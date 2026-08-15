@@ -6,7 +6,8 @@
  * 
  * 💡 NOOB / ARTIST GUIDE:
  * This script builds the vector PDF file using 'HTMLTemplate.html', saves it
- * to Google Drive, logs it into 'Invoice_Log', and emails it via Gmail.
+ * to Google Drive, logs it into 'Invoice_Log', emails it via Gmail,
+ * and notifies the team via Discord!
  */
 
 /**
@@ -31,6 +32,11 @@ function generateInvoicePdf() {
 
   // Log transaction in Invoice_Log tab
   logInvoice(data, pdfFile.getUrl());
+
+  // 🔔 Trigger Discord Notification Embed Card
+  if (typeof sendDiscordInvoiceNotification === 'function') {
+    sendDiscordInvoiceNotification(data, pdfFile.getUrl());
+  }
 
   SpreadsheetApp.getUi().alert(\✅ PDF Invoice Generated Successfully!\\n\\nSaved to Drive: \\\n\\nURL: \\);
   return pdfFile;
