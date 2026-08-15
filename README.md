@@ -8,6 +8,9 @@ Automated Invoice Generation and Books Management System built for **Studio Tunn
 
 - **Target Brand:** Studio Tunnel (Cineloom Postworks Pvt. Ltd.)
 - **GCP Project:** \st-in-gen\ (Project No: \972643538415\)\
+- **Collaborators:**\
+  - **Samiran Sonowal** (\samiransonowal\ / \samiran@studiotunnel.com\) — Owner & Lead Collaborator\
+  - **Jay Dantara** (\jd-tunnel\ / \jay@studiotunnel.com\) — Lead Developer\
 - **Primary Account:** \lab@studiotunnel.com\ / \jay@studiotunnel.com\\
 - **Source Documents:**\
   - **ACCOUNTS Sheet:** [\1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A\](https://docs.google.com/spreadsheets/d/1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A/edit?gid=0#gid=0)\
@@ -23,15 +26,19 @@ INVOICE_APP/\
 ├── .gitignore                                 <-- Git security rules excluding private secrets\
 ├── credentials/\
 │   ├── public/                                <-- Safe specifications & public entity info\
-│   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address\
+│   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address, Collaborators\
 │   │   ├── source_documents.json              <-- Google Sheets links & IDs\
 │   │   └── credentials.env.example            <-- Environment variable template\
 │   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON & env keys\
 └── framework/\
     ├── GAS-all/                               <-- Version-controlled Google Apps Script code\
-    │   ├── Code.gs                            <-- Core Apps Script logic & PDF engine\
-    │   ├── HTMLTemplate.html                  <-- Vector HTML Invoice print layout\
-    │   └── README.md                          <-- GAS module documentation\
+    │   ├── 0_Config.gs                        <-- Cell mappings & constants\
+    │   ├── 1_Utils.gs                         <-- Currency words converter\
+    │   ├── 2_InvoiceParser.gs                 <-- Sheet reader & checkbox validator\
+    │   ├── 3_PdfAndEmailer.gs                 <-- Vector PDF engine & emailer\
+    │   ├── 4_MenuUI.gs                        <-- Spreadsheet menu\
+    │   ├── 5_DiscordNotifier.gs               <-- Discord embed cards\
+    │   └── HTMLTemplate.html                  <-- Vector HTML Invoice print layout\
     ├── sample_docs/\
     │   └── 91_ZOMATO_RYZE STUDIO_REVISED...pdf  <-- Sample Client Invoice PDF\
     └── documentation/\
@@ -55,6 +62,9 @@ INVOICE_APP/\
 3. **Google Cloud Platform & OAuth 2.0 Auth:**\
    - Configured OAuth 2.0 Client credentials under GCP project \st-in-gen\.\
    - Whitelisted callback URIs for Apps Script and OAuth Playground.\
+\
+4. **Discord Ecosystem Notifications:**\
+   - Automatic posting of rich embed cards to Discord upon invoice creation.\
 
 ---\
 
