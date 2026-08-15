@@ -2,8 +2,8 @@
 credentials/private/
 *.env
 !credentials/public/*.env.example
-*.json
-!package.json
+credentials/public/*.json
+!credentials/public/company_public_info.json
 *.pem
 *.key
 
