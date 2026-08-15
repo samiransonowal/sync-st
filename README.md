@@ -19,19 +19,20 @@ Automated Invoice Generation and Books Management System built for **Studio Tunn
 
 \\\	ext\
 INVOICE_APP/\
-├── README.md                           <-- Project Overview & Documentation\
-├── .gitignore                          <-- Git security rules excluding private secrets\
-├── 91_ZOMATO_RYZE STUDIO_REVISED...pdf <-- Reference sample invoice\
+├── README.md                                  <-- Project Overview & Documentation\
+├── .gitignore                                 <-- Git security rules excluding private secrets\
 ├── credentials/\
-│   ├── public/                         <-- Safe specifications & public entity info\
-│   │   ├── company_public_info.json    <-- Legal Entity, GSTIN, PAN, TAN, Address\
-│   │   ├── source_documents.json       <-- Google Sheets links & IDs\
-│   │   └── credentials.env.example     <-- Environment variable template\
-│   └── private/                        <-- (GIT IGNORED) Secrets, OAuth JSON & env keys\
+│   ├── public/                                <-- Safe specifications & public entity info\
+│   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address\
+│   │   ├── source_documents.json              <-- Google Sheets links & IDs\
+│   │   └── credentials.env.example            <-- Environment variable template\
+│   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON & env keys\
 └── framework/\
-    └── source_docs/\
-        ├── cineloom-comptroller.md     <-- Cineloom Comptroller specification & rules\
-        └── README.md                   <-- Index of source documents & sheet links\
+    ├── sample_docs/\
+    │   └── 91_ZOMATO_RYZE STUDIO_REVISED...pdf  <-- Sample Client Invoice PDF\
+    └── documentation/\
+        ├── cineloom-comptroller.md            <-- Cineloom Comptroller specification & rules\
+        └── README.md                          <-- Index of source documents & sheet links\
 \\\\
 
 ---\
