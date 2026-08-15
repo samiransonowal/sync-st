@@ -28,6 +28,10 @@ INVOICE_APP/\
 │   │   └── credentials.env.example            <-- Environment variable template\
 │   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON & env keys\
 └── framework/\
+    ├── GAS-all/                               <-- Version-controlled Google Apps Script code\
+    │   ├── Code.gs                            <-- Core Apps Script logic & PDF engine\
+    │   ├── HTMLTemplate.html                  <-- Vector HTML Invoice print layout\
+    │   └── README.md                          <-- GAS module documentation\
     ├── sample_docs/\
     │   └── 91_ZOMATO_RYZE STUDIO_REVISED...pdf  <-- Sample Client Invoice PDF\
     └── documentation/\

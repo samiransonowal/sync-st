@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #111111;
+      font-size: 11px;
+      line-height: 1.4;
+      margin: 0;
+      padding: 0;
+    }
+    .header-table {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .company-name {
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      color: #000;
+    }
+    .green-bar {
+      height: 4px;
+      background-color: #008738;
+      margin: 8px 0 12px 0;
+    }
+    .title-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #008738;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .meta-table {
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    .meta-table td {
+      vertical-align: top;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .item-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .item-table th {
+      background-color: #008738;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 6px 8px;
+      text-align: left;
+      font-size: 10px;
+    }
+    .item-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 10px;
+    }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    
+    .totals-table {
+      width: 40%;
+      float: right;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    .totals-table td {
+      padding: 4px 6px;
+      font-size: 10px;
+    }
+    .grand-total-row {
+      background-color: #008738;
+      color: #ffffff;
+      font-weight: bold;
+    }
+    .words-block {
+      width: 55%;
+      float: left;
+      margin-top: 5px;
+    }
+    .clearfix { clear: both; }
+    
+    .footer-table {
+      width: 100%;
+      margin-top: 30px;
+    }
+    .bank-box {
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    .signature-box {
+      text-align: right;
+      font-size: 11px;
+    }
+    .signature-line {
+      font-family: 'Brush Script MT', cursive, sans-serif;
+      font-size: 20px;
+      margin-top: 15px;
+      display: inline-block;
+      border-bottom: 1px solid #333;
+      padding: 0 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Company Header & Logo -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 70%; vertical-align: top;">
+        <div class="company-name"><?= d.company.name ?></div>
+        <div><?= d.company.address ?></div>
+        <div>HSN Code: <?= d.company.hsn ?></div>
+        <div>Phone no. : <?= d.company.phone ?></div>
+        <div>Email : <?= d.company.email ?></div>
+        <div>GSTIN : <?= d.company.gstin ?></div>
+        <div>State: <?= d.company.state ?></div>
+        <div>PAN: <?= d.company.pan ?></div>
+        <div>TAN: <?= d.company.tan ?></div>
+      </td>
+      <td style="width: 30%; text-align: right; vertical-align: top;">
+        <!-- Studio Tunnel Logo Placeholder -->
+        <div style="background:#000; color:#fff; display:inline-block; padding:10px 15px; font-weight:bold; font-size:14px;">
+          STUDIO<br><span style="color:#00ff66;">TUNNEL</span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="green-bar"></div>
+
+  <!-- Document Title -->
+  <div class="title-text">Tax Invoice</div>
+
+  <!-- Client & Invoice Metadata -->
+  <table class="meta-table">
+    <tr>
+      <!-- Bill To Left -->
+      <td style="width: 60%;">
+        <div class="section-title">Bill To</div>
+        <div style="font-weight: bold;"><?= d.client.name ?></div>
+        <div><?= d.client.address ?></div>
+        <div>Contact No. : <?= d.client.contact ?></div>
+        <div>GSTIN : <?= d.client.gstin ?></div>
+        <div>State: <?= d.client.state ?></div>
+      </td>
+      <!-- Invoice Details Right -->
+      <td style="width: 40%; text-align: right;">
+        <div class="section-title">Invoice Details</div>
+        <div>Invoice No. : <strong><?= d.inv.no ?></strong></div>
+        <div>Date : <?= d.inv.date ?></div>
+        <div>Place of supply: <?= d.inv.placeOfSupply ?></div>
+        <div>PAN: <?= d.client.pan ?></div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Line Items Table -->
+  <table class="item-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">#</th>
+        <th style="width: 35%;">Item name</th>
+        <th style="width: 12%;">HSN/ SAC</th>
+        <th style="width: 8%;" class="text-center">Quantity</th>
+        <th style="width: 8%;" class="text-center">Unit</th>
+        <th style="width: 12%;" class="text-right">Price/ Unit</th>
+        <th style="width: 10%;" class="text-right">GST</th>
+        <th style="width: 10%;" class="text-right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <? for (var i = 0; i < d.items.length; i++) { var item = d.items[i]; ?>
+      <tr>
+        <td><?= item.srNo ?></td>
+        <td><strong><?= item.name ?></strong></td>
+        <td><?= item.hsn ?></td>
+        <td class="text-center"><?= item.qty ?></td>
+        <td class="text-center"><?= item.unit ?></td>
+        <td class="text-right">₹ <?= item.rate.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+        <td class="text-right">₹ <?= item.gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?><br><small>(<?= item.gstRate ?>%)</small></td>
+        <td class="text-right">₹ <?= item.amount.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+      </tr>
+      <? } ?>
+    </tbody>
+  </table>
+
+  <!-- Summary Section -->
+  <div class="words-block">
+    <div><strong>Invoice Amount In Words</strong></div>
+    <div style="margin-bottom: 15px;"><?= d.financials.words ?></div>
+
+    <div><strong>Terms and Conditions</strong></div>
+    <div>Thanks for doing business with us!</div>
+  </div>
+
+  <table class="totals-table">
+    <tr>
+      <td>Sub Total</td>
+      <td class="text-right">₹ <?= d.financials.subTotal.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <? if (d.financials.isIntraState) { ?>
+    <tr>
+      <td>SGST@9%</td>
+      <td class="text-right">₹ <?= d.financials.sgst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <tr>
+      <td>CGST@9%</td>
+      <td class="text-right">₹ <?= d.financials.cgst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <? } else { ?>
+    <tr>
+      <td>IGST@18%</td>
+      <td class="text-right">₹ <?= d.financials.igst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <? } ?>
+    <tr class="grand-total-row">
+      <td>Total</td>
+      <td class="text-right">₹ <?= d.financials.grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <tr>
+      <td>Received</td>
+      <td class="text-right">₹ <?= d.financials.received.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+    </tr>
+    <tr>
+      <td><strong>Balance</strong></td>
+      <td class="text-right"><strong>₹ <?= d.financials.balance.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></strong></td>
+    </tr>
+  </table>
+
+  <div class="clearfix"></div>
+
+  <!-- Footer Payment Details & Signatory -->
+  <table class="footer-table">
+    <tr>
+      <td style="width: 50%; vertical-align: bottom;" class="bank-box">
+        <div><strong>Pay To:</strong></div>
+        <div>Bank Name : <?= d.bank.name ?></div>
+        <div>Bank Account No. : <?= d.bank.accountNo ?></div>
+        <div>Bank IFSC code : <?= d.bank.ifsc ?></div>
+        <div>Account holder's name : <?= d.bank.holder ?></div>
+      </td>
+      <td style="width: 50%; text-align: right; vertical-align: bottom;" class="signature-box">
+        <div>For :<strong><?= d.company.name ?></strong></div>
+        <div class="signature-line">Saimman</div><br>
+        <div style="margin-top: 5px;">Authorized Signatory</div>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
