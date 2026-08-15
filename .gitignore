@@ -1,0 +1,17 @@
+# Credentials & Secrets
+credentials/
+*.json
+!package.json
+.env*
+*.pem
+*.key
+
+# IDE & OS Junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node dependencies
+node_modules/
+
