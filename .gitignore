@@ -1,8 +1,9 @@
-# Credentials & Secrets
-credentials/
+# Secret & Private Credentials
+credentials/private/
+*.env
+!credentials/public/*.env.example
 *.json
 !package.json
-.env*
 *.pem
 *.key
 
