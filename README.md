@@ -5,7 +5,8 @@
 **Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
 **Studio Owner & Lead Collaborator:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
 **GCP Administration Account:** `lab@studiotunnel.com`  
-**Organization Directory:** [`users.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/users.md)  
+**Master Organization Directory (YAML):** [`framework/documentation/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/framework/documentation/users.yaml)  
+**Synced Directory Matrix (JSON):** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)  
 **Design System:** [`DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/framework/GAS-all/DesignSystem.gs)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
 **GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)
@@ -29,11 +30,13 @@ It features a **Hybrid Architecture**:
 ```text
 INVOICE_APP/
 ├── CHANGELOG.md                         <-- Version History (Data Logic, Data Flow, UI/UX)
-├── users.md                             <-- Google Workspace User Directory & Identity Matrix
 ├── credentials/
 │   ├── private/secrets.env              <-- Private secrets & API keys (Git Ignored)
-│   └── public/credentials.env.example   <-- Public template for co-developers
+│   └── public/
+│       ├── credentials.env.example     <-- Public template for co-developers
+│       └── users.json                   <-- Synced User Directory Matrix (JSON)
 ├── framework/
+│   ├── sync_users.py                    <-- Sync Script (users.yaml -> users.json)
 │   ├── GAS-all/                         <-- Modular Apps Script Source Engine
 │   │   ├── 0_Config.gs                  <-- Cell mappings & constants
 │   │   ├── 1_Utils.gs                   <-- Currency-in-words converter & date formatters
@@ -45,6 +48,7 @@ INVOICE_APP/
 │   │   ├── HTMLTemplate.html            <-- Invoice vector Lexend HTML print layout
 │   │   └── README.md                    <-- Beginner guide for artists
 │   ├── documentation/
+│   │   ├── users.yaml                   <-- Master Organization Directory (YAML)
 │   │   ├── cineloom-comptroller.md      <-- [LOCKED & READONLY] Version 1.0 Original Spec
 │   │   ├── cineloom-comptroller-v2.md   <-- Version 2.0 Active Architecture Spec
 │   │   ├── bigquery_schema.sql          <-- Production BigQuery DDL Schema
@@ -72,7 +76,7 @@ INVOICE_APP/
 ## 🏷️ Release History Summary
 
 - **v0.3 (`aesthetic`)**: Created `DesignSystem.gs` (Lexend font, 90%/20% gray contrast rules), added Google Drive live HTML web invoice creation with domain permissions, and locked v1 spec.
-- **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.md`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
+- **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.yaml` & `users.json`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
 - **v0.1 (`genesis`)**: Decoupled Sheets Doorway from BigQuery Data Warehouse (`st_fin_com_prog`), added Looker Studio visual dashboard architecture & modular Apps Script vector PDF generator.
 
 *(Full categorized breakdown in [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md))*
