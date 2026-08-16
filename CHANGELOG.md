@@ -8,6 +8,28 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
+### 📦 Release Version `v0.3` — *"aesthetic"*
+**Date:** 2026-08-17  
+**Git Tag:** `v0.3`  
+
+#### 🧠 Data Logic
+- Created GAS-compatible Design System specification ([`DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/framework/GAS-all/DesignSystem.gs)) defining Lexend typography and contrast bounds.
+- Set strict text color rules: **Darkest Black = 90% Gray (`#1A1A1A`)** and **Lightest White = 20% Gray (`#CCCCCC`)** for text on dark elements (no pure `#000000` or `#FFFFFF` permitted for text).
+- Permitted 100% Pure White (`#FFFFFF`) exclusively for invoice paper backgrounds.
+- Set brand green color properties (`primaryGreen`, `darkGreen`, `lightGreenTint`) as blank placeholders (`""`) to be defined later.
+- Implemented file lock (`IsReadOnly = True`) on Version 1.0 specification (`cineloom-comptroller.md`).
+
+#### 🔄 Data Flow
+- Upgraded `3_PdfAndEmailer.gs` (`generateInvoiceDocuments`) to generate **both a viewable `.html` web document AND a `.pdf` vector file** in Google Drive.
+- Configured domain-level viewer permissions (`DriveApp.Access.DOMAIN_WITH_LINK`) and explicit viewer access (`ROLES.OWNER_EMAIL`, `ROLES.REPORT_RECIPIENT_EMAIL`).
+- Updated `Invoice_Log` logging to record both PDF Drive URL and live HTML Web Invoice URL.
+
+#### 🎨 UI / UX
+- Updated [`HTMLTemplate.html`](file:///d:/Studio%20Tunnel/INVOICE_APP/framework/GAS-all/HTMLTemplate.html) to import **Google Font: Lexend** via CDN (`family=Lexend:wght@300;400;500;600;700`).
+- Refactored invoice HTML/CSS styling to strictly use `#1A1A1A` (90% Gray) for headings/labels and `#CCCCCC` (20% Gray) for table headers and grand total text.
+
+---
+
 ### 📦 Release Version `v0.2` — *"inclusion"*
 **Date:** 2026-08-17  
 **Git Tag:** `v0.2`  
@@ -17,7 +39,6 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 - Defined `YYYYMMDD` serial date string standard (`formatDateYYYYMMDD`) for file naming and invoice serial keys.
 - Added regulatory regex validation helper functions in Apps Script (`1_Utils.gs`) for Indian GSTIN (`validateGSTIN`) and PAN (`validatePAN`).
 - Provisioned Google Workspace User Directory, Primary Emails, and Public Aliases Matrix into system reference configuration (`users.md`).
-- Linked contact aliases (`contact@studiotunnel.com`, `invoices@studiotunnel.com`) to financial data pipeline metadata.
 
 #### 🔄 Data Flow
 - Configured date format constants (`DATE_FORMATS`: `SERIAL: 'yyyyMMdd'`, `DISPLAY: 'dd/MM/yyyy'`, `ISO`, `DB`) in `0_Config.gs`.
@@ -27,7 +48,6 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 #### 🎨 UI / UX
 - Formatted human-readable date display (`DD/MM/YYYY`) for PDF invoice headers and Google Sheets UI.
 - Created clean, human-readable User Directory & Identity Matrix markdown table ([`users.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/users.md)) for team reference.
-- Updated root `README.md` with release version badges, contact matrix, and repository structure.
 
 ---
 
@@ -52,12 +72,3 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 - Built Google Sheets top menu bar (`🚀 Studio Tunnel -> 📄 Generate PDF Invoice`).
 - Created high-resolution HTML/CSS vector print template (`HTMLTemplate.html`) matching Studio Tunnel branding.
 - Established locked status for Version 1.0 specification (`cineloom-comptroller.md`).
-
----
-
-## 📌 Categorization Guidelines for Future Releases
-
-When updating this document for future releases, group all changes under:
-1. **Data Logic**: Business rules, tax logic, schema definitions, algorithms, and calculations.
-2. **Data Flow**: Pipelines, APIs, Apps Script bridges, BigQuery sync, webhooks, and database integrations.
-3. **UI / UX**: Google Sheets menus, HTML templates, Discord embed cards, Looker Studio dashboards, and user documentation.
