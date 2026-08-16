@@ -12,9 +12,6 @@ Automated Invoice Generation and Books Management System built for **Studio Tunn
   - **Samiran Sonowal** (\samiransonowal\ / \samiran@studiotunnel.com\) — Owner & Lead Collaborator\
   - **Jay Dantara** (\jd-tunnel\ / \jay@studiotunnel.com\) — Lead Developer\
 - **Primary Account:** \lab@studiotunnel.com\ / \jay@studiotunnel.com\\
-- **Source Documents:**\
-  - **ACCOUNTS Sheet:** [\1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A\](https://docs.google.com/spreadsheets/d/1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A/edit?gid=0#gid=0)\
-  - **PROJECT TRACKER Sheet:** [\1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0\](https://docs.google.com/spreadsheets/d/1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0/edit?pli=1&gid=0#gid=0)\
 
 ---\
 
@@ -27,9 +24,10 @@ INVOICE_APP/\
 ├── credentials/\
 │   ├── public/                                <-- Safe specifications & public entity info\
 │   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address, Collaborators\
-│   │   ├── source_documents.json              <-- Google Sheets links & IDs\
 │   │   └── credentials.env.example            <-- Environment variable template\
-│   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON & env keys\
+│   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON, Source Sheets & env keys\
+│       ├── source_documents.json              <-- Private Spreadsheet links & IDs\
+│       └── secrets.env                        <-- Private environment variables\
 └── framework/\
     ├── GAS-all/                               <-- Version-controlled Google Apps Script code\
     │   ├── 0_Config.gs                        <-- Cell mappings & constants\
@@ -70,5 +68,5 @@ INVOICE_APP/\
 
 ## 🔒 Security Policy
 
-Private keys, OAuth secrets, and environment parameters are housed exclusively in \credentials/private/\ and are strictly ignored by Git (\.gitignore\).
+Private keys, OAuth secrets, source document links, and environment parameters are housed exclusively in \credentials/private/\ and are strictly ignored by Git (\.gitignore\).
 
