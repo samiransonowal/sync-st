@@ -1,15 +1,15 @@
 # ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
 
-**Release Version:** `v0.4` (*additional structure*)  
+**Release Version:** `v0.5` (*user-details*)  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
 **Studio Owner & Lead Collaborator:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
 **GCP Administration Account:** `lab@studiotunnel.com`  
 **Master Organization Directory (YAML):** [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)  
+**Google Admin Raw Export (JSON):** [`documentation/organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json)  
 **Synced Directory Matrix (JSON):** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)  
 **Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
-**Tech Stack Index:** [`documentation/tech-stack/tech_stack_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/tech_stack_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
 **GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)
 
@@ -27,7 +27,7 @@ It features a **Hybrid Architecture**:
 
 ---
 
-## 📁 Human-Friendly Repository Structure
+## 📁 Repository Structure
 
 ```text
 INVOICE_APP/
@@ -64,8 +64,9 @@ INVOICE_APP/
 │   │   └── cineloom-comptroller-v2.md  <-- Version 2.0 Active BigQuery Hybrid Architecture Spec
 │   ├── schemas/                        <-- Database Schemas & DDL Scripts
 │   │   └── bigquery_schema.sql         <-- BigQuery st_fin_com_prog DDL script
-│   ├── organization/                   <-- Team Directory & Identity Matrices
-│   │   └── users.yaml                  <-- Master User Directory (YAML source of truth)
+│   ├── organization/                   <-- Verified Team Directory & Identity Matrices
+│   │   ├── users.yaml                  <-- Master User Directory (YAML source of truth)
+│   │   └── user_log.json               <-- Formatted Google Workspace Admin API export
 │   ├── tech-stack/                     <-- Technical Choice Modules (01 to 05)
 │   │   ├── 01_core_architecture.md
 │   │   ├── 02_database_and_warehouse.md
@@ -81,20 +82,23 @@ INVOICE_APP/
 
 ---
 
-## 👥 Key Collaborators & Contact Matrix
+## 👥 Verified Organization User Directory
 
-| Identity | Role | System Privilege | Contact |
-| :--- | :--- | :--- | :--- |
-| **Samiran Sonowal** | Studio Owner | Primary Escalation Target, Data Owner | `samiran@studiotunnel.com` |
-| **Jay** | Lead Developer | Git & Repository Commit Author | `jay@studiotunnel.com` |
-| **Lab Account** | GCP Admin | GCP Owner (`st-in-gen`), OAuth Client ID | `lab@studiotunnel.com` |
-| **Yash** | Colorist / Executive | Weekly Accounts Report Recipient | `yash@studiotunnel.com` |
-| **Contact / Invoices** | Business Public | Inbound Billing & Public Alias | `contact@studiotunnel.com` |
+| # | Primary Email | Full Name / Account Name | Secondary Aliases / Personal Emails | Contact Phone | Role & Privileges |
+| :-: | :--- | :--- | :--- | :--- | :--- |
+| **1** | `samiran@studiotunnel.com` | **Samiran Sonowal** | `samiran26sonowal@gmail.com` | `7030168963` | Studio Owner, Managing Director & Data Owner |
+| **2** | `lab@studiotunnel.com` | **Tech Dev (Studio Tunnel Lab)** | `jay@studiotunnel.com`, `postman@jaydantara.com` | `+91 80809 11109` | GCP Cloud Administrator & Lead Systems Architect |
+| **3** | `accounts@studiotunnel.com` | **Accounts Cineloom Postworks** | `samiran26sonowal@gmail.com` | `7030168963` | Accounts Officer & Billing Inbox Operator |
+| **4** | `art@studiotunnel.com` | **Artists @ Studio Tunnel** | `manoj@studiotunnel.com`, `sujith@studiotunnel.com`, `contactmanojsahu@gmail.com` | `+91 84549 81924`<br>`+91 83189 84245` | Senior Colorists & Post-Production Artists Group |
+| **5** | `contact@studiotunnel.com` | **Studio Tunnel Contact** | `tamash@studiotunnel.com`, `prakash@studiotunnel.com`, `tamashansari4@gmail.com`, `prakashjai.tunnel@gmail.com` | `9372586002`<br>`8910460532` | Public Relations, Client Services & Inbound Billing |
+| **6** | `ops@studiotunnel.com` | **Ops Tunnel** | `ayush@studiotunnel.com`, `vijay@studiotunnel.com`, `arjun@studiotunnel.com`, `golu@studiotunnel.com`, `aaditya@studiotunnel.com` | *N/A* | Line Producers & Production Operations Team |
+| **7** | `yash@studiotunnel.com` | **Yash** | *Weekly Report Recipient* | *N/A* | Senior Colorist & Financial Comptroller |
 
 ---
 
 ## 🏷️ Release History Summary
 
+- **v0.5 (`user-details`)**: Provisioned exact verified Google Workspace Admin Directory data (`customer_id: C00yqau03`), created formatted `user_log.json`, and integrated account aliases/phones into `users.yaml` & `sync_users.py`.
 - **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names (`documentation_index.md`, `tech_stack_index.md`, `apps_script_guide.md`).
 - **v0.3 (`aesthetic`)**: Created `DesignSystem.gs` (Lexend font, 90%/20% gray contrast rules), added Google Drive live HTML web invoice creation with domain permissions, and locked v1 spec.
 - **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.yaml` & `users.json`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
