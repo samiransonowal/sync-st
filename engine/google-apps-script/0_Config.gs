@@ -1,8 +1,29 @@
 // ============================================================================
 // CINELOOM POSTWORKS PVT. LTD. / STUDIO TUNNEL
 // MASTER CONFIGURATION & CONSTANTS
-// Program: ST-fin-com-prog (v0.2 inclusion)
+// Program: ST-fin-com-prog (v0.5 inclusion)
 // ============================================================================
+
+// ----------------------------------------------------------------------------
+// 🧪 DRY RUN MODE — SET TO false FOR LIVE PRODUCTION
+// When true: PDF + HTML are generated normally, Invoice_Log is written.
+//            Gmail sends and Discord pings are SKIPPED (safe for testing).
+// When false: Full production flow (email sent, Discord notified).
+// ----------------------------------------------------------------------------
+var DRY_RUN_MODE = true;
+
+// ----------------------------------------------------------------------------
+// 🧪 TEST CLIENT — Used by 6_SelfTest.gs for dry run invoice generation
+// All fields mirror the real Invoice_Generator structure.
+// ----------------------------------------------------------------------------
+var TEST_CLIENT = {
+  name: 'TEST CLIENT',
+  address: '00-Test Street, Test City - 000 000',
+  email: '',          // Intentionally blank — no email sent in dry run
+  gstin: '27AABCT1332L1ZV',
+  state: '27-Maharashtra',
+  pan: 'AABCT1332L'
+};
 
 // ----------------------------------------------------------------------------
 // 🌐 TIMEZONE & DATE FORMATTING STANDARDS
