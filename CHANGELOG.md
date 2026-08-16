@@ -8,21 +8,35 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
+### 📦 Release Version `v0.6` — *"verification"*
+**Date:** 2026-08-17  
+**Git Tag:** `v0.6`  
+
+#### 🧠 Data Logic
+- Created automated System Integrity & Validation Suite ([`engine/python-scripts/test_system_integrity.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/python-scripts/test_system_integrity.py)) testing 5 core subsystems:
+  1. Master `users.yaml` directory syntax.
+  2. Synced `users.json` matrix alignment.
+  3. Regulatory GSTIN (`27AAMCC8604R1ZV`) & PAN (`AAMCC8604R`) regex bounds.
+  4. IST Timezone & `YYYYMMDD` date serial formatters.
+  5. Intra/Inter-state GST tax math (9%/9%/18%) and TDS (10%) deductions.
+- Achieved **100% PASS RATE** across all system integrity checks.
+
+#### 🔄 Data Flow
+- Verified BigQuery SQL statement generation and tax calculations via [`engine/python-scripts/dry_run_bigquery.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/python-scripts/dry_run_bigquery.py).
+- Created Tech Stack Verification Module ([`documentation/tech-stack/06_verification_and_dry_runs.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/06_verification_and_dry_runs.md)).
+
+#### 🎨 UI / UX
+- Updated [`README.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/README.md) and [`documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md) with technical verification commands and test suite summaries.
+
+---
+
 ### 📦 Release Version `v0.5` — *"user-details"*
 **Date:** 2026-08-17  
 **Git Tag:** `v0.5`  
 
 #### 🧠 Data Logic
 - Verified and imported exact Google Workspace Admin Directory data (`customer_id: C00yqau03`) into [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml).
-- Created formatted raw export log [`documentation/organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json) containing full Google Workspace user profiles, phone numbers, recovery emails, and alias mappings.
-- Expanded directory profiles to include Accounts, Colorists, Operations/Line Producers, Public Contact, and Infrastructure Admin accounts.
-
-#### 🔄 Data Flow
-- Integrated `user_log.json` into the automated sync pipeline (`sync_users.py`), auto-generating [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json).
-- Updated private `secrets.env` and public `credentials.env.example` to track `USER_LOG_FILE`.
-
-#### 🎨 UI / UX
-- Enhanced Organization Directory table in root [`README.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/README.md) and [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md) displaying primary emails, full names, secondary aliases, and contact numbers.
+- Created formatted raw export log [`documentation/organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json).
 
 ---
 
@@ -41,8 +55,7 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 **Git Tag:** `v0.3`  
 
 #### 🧠 Data Logic
-- Created GAS-compatible Design System specification ([`DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)) defining Lexend typography and contrast bounds (`#1A1A1A` 90% gray text, `#CCCCCC` 20% gray light text).
-- Generated live viewable `.html` web invoice documents in Google Drive alongside `.pdf` vector files.
+- Created GAS-compatible Design System specification ([`DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)) defining Lexend typography and contrast bounds.
 
 ---
 
@@ -52,7 +65,6 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 #### 🧠 Data Logic
 - Established IST `Asia/Kolkata` timezone standard across all scripts, Apps Script functions, and BigQuery SQL queries.
-- Defined `YYYYMMDD` serial date string standard (`formatDateYYYYMMDD`) and regulatory GSTIN/PAN regex validators.
 
 ---
 

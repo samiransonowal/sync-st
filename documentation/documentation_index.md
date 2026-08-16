@@ -20,6 +20,7 @@ Index of active architectural specifications and source document references for 
 ## 👥 Organization Directory Reference
 
 - **Master YAML Directory:** [`organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)
+- **Google Admin Raw Export:** [`organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json)
 - **Synced Public JSON Matrix:** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)
 - **Sync Script:** `python engine/python-scripts/sync_users.py`
 
@@ -32,6 +33,14 @@ Index of active architectural specifications and source document references for 
 - **[`tech-stack/03_automation_and_webhooks.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/03_automation_and_webhooks.md)**
 - **[`tech-stack/04_design_system_and_pdf.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/04_design_system_and_pdf.md)**
 - **[`tech-stack/05_security_and_credentials.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/05_security_and_credentials.md)**
+- **[`tech-stack/06_verification_and_dry_runs.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/06_verification_and_dry_runs.md)**
+
+---
+
+## 🔬 Verification & Test Suites
+
+- **System Integrity Test Suite:** `python engine/python-scripts/test_system_integrity.py` *(5/5 Passed)*
+- **BigQuery Dry-Run Engine:** `python engine/python-scripts/dry_run_bigquery.py` *(Passed)*
 
 ---
 

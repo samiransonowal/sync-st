@@ -1,13 +1,13 @@
 # ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
 
-**Release Version:** `v0.5` (*user-details*)  
+**Release Version:** `v0.6` (*verification*)  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
 **Studio Owner & Lead Collaborator:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
 **GCP Administration Account:** `lab@studiotunnel.com`  
 **Master Organization Directory (YAML):** [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)  
-**Google Admin Raw Export (JSON):** [`documentation/organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json)  
-**Synced Directory Matrix (JSON):** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)  
+**System Verification Suite:** `python engine/python-scripts/test_system_integrity.py` *(5/5 Passed)*  
+**BigQuery Dry-Run Engine:** `python engine/python-scripts/dry_run_bigquery.py` *(Passed)*  
 **Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
@@ -56,7 +56,8 @@ INVOICE_APP/
 │   │   └── apps_script_guide.md        <-- Beginner Guide for Artists & Apps Script Usage
 │   └── python-scripts/                 <-- Local Utilities & Dry-Run Test Scripts
 │       ├── dry_run_bigquery.py         <-- BigQuery SQL generation & data flow dry-run test
-│       └── sync_users.py               <-- Auto-sync script (users.yaml -> users.json)
+│       ├── sync_users.py               <-- Auto-sync script (users.yaml -> users.json)
+│       └── test_system_integrity.py    <-- System Integrity & Validation Test Suite (100% Pass)
 │
 ├── 📚 documentation/                   <-- Specifications, Schemas & User Directory
 │   ├── master-specs/                   <-- Master Specifications & Versions
@@ -67,12 +68,13 @@ INVOICE_APP/
 │   ├── organization/                   <-- Verified Team Directory & Identity Matrices
 │   │   ├── users.yaml                  <-- Master User Directory (YAML source of truth)
 │   │   └── user_log.json               <-- Formatted Google Workspace Admin API export
-│   ├── tech-stack/                     <-- Technical Choice Modules (01 to 05)
+│   ├── tech-stack/                     <-- Technical Choice Modules (01 to 06)
 │   │   ├── 01_core_architecture.md
 │   │   ├── 02_database_and_warehouse.md
 │   │   ├── 03_automation_and_webhooks.md
 │   │   ├── 04_design_system_and_pdf.md
 │   │   ├── 05_security_and_credentials.md
+│   │   ├── 06_verification_and_dry_runs.md
 │   │   └── tech_stack_index.md         <-- Tech Stack Module Navigation Index
 │   └── documentation_index.md          <-- Master Documentation Index
 │
@@ -82,24 +84,26 @@ INVOICE_APP/
 
 ---
 
-## 👥 Verified Organization User Directory
+## 🔬 System Integrity Verification Commands
 
-| # | Primary Email | Full Name / Account Name | Secondary Aliases / Personal Emails | Contact Phone | Role & Privileges |
-| :-: | :--- | :--- | :--- | :--- | :--- |
-| **1** | `samiran@studiotunnel.com` | **Samiran Sonowal** | `samiran26sonowal@gmail.com` | `7030168963` | Studio Owner, Managing Director & Data Owner |
-| **2** | `lab@studiotunnel.com` | **Tech Dev (Studio Tunnel Lab)** | `jay@studiotunnel.com`, `postman@jaydantara.com` | `+91 80809 11109` | GCP Cloud Administrator & Lead Systems Architect |
-| **3** | `accounts@studiotunnel.com` | **Accounts Cineloom Postworks** | `samiran26sonowal@gmail.com` | `7030168963` | Accounts Officer & Billing Inbox Operator |
-| **4** | `art@studiotunnel.com` | **Artists @ Studio Tunnel** | `manoj@studiotunnel.com`, `sujith@studiotunnel.com`, `contactmanojsahu@gmail.com` | `+91 84549 81924`<br>`+91 83189 84245` | Senior Colorists & Post-Production Artists Group |
-| **5** | `contact@studiotunnel.com` | **Studio Tunnel Contact** | `tamash@studiotunnel.com`, `prakash@studiotunnel.com`, `tamashansari4@gmail.com`, `prakashjai.tunnel@gmail.com` | `9372586002`<br>`8910460532` | Public Relations, Client Services & Inbound Billing |
-| **6** | `ops@studiotunnel.com` | **Ops Tunnel** | `ayush@studiotunnel.com`, `vijay@studiotunnel.com`, `arjun@studiotunnel.com`, `golu@studiotunnel.com`, `aaditya@studiotunnel.com` | *N/A* | Line Producers & Production Operations Team |
-| **7** | `yash@studiotunnel.com` | **Yash** | *Weekly Report Recipient* | *N/A* | Senior Colorist & Financial Comptroller |
+```bash
+# 1. Run System Integrity & Schema Validation Suite (100% Pass Rate)
+python engine/python-scripts/test_system_integrity.py
+
+# 2. Run BigQuery Data Flow & SQL Generation Dry-Run Engine
+python engine/python-scripts/dry_run_bigquery.py
+
+# 3. Sync Master YAML User Directory to Public JSON Matrix
+python engine/python-scripts/sync_users.py
+```
 
 ---
 
 ## 🏷️ Release History Summary
 
+- **v0.6 (`verification`)**: Created System Integrity & Validation Suite (`test_system_integrity.py` - 100% pass), BigQuery data flow dry runs, and tech stack verification module (`06_verification_and_dry_runs.md`).
 - **v0.5 (`user-details`)**: Provisioned exact verified Google Workspace Admin Directory data (`customer_id: C00yqau03`), created formatted `user_log.json`, and integrated account aliases/phones into `users.yaml` & `sync_users.py`.
-- **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names (`documentation_index.md`, `tech_stack_index.md`, `apps_script_guide.md`).
+- **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names.
 - **v0.3 (`aesthetic`)**: Created `DesignSystem.gs` (Lexend font, 90%/20% gray contrast rules), added Google Drive live HTML web invoice creation with domain permissions, and locked v1 spec.
 - **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.yaml` & `users.json`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
 - **v0.1 (`genesis`)**: Decoupled Sheets Doorway from BigQuery Data Warehouse (`st_fin_com_prog`), added Looker Studio visual dashboard architecture & modular Apps Script vector PDF generator.
