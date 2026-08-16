@@ -1,71 +1,73 @@
-# Studio Tunnel Invoice Generator (IN-gen)
+# ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
 
-Automated Invoice Generation and Books Management System built for **Studio Tunnel** under **Cineloom Postworks Pvt. Ltd.** in Google Workspace and GCP ecosystem.
+**Release Version:** 0.1 (*genesis*)  
+**Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
+**Lead Developer:** Jay (jay@studiotunnel.com / GitHub: jd-tunnel)  
+**Studio Owner & Lead Collaborator:** Samiran Sonowal (samiran@studiotunnel.com / GitHub: samiransonowal)  
+**GCP Administration Account:** lab@studiotunnel.com  
+**GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)
 
----\
+---
 
-## 📌 System Overview
+## 🚀 Overview
 
-- **Target Brand:** Studio Tunnel (Cineloom Postworks Pvt. Ltd.)
-- **GCP Project:** \st-in-gen\ (Project No: \972643538415\)\
-- **Collaborators:**\
-  - **Samiran Sonowal** (\samiransonowal\ / \samiran@studiotunnel.com\) — Owner & Lead Collaborator\
-  - **Jay Dantara** (\jd-tunnel\ / \jay@studiotunnel.com\) — Lead Developer\
-- **Primary Account:** \lab@studiotunnel.com\ / \jay@studiotunnel.com\\
+ST-fin-com-prog is the automated financial comptroller and vector PDF invoice generation system for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
 
----\
+It features a **Hybrid Architecture**:
+1. **Google Sheets (PROJECT TRACKER & ACCOUNTS)**: Human-friendly data input doorway for Samiran and Line Producers.
+2. **Google BigQuery (st-in-gen.st_fin_com_prog)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
+3. **Google Looker Studio**: Executive financial reporting portal & real-time overdue chase list dashboards.
+4. **Google Apps Script & Discord Engine**: Event-driven vector PDF invoice generation, Drive archiving, Gmail routing, and Discord #invoices-log alerts.
+
+---
 
 ## 📁 Repository Structure
 
-\\\	ext\
-INVOICE_APP/\
-├── README.md                                  <-- Project Overview & Documentation\
-├── .gitignore                                 <-- Git security rules excluding private secrets\
-├── credentials/\
-│   ├── public/                                <-- Safe specifications & public entity info\
-│   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address, Collaborators\
-│   │   └── credentials.env.example            <-- Unified environment variable template\
-│   └── private/                               <-- (GIT IGNORED) Master unified secrets file\
-│       └── secrets.env                        <-- Unified Private Env (OAuth, Sheets, Drive & Discord secrets)\
-└── framework/\
-    ├── GAS-all/                               <-- Version-controlled Google Apps Script code\
-    │   ├── 0_Config.gs                        <-- Cell mappings & constants\
-    │   ├── 1_Utils.gs                         <-- Currency words converter\
-    │   ├── 2_InvoiceParser.gs                 <-- Sheet reader & checkbox validator\
-    │   ├── 3_PdfAndEmailer.gs                 <-- Vector PDF engine & emailer\
-    │   ├── 4_MenuUI.gs                        <-- Spreadsheet menu\
-    │   ├── 5_DiscordNotifier.gs               <-- Discord embed cards\
-    │   └── HTMLTemplate.html                  <-- Vector HTML Invoice print layout\
-    ├── sample_docs/\
-    │   └── 91_ZOMATO_RYZE STUDIO_REVISED...pdf  <-- Sample Client Invoice PDF\
-    └── documentation/\
-        ├── cineloom-comptroller.md            <-- Cineloom Comptroller specification & rules\
-        └── README.md                          <-- Index of source documents & sheet links\
-\\\\
+`	ext
+INVOICE_APP/
+├── credentials/
+│   ├── private/secrets.env              <-- Private secrets & API keys (Git Ignored)
+│   └── public/credentials.env.example   <-- Public template for co-developers
+├── framework/
+│   ├── GAS-all/                         <-- Modular Apps Script Source Engine
+│   │   ├── 0_Config.gs                  <-- Cell mappings & constants
+│   │   ├── 1_Utils.gs                   <-- Currency-in-words converter
+│   │   ├── 2_InvoiceParser.gs           <-- Checkbox line-item parser
+│   │   ├── 3_PdfAndEmailer.gs           <-- Vector PDF builder & Gmail router
+│   │   ├── 4_MenuUI.gs                  <-- Google Sheets top menu bar
+│   │   ├── 5_DiscordNotifier.gs         <-- Discord rich embed card sender
+│   │   ├── HTMLTemplate.html            <-- Invoice vector print layout
+│   │   └── README.md                    <-- Beginner guide for artists
+│   ├── documentation/
+│   │   ├── cineloom-comptroller.md      <-- [LOCKED] Version 1.0 Original Spec
+│   │   ├── cineloom-comptroller-v2.md   <-- Version 2.0 Active Architecture Spec
+│   │   ├── bigquery_schema.sql          <-- Production BigQuery DDL DDL Schema
+│   │   └── README.md                    <-- Documentation index
+│   ├── sample_docs/                     <-- Sample PDF invoices & source layouts
+│   └── dry_run_bigquery.py              <-- BigQuery data flow dry run script
+├── .gitignore                           <-- Strict security filter
+└── README.md                            <-- Root documentation
+`
 
----\
+---
 
-## ⚙️ Features & Architecture
+## 👥 Key Collaborators & Contact Matrix
 
-1. **Google Apps Script & Drive Integration:**\
-   - Automatic calculation of Subtotals, GST (9% CGST + 9% SGST vs 18% IGST), and Balance Due.\
-   - Indian Rupee Currency-in-Words generator (\Ninety Thousand Eight Hundred Sixty Rupees only\).\
-   - Vector PDF generation using brand green theme (\#008738\).\
-   - Automatic email drafting & sending via Gmail API.\
-\
-2. **Dynamic Line Item Filtering:**\
-   - Row-level Checkboxes (\☑ TRUE\ / \☐ FALSE\) allowing line item selection prior to PDF build.\
-\
-3. **Google Cloud Platform & OAuth 2.0 Auth:**\
-   - Configured OAuth 2.0 Client credentials under GCP project \st-in-gen\.\
-   - Whitelisted callback URIs for Apps Script and OAuth Playground.\
-\
-4. **Discord Ecosystem Notifications:**\
-   - Automatic posting of rich embed cards to Discord upon invoice creation.\
+| Identity | Role | System Privilege | Contact |
+| :--- | :--- | :--- | :--- |
+| **Samiran Sonowal** | Studio Owner | Primary Escalation Target, Data Owner | samiran@studiotunnel.com |
+| **Jay** | Lead Developer | Git & Repository Commit Author | jay@studiotunnel.com |
+| **Lab Account** | GCP Admin | GCP Owner (st-in-gen), OAuth Client ID | lab@studiotunnel.com |
+| **Yash** | Colorist / Executive | Weekly Accounts Report Recipient | yash@studiotunnel.com |
 
----\
+---
 
-## 🔒 Security Policy
+## 🏷️ Release History
 
-Private keys, OAuth secrets, source document links, and environment parameters are housed exclusively in \credentials/private/secrets.env\ and are strictly ignored by Git (\.gitignore\).
+- **v0.1 (genesis)**: 
+  - Decoupled Sheets Doorway from BigQuery Data Warehouse (st_fin_com_prog).
+  - Added Looker Studio visual dashboard architecture.
+  - Implemented row-level checkbox line-item filtering in Google Sheets.
+  - Added modular Apps Script vector PDF generator & Discord notifications.
+  - Established locked status for original v1 specification (cineloom-comptroller.md).
 
