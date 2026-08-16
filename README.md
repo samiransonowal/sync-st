@@ -24,10 +24,9 @@ INVOICE_APP/\
 ├── credentials/\
 │   ├── public/                                <-- Safe specifications & public entity info\
 │   │   ├── company_public_info.json           <-- Legal Entity, GSTIN, PAN, TAN, Address, Collaborators\
-│   │   └── credentials.env.example            <-- Environment variable template\
-│   └── private/                               <-- (GIT IGNORED) Secrets, OAuth JSON, Source Sheets & env keys\
-│       ├── source_documents.json              <-- Private Spreadsheet links & IDs\
-│       └── secrets.env                        <-- Private environment variables\
+│   │   └── credentials.env.example            <-- Unified environment variable template\
+│   └── private/                               <-- (GIT IGNORED) Master unified secrets file\
+│       └── secrets.env                        <-- Unified Private Env (OAuth, Sheets, Drive & Discord secrets)\
 └── framework/\
     ├── GAS-all/                               <-- Version-controlled Google Apps Script code\
     │   ├── 0_Config.gs                        <-- Cell mappings & constants\
@@ -68,5 +67,5 @@ INVOICE_APP/\
 
 ## 🔒 Security Policy
 
-Private keys, OAuth secrets, source document links, and environment parameters are housed exclusively in \credentials/private/\ and are strictly ignored by Git (\.gitignore\).
+Private keys, OAuth secrets, source document links, and environment parameters are housed exclusively in \credentials/private/secrets.env\ and are strictly ignored by Git (\.gitignore\).
 
