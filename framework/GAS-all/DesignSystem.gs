@@ -44,11 +44,11 @@ var DESIGN_SYSTEM = {
       lightestWhite: "#CCCCCC"     // 20% Gray (Used ONLY for text on dark backgrounds - NEVER pure #FFFFFF)
     },
 
-    // Brand Colors (Studio Tunnel Theme)
+    // Brand Colors (Studio Tunnel Theme — To be defined later)
     brand: {
-      primaryGreen: "#008738",    // Studio Tunnel Signature Green
-      darkGreen: "#005F27",       // Deep Accent Green
-      lightGreenTint: "#E6F4ED"   // Soft table row highlight tint
+      primaryGreen: "",           // Placeholder - To be defined later
+      darkGreen: "",              // Placeholder - To be defined later
+      lightGreenTint: ""          // Placeholder - To be defined later
     },
 
     // UI Borders & Dividers
