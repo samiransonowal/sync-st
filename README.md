@@ -8,6 +8,8 @@
 **Master Organization Directory (YAML):** [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)  
 **Synced Directory Matrix (JSON):** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)  
 **Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
+**Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
+**Tech Stack Index:** [`documentation/tech-stack/tech_stack_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/tech_stack_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
 **GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)
 
@@ -30,7 +32,7 @@ It features a **Hybrid Architecture**:
 ```text
 INVOICE_APP/
 ├── CHANGELOG.md                         <-- Version History (Data Logic, Data Flow, UI/UX)
-├── README.md                            <-- Root Project Overview & Navigation Index
+├── README.md                            <-- Sole Root Project Overview & Navigation Index
 ├── .gitignore                           <-- Git Security Filters
 │
 ├── 🔐 credentials/                     <-- Security & Access Configuration
@@ -41,7 +43,7 @@ INVOICE_APP/
 │       ├── credentials.env.example     <-- Safe public environment template for developers
 │       └── users.json                   <-- Synced public JSON user matrix
 │
-├── ⚙️ engine/                          <-- Automation Scripts & Processing Code
+├── ⚙️ engine/                          <-- Automation Scripts & Processing Engine
 │   ├── google-apps-script/             <-- Google Apps Script Master Engine
 │   │   ├── 0_Config.gs                 <-- Core cell maps, constants & timezone
 │   │   ├── 1_Utils.gs                  <-- Date formatters, currency converter & validators
@@ -50,7 +52,8 @@ INVOICE_APP/
 │   │   ├── 4_MenuUI.gs                 <-- Google Sheets top menu bar
 │   │   ├── 5_DiscordNotifier.gs        <-- Discord embed notifications
 │   │   ├── DesignSystem.gs             <-- Lexend typography & color contrast spec
-│   │   └── HTMLTemplate.html           <-- Vector HTML invoice print template
+│   │   ├── HTMLTemplate.html           <-- Vector HTML invoice print template
+│   │   └── apps_script_guide.md        <-- Beginner Guide for Artists & Apps Script Usage
 │   └── python-scripts/                 <-- Local Utilities & Dry-Run Test Scripts
 │       ├── dry_run_bigquery.py         <-- BigQuery SQL generation & data flow dry-run test
 │       └── sync_users.py               <-- Auto-sync script (users.yaml -> users.json)
@@ -68,8 +71,9 @@ INVOICE_APP/
 │   │   ├── 02_database_and_warehouse.md
 │   │   ├── 03_automation_and_webhooks.md
 │   │   ├── 04_design_system_and_pdf.md
-│   │   └── 05_security_and_credentials.md
-│   └── README.md                       <-- Documentation Index
+│   │   ├── 05_security_and_credentials.md
+│   │   └── tech_stack_index.md         <-- Tech Stack Module Navigation Index
+│   └── documentation_index.md          <-- Master Documentation Index
 │
 └── 📑 sample-documents/                <-- Reference Samples & Customer PDF Specs
     └── 91_ZOMATO_RYZE STUDIO_REVISED INVOICE_010726.pdf
@@ -91,7 +95,7 @@ INVOICE_APP/
 
 ## 🏷️ Release History Summary
 
-- **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`).
+- **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names (`documentation_index.md`, `tech_stack_index.md`, `apps_script_guide.md`).
 - **v0.3 (`aesthetic`)**: Created `DesignSystem.gs` (Lexend font, 90%/20% gray contrast rules), added Google Drive live HTML web invoice creation with domain permissions, and locked v1 spec.
 - **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.yaml` & `users.json`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
 - **v0.1 (`genesis`)**: Decoupled Sheets Doorway from BigQuery Data Warehouse (`st_fin_com_prog`), added Looker Studio visual dashboard architecture & modular Apps Script vector PDF generator.
