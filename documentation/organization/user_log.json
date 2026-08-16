@@ -1,0 +1,188 @@
+[
+  {
+    "id": "106181526410030572655",
+    "primaryEmail": "accounts@studiotunnel.com",
+    "name": {
+      "givenName": "Accounts",
+      "familyName": "Cineloom Postworks",
+      "fullName": "Accounts Cineloom Postworks"
+    },
+    "emails": [
+      {
+        "address": "samiran26sonowal@gmail.com",
+        "type": "work"
+      },
+      {
+        "address": "accounts@studiotunnel.com",
+        "primary": true
+      }
+    ],
+    "phones": [
+      {
+        "value": "7030168963",
+        "type": "work"
+      }
+    ],
+    "customerId": "C00yqau03",
+    "suspended": false
+  },
+  {
+    "id": "105406139565417522006",
+    "primaryEmail": "art@studiotunnel.com",
+    "name": {
+      "givenName": "Artists @",
+      "familyName": "Studio Tunnel",
+      "fullName": "Artists @ Studio Tunnel"
+    },
+    "aliases": [
+      "manoj@studiotunnel.com",
+      "sujith@studiotunnel.com"
+    ],
+    "emails": [
+      {
+        "address": "contactmanojsahu@gmail.com",
+        "type": "custom"
+      },
+      {
+        "address": "art@studiotunnel.com",
+        "primary": true
+      },
+      {
+        "address": "manoj@studiotunnel.com"
+      },
+      {
+        "address": "sujith@studiotunnel.com"
+      }
+    ],
+    "phones": [
+      {
+        "value": "+91 84549 81924",
+        "type": "mobile"
+      },
+      {
+        "value": "+91 83189 84245",
+        "type": "mobile"
+      }
+    ],
+    "customerId": "C00yqau03",
+    "suspended": false
+  },
+  {
+    "id": "108184345258284288978",
+    "primaryEmail": "contact@studiotunnel.com",
+    "name": {
+      "givenName": "Studio",
+      "familyName": "Tunnel",
+      "fullName": "Studio Tunnel"
+    },
+    "aliases": [
+      "tamash@studiotunnel.com",
+      "prakash@studiotunnel.com"
+    ],
+    "emails": [
+      {
+        "address": "tamashansari4@gmail.com",
+        "type": "work"
+      },
+      {
+        "address": "prakashjai.tunnel@gmail.com",
+        "type": "home"
+      },
+      {
+        "address": "contact@studiotunnel.com",
+        "primary": true
+      },
+      {
+        "address": "tamash@studiotunnel.com"
+      },
+      {
+        "address": "prakash@studiotunnel.com"
+      }
+    ],
+    "phones": [
+      {
+        "value": "9372586002",
+        "type": "work"
+      },
+      {
+        "value": "8910460532",
+        "type": "home"
+      }
+    ],
+    "customerId": "C00yqau03",
+    "suspended": false
+  },
+  {
+    "id": "118101672367849940187",
+    "primaryEmail": "lab@studiotunnel.com",
+    "name": {
+      "givenName": "Tech",
+      "familyName": "Dev",
+      "fullName": "Tech Dev"
+    },
+    "aliases": [
+      "jay@studiotunnel.com"
+    ],
+    "emails": [
+      {
+        "address": "postman@jaydantara.com",
+        "type": "work"
+      },
+      {
+        "address": "lab@studiotunnel.com",
+        "primary": true
+      },
+      {
+        "address": "jay@studiotunnel.com"
+      }
+    ],
+    "phones": [
+      {
+        "value": "+91 80809 11109",
+        "type": "work"
+      }
+    ],
+    "isDelegatedAdmin": true,
+    "customerId": "C00yqau03",
+    "suspended": false
+  },
+  {
+    "id": "112233445566778899000",
+    "primaryEmail": "ops@studiotunnel.com",
+    "name": {
+      "givenName": "Ops",
+      "familyName": "Tunnel",
+      "fullName": "Ops Tunnel"
+    },
+    "aliases": [
+      "ayush@studiotunnel.com",
+      "vijay@studiotunnel.com",
+      "arjun@studiotunnel.com",
+      "golu@studiotunnel.com",
+      "aaditya@studiotunnel.com"
+    ],
+    "emails": [
+      {
+        "address": "ops@studiotunnel.com",
+        "primary": true
+      },
+      {
+        "address": "ayush@studiotunnel.com"
+      },
+      {
+        "address": "vijay@studiotunnel.com"
+      },
+      {
+        "address": "arjun@studiotunnel.com"
+      },
+      {
+        "address": "golu@studiotunnel.com"
+      },
+      {
+        "address": "aaditya@studiotunnel.com"
+      }
+    ],
+    "customerId": "C00yqau03",
+    "suspended": false
+  }
+]
