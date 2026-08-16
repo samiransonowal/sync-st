@@ -13,14 +13,19 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 **Git Tag:** `v0.2`  
 
 #### 🧠 Data Logic
+- Established IST `Asia/Kolkata` timezone standard across all scripts, Apps Script functions, and BigQuery SQL queries.
+- Defined `YYYYMMDD` serial date string standard (`formatDateYYYYMMDD`) for file naming and invoice serial keys.
+- Added regulatory regex validation helper functions in Apps Script (`1_Utils.gs`) for Indian GSTIN (`validateGSTIN`) and PAN (`validatePAN`).
 - Provisioned Google Workspace User Directory, Primary Emails, and Public Aliases Matrix into system reference configuration (`users.md`).
 - Linked contact aliases (`contact@studiotunnel.com`, `invoices@studiotunnel.com`) to financial data pipeline metadata.
 
 #### 🔄 Data Flow
+- Configured date format constants (`DATE_FORMATS`: `SERIAL: 'yyyyMMdd'`, `DISPLAY: 'dd/MM/yyyy'`, `ISO`, `DB`) in `0_Config.gs`.
 - Integrated `users.md` identity matrix as a primary reference layer in `secrets.env` and `credentials.env.example`.
 - Verified dry-run execution of BigQuery SQL DDL schema script (`bigquery_schema.sql`) and data flow test script (`dry_run_bigquery.py`).
 
 #### 🎨 UI / UX
+- Formatted human-readable date display (`DD/MM/YYYY`) for PDF invoice headers and Google Sheets UI.
 - Created clean, human-readable User Directory & Identity Matrix markdown table ([`users.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/users.md)) for team reference.
 - Updated root `README.md` with release version badges, contact matrix, and repository structure.
 

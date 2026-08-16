@@ -1,72 +1,78 @@
-/**
- * ============================================================================
- * STUDIO TUNNEL / CINELOOM POSTWORKS PVT. LTD.
- * FILE 1: 1_Utils.gs
- * ============================================================================
- * 
- * 💡 NOOB / ARTIST GUIDE:
- * Helper utility functions like converting numbers to Indian Rupees in words.
- */
+// ============================================================================
+// CINELOOM POSTWORKS PVT. LTD. / STUDIO TUNNEL
+// UTILITY FUNCTIONS & REGULATORY VALIDATORS
+// ============================================================================
 
 /**
- * Converts any number (e.g. 90860.00) into Indian Currency Words:
- * 'Ninety Thousand Eight Hundred Sixty Rupees only'
- * 
- * @param {number} num - The number to convert
- * @returns {string} Currency in words
+ * Formats a Date object into IST YYYYMMDD serial string.
+ * @param {Date} dateObj 
+ * @return {string} e.g. '20260701'
  */
-function numberToIndianWords(num) {
-  if (num === null || num === undefined || isNaN(num) || num === 0) return 'Zero Rupees only';
+function formatDateYYYYMMDD(dateObj) {
+  if (!dateObj || !(dateObj instanceof Date)) dateObj = new Date();
+  return Utilities.formatDate(dateObj, TIMEZONE, DATE_FORMATS.SERIAL);
+}
+
+/**
+ * Formats a Date object into IST DD/MM/YYYY human display string.
+ * @param {Date} dateObj 
+ * @return {string} e.g. '01/07/2026'
+ */
+function formatDateDisplay(dateObj) {
+  if (!dateObj || !(dateObj instanceof Date)) dateObj = new Date();
+  return Utilities.formatDate(dateObj, TIMEZONE, DATE_FORMATS.DISPLAY);
+}
+
+/**
+ * Validates an Indian GSTIN (GST Identification Number).
+ * @param {string} gstin 
+ * @return {boolean}
+ */
+function validateGSTIN(gstin) {
+  if (!gstin) return false;
+  var regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  return regex.test(gstin.trim().toUpperCase());
+}
+
+/**
+ * Validates an Indian PAN (Permanent Account Number).
+ * @param {string} pan 
+ * @return {boolean}
+ */
+function validatePAN(pan) {
+  if (!pan) return false;
+  var regex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+  return regex.test(pan.trim().toUpperCase());
+}
+
+/**
+ * Converts a numeric amount to Indian Rupee Words (e.g. 150000 -> One Lakh Fifty Thousand).
+ * @param {number} amount 
+ * @return {string}
+ */
+function numberToIndianWords(amount) {
+  if (isNaN(amount) || amount === 0) return 'Zero Rupees Only';
   
-  const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 
-             'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-  function convertGroup(n) {
-    let str = '';
-    if (n > 99) {
-      str += a[Math.floor(n / 100)] + ' Hundred ';
-      n %= 100;
-    }
-    if (n > 19) {
-      str += b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
-    } else if (n > 0) {
-      str += a[n];
-    }
-    return str.trim();
+  var words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  var tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  function numToWords(n) {
+    if (n < 20) return words[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + words[n % 10] : '');
+    if (n < 1000) return words[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + numToWords(n % 100) : '');
+    if (n < 100000) return numToWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 !== 0 ? ' ' + numToWords(n % 1000) : '');
+    if (n < 10000000) return numToWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 !== 0 ? ' ' + numToWords(n % 100000) : '');
+    return numToWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 !== 0 ? ' ' + numToWords(n % 10000000) : '');
   }
-
-  const rounded = Math.round(num * 100) / 100;
-  let rupees = Math.floor(rounded);
-  let paise = Math.round((rounded - rupees) * 100);
-
-  let result = '';
-
-  if (rupees >= 10000000) { // Crores
-    const cr = Math.floor(rupees / 10000000);
-    result += convertGroup(cr) + ' Crore ';
-    rupees %= 10000000;
+  
+  var whole = Math.floor(amount);
+  var fraction = Math.round((amount - whole) * 100);
+  var result = numToWords(whole) + ' Rupees';
+  
+  if (fraction > 0) {
+    result += ' and ' + numToWords(fraction) + ' Paise';
   }
-  if (rupees >= 100000) { // Lakhs
-    const lakh = Math.floor(rupees / 100000);
-    result += convertGroup(lakh) + ' Lakh ';
-    rupees %= 100000;
-  }
-  if (rupees >= 1000) { // Thousands
-    const th = Math.floor(rupees / 1000);
-    result += convertGroup(th) + ' Thousand ';
-    rupees %= 1000;
-  }
-  if (rupees > 0) {
-    result += convertGroup(rupees);
-  }
-
-  result = result.trim() + ' Rupees';
-
-  if (paise > 0) {
-    result += ' and ' + convertGroup(paise) + ' Paise';
-  }
-
-  return result + ' only';
+  return result + ' Only';
 }
 
