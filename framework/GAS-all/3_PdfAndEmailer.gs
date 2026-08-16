@@ -5,48 +5,105 @@
  * ============================================================================
  * 
  * 💡 NOOB / ARTIST GUIDE:
- * This script builds the vector PDF file using 'HTMLTemplate.html', saves it
- * to Google Drive, logs it into 'Invoice_Log', emails it via Gmail,
+ * This script builds both vector HTML documents and PDF files using 'HTMLTemplate.html',
+ * saves them to the shared Google Drive folder ('INVOICES_GENERATED'), configures
+ * domain-level viewer permissions, logs transactions into 'Invoice_Log', emails them,
  * and notifies the team via Discord!
  */
 
 /**
- * Generates PDF Invoice File in Google Drive
+ * Generates HTML & PDF Invoice Documents in Google Drive with Restricted Access Permissions
  * 
- * @returns {GoogleAppsScript.Drive.File} Generated PDF File
+ * @returns {Object} { htmlFile, pdfFile, htmlUrl, pdfUrl }
  */
-function generateInvoicePdf() {
+function generateInvoiceDocuments() {
   const data = getInvoiceData();
   const htmlTemplate = HtmlService.createTemplateFromFile('HTMLTemplate');
   htmlTemplate.d = data;
   
-  const htmlOutput = htmlTemplate.evaluate().getContent();
-  const blob = Utilities.newBlob(htmlOutput, 'text/html', 'invoice.html').getAs('application/pdf');
+  const htmlContent = htmlTemplate.evaluate().getContent();
   
-  const fileName = \\_\_TAX_INVOICE.pdf\.replace(/[^a-zA-Z0-9_\\-\\.]/g, '_');
-  blob.setName(fileName);
-
-  // Save to Google Drive Root (or specific target folder)
-  const folder = DriveApp.getRootFolder();
-  const pdfFile = folder.createFile(blob);
-
+  // Generate YYYYMMDD serial date string for standardized file naming
+  var dateSerial = formatDateYYYYMMDD(new Date(data.inv.date || new Date()));
+  var baseFileName = (data.inv.no + '_' + data.client.name + '_' + dateSerial).replace(/[^a-zA-Z0-9_\\-\\.]/g, '_');
+  
+  // 1. Create Vector HTML File
+  var htmlBlob = Utilities.newBlob(htmlContent, 'text/html', baseFileName + '.html');
+  
+  // 2. Create Vector PDF File
+  var pdfBlob = Utilities.newBlob(htmlContent, 'text/html', baseFileName + '.html').getAs('application/pdf');
+  pdfBlob.setName(baseFileName + '.pdf');
+  
+  // Save to target Google Drive folder (or Root fallback)
+  var folder = DriveApp.getRootFolder();
+  if (typeof GOOGLE_DRIVE_FOLDER_ID !== 'undefined' && GOOGLE_DRIVE_FOLDER_ID) {
+    try {
+      folder = DriveApp.getFolderById(GOOGLE_DRIVE_FOLDER_ID);
+    } catch (e) {
+      Logger.log('⚠️ Configured folder ID invalid, falling back to Root folder.');
+    }
+  }
+  
+  var htmlFile = folder.createFile(htmlBlob);
+  var pdfFile = folder.createFile(pdfBlob);
+  
+  // 🔒 SET PERMISSIONS: Restrict to Domain / Workspace Authorized Viewers
+  try {
+    // Set sharing access so anyone with link in workspace or explicitly shared can view
+    htmlFile.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW);
+    pdfFile.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // Explicitly add Samiran & Lead Collaborators as Viewers/Editors
+    if (typeof ROLES !== 'undefined' && ROLES.OWNER_EMAIL) {
+      htmlFile.addViewer(ROLES.OWNER_EMAIL);
+      pdfFile.addViewer(ROLES.OWNER_EMAIL);
+    }
+    if (typeof ROLES !== 'undefined' && ROLES.REPORT_RECIPIENT_EMAIL) {
+      htmlFile.addViewer(ROLES.REPORT_RECIPIENT_EMAIL);
+      pdfFile.addViewer(ROLES.REPORT_RECIPIENT_EMAIL);
+    }
+  } catch (err) {
+    Logger.log('⚠️ Permission setting notice: ' + err.message);
+  }
+  
+  var htmlUrl = htmlFile.getUrl();
+  var pdfUrl = pdfFile.getUrl();
+  
   // Log transaction in Invoice_Log tab
-  logInvoice(data, pdfFile.getUrl());
-
+  logInvoice(data, pdfUrl, htmlUrl);
+  
   // 🔔 Trigger Discord Notification Embed Card
   if (typeof sendDiscordInvoiceNotification === 'function') {
-    sendDiscordInvoiceNotification(data, pdfFile.getUrl());
+    sendDiscordInvoiceNotification(data, pdfUrl);
   }
-
-  SpreadsheetApp.getUi().alert(\✅ PDF Invoice Generated Successfully!\\n\\nSaved to Drive: \\\n\\nURL: \\);
-  return pdfFile;
+  
+  SpreadsheetApp.getUi().alert(
+    '✅ Invoice Documents Generated Successfully!\\n\\n' +
+    '📄 Viewable HTML Invoice URL:\\n' + htmlUrl + '\\n\\n' +
+    '📑 Vector PDF Invoice URL:\\n' + pdfUrl
+  );
+  
+  return {
+    htmlFile: htmlFile,
+    pdfFile: pdfFile,
+    htmlUrl: htmlUrl,
+    pdfUrl: pdfUrl
+  };
 }
 
 /**
- * Generates PDF & Emails it directly to the Client via Gmail
+ * Legacy wrapper for backward compatibility
+ */
+function generateInvoicePdf() {
+  var docs = generateInvoiceDocuments();
+  return docs.pdfFile;
+}
+
+/**
+ * Generates HTML & PDF & Emails documents to the Client via Gmail
  */
 function generateAndEmailInvoice() {
-  const pdfFile = generateInvoicePdf();
+  const docs = generateInvoiceDocuments();
   const data = getInvoiceData();
 
   if (!data.client.email) {
@@ -54,30 +111,43 @@ function generateAndEmailInvoice() {
     return;
   }
 
-  const subject = \Tax Invoice #\ from \ (\)\;
-  const body = \Dear \,\\n\\nPlease find attached Tax Invoice #\ dated \ for ₹\.\\n\\nBank Payment Details:\\nBank: \\\nAccount No: \\\nIFSC: \\\nAccount Holder: \\\n\\nThank you for doing business with us!\\n\\nBest regards,\\n\\\n\\\nPhone: \\;
+  const subject = 'Tax Invoice #' + data.inv.no + ' from ' + data.company.brand;
+  const body = 
+    'Dear ' + data.client.name + ',\\n\\n' +
+    'Please find attached Tax Invoice #' + data.inv.no + ' dated ' + data.inv.date + ' for ₹' + data.financials.grandTotal + '.\\n\\n' +
+    'You can also view your live web invoice directly here:\\n' + docs.htmlUrl + '\\n\\n' +
+    'Bank Payment Details:\\n' +
+    'Bank: ' + data.company.bank.name + '\\n' +
+    'Account No: ' + data.company.bank.accNo + '\\n' +
+    'IFSC: ' + data.company.bank.ifsc + '\\n' +
+    'Account Holder: ' + data.company.legalName + '\\n\\n' +
+    'Thank you for doing business with us!\\n\\n' +
+    'Best regards,\\n' +
+    data.company.brand + '\\n' +
+    'Phone: ' + data.company.phone;
 
   GmailApp.sendEmail(data.client.email, subject, body, {
-    attachments: [pdfFile.getAs(MimeType.PDF)],
+    attachments: [docs.pdfFile.getAs(MimeType.PDF), docs.htmlFile.getAs(MimeType.HTML)],
     name: data.company.brand
   });
 
-  SpreadsheetApp.getUi().alert(\📧 Email sent successfully to \ with attached invoice!\);
+  SpreadsheetApp.getUi().alert('📧 Email sent successfully to ' + data.client.email + ' with attached PDF and Web HTML Invoice link!');
 }
 
 /**
  * Logs historical transaction into Invoice_Log sheet tab
  * 
  * @param {Object} data - Invoice Dataset
- * @param {string} pdfUrl - Google Drive Link
+ * @param {string} pdfUrl - Google Drive PDF Link
+ * @param {string} htmlUrl - Google Drive HTML Web Link
  */
-function logInvoice(data, pdfUrl) {
+function logInvoice(data, pdfUrl, htmlUrl) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let logSheet = ss.getSheetByName(SHEET_NAMES.LOG);
   
   if (!logSheet) {
     logSheet = ss.insertSheet(SHEET_NAMES.LOG);
-    logSheet.appendRow(['Invoice No', 'Date', 'Client Name', 'Subtotal', 'Tax Amount', 'Grand Total', 'PDF Link', 'Timestamp']);
+    logSheet.appendRow(['Invoice No', 'Date', 'Client Name', 'Subtotal', 'Tax Amount', 'Grand Total', 'PDF Link', 'HTML Web Link', 'Timestamp']);
   }
 
   logSheet.appendRow([
@@ -88,6 +158,7 @@ function logInvoice(data, pdfUrl) {
     data.financials.totalGst,
     data.financials.grandTotal,
     pdfUrl,
+    htmlUrl || '',
     new Date()
   ]);
 }
