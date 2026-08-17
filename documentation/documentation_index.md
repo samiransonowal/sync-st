@@ -22,6 +22,9 @@ Index of active architectural specifications and source document references for 
 3. **[`ci_setup.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/ci_setup.md)** 🚀 `[CI/CD PIPELINE]`:
    - Automated 3-silo deployment guide (`dev`, `test`, `prod`) to isolated Google Apps Script projects via GitHub Actions.
 
+4. **[`data-flow/data_flow_and_bigquery_model.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/data-flow/data_flow_and_bigquery_model.md)** 📊 `[ACTIVE DATA FLOW & BQ MODEL]`:
+   - End-to-end data flow specification: Source inventory, canonical tagging rules, 9-table BigQuery relational model (Staging, Dimensions, Facts), and open architectural decisions for review.
+
 ---
 
 ## 👥 Organization Directory & External Sheets
