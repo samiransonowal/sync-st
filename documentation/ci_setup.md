@@ -101,6 +101,7 @@ npm run clasp-push
 > [!CAUTION]
 > ### 🛑 MANDATORY GIT PUSH RULES
 > - **Data Ingestion**: Pulling data from any remote repository/source is permitted.
-> - **Push Approval**: Pushing code or commits to Git or GitHub from local workstations using Samiran's identity (`samiransonowal` / `samiran@studiotunnel.com`) **MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`**.
+> - **Interactive Email Consent**: Pushing code or commits to Git or GitHub from local workstations using Samiran's identity (`samiransonowal` / `samiran@studiotunnel.com`) **MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`**.
+> - **"Give Consent" Button Requirement**: To give permission, `lab@studiotunnel.com` must receive an automated email from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and click the **"Give Consent"** button or hyperlink inside the email.
 > - **Main Branch Permanent Lock**: The initial release is pushed synchronously across all branches (`main`, `dev`, `test`). **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH.** All subsequent development must be committed to `dev` or `test` branches via Pull Requests with consent from `lab@studiotunnel.com`.
 
