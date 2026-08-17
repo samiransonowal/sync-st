@@ -205,12 +205,12 @@ To give consent for this push, click the link below:
       <p>Please review the proposed changes and click the button below to authorize this push:</p>
 
       <div class="btn-container">
-        <a href="{consent_url}" class="btn-consent">✅ Give Consent</a>
+        <a href="{consent_url}" class="btn-consent">✅ Give Consent & Review Repo</a>
       </div>
 
       <p style="font-size:12px; color:#64748B; text-align:center;">
-        If the button above does not open, copy and paste this hyperlink into your browser:<br>
-        <a href="{consent_url}" style="color:#00E599;">{consent_url}</a>
+        <strong>Direct Hyperlink:</strong> <a href="{consent_url}" style="color:#00E599; font-weight:bold;">{consent_url}</a><br>
+        <small><i>Note: If GitHub shows "404 Page Not Found", ensure you are signed into GitHub as <strong>jd-tunnel / lab@studiotunnel.com</strong> to access private repository resources.</i></small>
       </p>
     </div>
     <div class="footer">
@@ -229,7 +229,7 @@ To give consent for this push, click the link below:
 def main():
     repo_root = Path(__file__).resolve().parent.parent
     branch, commit_hash, commit_msg = get_git_info()
-    consent_url = f"{REPO_URL}/pulls"
+    consent_url = f"{REPO_URL}"
 
     print("=" * 75)
     print("🔒 ST-IN-gen — DISPATCH GIT PUSH CONSENT REQUEST EMAIL")
