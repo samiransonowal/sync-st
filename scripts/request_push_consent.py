@@ -232,8 +232,11 @@ def main():
     consent_url = f"{REPO_URL}"
 
     print("=" * 75)
-    print("🔒 ST-IN-gen — DISPATCH GIT PUSH CONSENT REQUEST EMAIL")
+    print("🔒 ST-IN-gen — DISPATCH PRODUCTION GIT PUSH CONSENT REQUEST EMAIL")
     print("=" * 75)
+    print("  [POLICY] Push to 'dev' & 'test' branches is UNRESTRICTED for Samiran.")
+    print("  [POLICY] Production ('prod' / 'main') deployment requires approval from lab@studiotunnel.com.")
+    print("-" * 75)
     print(f"  Sender   : {SENDER_EMAIL}")
     print(f"  Recipient: {RECIPIENT_EMAIL}")
     print(f"  Branch   : {branch}")

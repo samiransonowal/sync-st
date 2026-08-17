@@ -68,21 +68,19 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 ---
 
-### E. 🐙 GitHub Repository & Git Push Governance (`IN-gen`)
+### E. 🐙 GitHub Repository & Branch Push Governance (`IN-gen`)
 
-| Resource | Role / Access | Configuration | Purpose / Governance Rule |
+| Branch | Permission Level | Consent Requirement | Purpose / Scope |
 | :--- | :--- | :--- | :--- |
-| **GitHub Repository** | `Owner` / `Admin` | `samiransonowal/IN-gen` | Code commit, PR review, GitHub Actions secret management |
-| **Local Git Config** | `User Identity` | `git config --global user.email "samiran@studiotunnel.com"` | Author attribution on commits and tags |
-| **Git Push Policy** | `APPROVAL REQUIRED` | Consent from `lab@studiotunnel.com` | Pushing code using `samiran@...` identity requires email dispatch with interactive "Give Consent" button click by `lab@studiotunnel.com` |
-| **Branch Protection** | `MAIN LOCKED` | Permanent push lock on `main` | No further direct pushes allowed to `main` branch after synchronized release |
+| **`dev` (Development)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
+| **`test` (Testing)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
+| **`prod` / `main` (Production)** | `APPROVAL REQUIRED` | **Consent required from `lab@`** | Production deployment requires approval email dispatch & "Give Consent" button click by `lab@studiotunnel.com` |
 
 > [!CAUTION]
-> ### 🛑 MANDATORY GIT PUSH & EMAIL CONSENT WORKFLOW
-> 1. **Data Pull Access**: You can pull data from anywhere into the workstation environment.
-> 2. **Interactive Email Consent Requirement**: Pushing data or commits to Git or GitHub from this machine under Samiran's identity (`samiransonowal` / `samiran@studiotunnel.com`) **MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`**.
-> 3. **"Give Consent" Button Mechanism**: To grant permission, `lab@studiotunnel.com` must receive an email dispatch sent from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and click on the interactive **"Give Consent"** button or hyperlink inside the email.
-> 4. **Main Branch Push Lock**: Following this initial synchronized push across all branches (`main`, `dev`, `test`), **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH**. All future changes must target environment branches (`dev` / `test`) via Pull Requests subject to consent from `lab@studiotunnel.com`.
+> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
+> 1. **`dev` & `test` Branches**: Pushing to development (`dev`) and testing (`test`) branches does **not** require any prior approval or permission. Samiran (`samiran@studiotunnel.com`) has unrestricted push access to `dev` and `test`.
+> 2. **`prod` (`main`) Production Branch**: Pushing or promoting code to the production branch (`prod` / `main`) **REQUIRES PRIOR CONSENT FROM `lab@studiotunnel.com`**.
+> 3. **Production Consent Mechanism**: For production pushes, `lab@studiotunnel.com` receives an automated approval request email sent from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the interactive **"Give Consent"** button or hyperlink inside the email.
 
 ---
 

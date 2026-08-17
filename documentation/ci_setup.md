@@ -99,9 +99,8 @@ npm run clasp-push
 ## 7. Git Push & Branch Governance Policy
 
 > [!CAUTION]
-> ### 🛑 MANDATORY GIT PUSH RULES
-> - **Data Ingestion**: Pulling data from any remote repository/source is permitted.
-> - **Interactive Email Consent**: Pushing code or commits to Git or GitHub from local workstations using Samiran's identity (`samiransonowal` / `samiran@studiotunnel.com`) **MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`**.
-> - **"Give Consent" Button Requirement**: To give permission, `lab@studiotunnel.com` must receive an automated email from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and click the **"Give Consent"** button or hyperlink inside the email.
-> - **Main Branch Permanent Lock**: The initial release is pushed synchronously across all branches (`main`, `dev`, `test`). **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH.** All subsequent development must be committed to `dev` or `test` branches via Pull Requests with consent from `lab@studiotunnel.com`.
+> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
+> - **`dev` & `test` Branches**: Free, unrestricted commit and push permission for Samiran (`samiran@studiotunnel.com`). **No prior permission required.**
+> - **`prod` (`main`) Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the production branch requires prior explicit consent from `lab@studiotunnel.com`.
+> - **Production Consent Email**: To grant production push permission, `lab@studiotunnel.com` receives an automated approval email from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the **"Give Consent"** button or hyperlink inside the email.
 

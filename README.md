@@ -26,11 +26,10 @@
 > - `tamash@studiotunnel.com`
 
 > [!CAUTION]
-> ### 🛑 MANDATORY GIT PUSH & EMAIL CONSENT WORKFLOW
-> **PUSHING DATA OR COMMITS TO GIT / GITHUB FROM THIS MACHINE UNDER SAMIRAN'S ID MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`.**  
-> 1. **Data Ingestion**: Data pulling from any remote source is permitted.
-> 2. **Interactive Email Consent**: To give permission, `lab@studiotunnel.com` must receive an automated approval email sent from `samiran@studiotunnel.com` and click on the **"Give Consent"** button or hyperlink inside the email.
-> 3. **Main Branch Lock**: The `main` branch is permanently locked after this initial synchronized release. **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH.** All future development must target environment branches (`dev` / `test`) via approved Pull Requests.
+> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
+> - **`dev` & `test` Branches**: Free, unrestricted commit and push access for Samiran (`samiran@studiotunnel.com`). **No prior permission required.**
+> - **`prod` (`main`) Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the production branch requires prior explicit consent from `lab@studiotunnel.com`.
+> - **Production Consent Email**: To grant production push permission, `lab@studiotunnel.com` receives an automated email sent from `samiran@studiotunnel.com` and clicks on the **"Give Consent"** button or hyperlink inside the email.
 
 
 ---
