@@ -1,0 +1,66 @@
+name: ST-IN-gen CI/CD
+
+on:
+  push:
+    branches: [dev, test, prod]
+
+jobs:
+  deploy:
+    name: Validate & Deploy (ST-IN-gen)
+    runs-on: ubuntu-latest
+    env:
+      SCRIPT_IDS_JSON: ${{ secrets.SCRIPT_IDS_JSON }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLASP_TOKEN: ${{ secrets.CLASP_TOKEN }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install Node & Python Dependencies
+        run: |
+          npm ci
+          pip install pyyaml
+
+      - name: 🧪 Run System Integrity Tests
+        run: |
+          echo "========================================================"
+          echo "🚀 STEP 1: Running System Integrity & Schema Validations"
+          echo "========================================================"
+          python engine/python-scripts/test_system_integrity.py
+
+      - name: 🔧 Configure Environment & Apps Script Targets
+        run: |
+          echo "========================================================"
+          echo "⚙️ STEP 2: Setting Environment Config (.clasp.json & DRY_RUN_MODE)"
+          echo "========================================================"
+          node scripts/setEnv.js
+
+      - name: 🔐 Configure Clasp & GCP Credentials
+        run: |
+          echo "========================================================"
+          echo "🔑 STEP 3: Authenticating Clasp"
+          echo "========================================================"
+          if [ -n "$CLASP_TOKEN" ]; then
+            echo "$CLASP_TOKEN" > ~/.clasprc.json
+            echo "✅ Clasp credentials loaded into ~/.clasprc.json"
+          else
+            echo "⚠️ CLASP_TOKEN secret not found in repository secrets"
+          fi
+
+      - name: 🚀 Push to Target Apps Script Project
+        run: |
+          echo "========================================================"
+          echo "📤 STEP 4: Deploying code via clasp push"
+          echo "========================================================"
+          npm run clasp-push

@@ -74,6 +74,9 @@ var SHEET_NAMES = {
   LOG: 'Invoice_Log',
   PROJECT_TRACKER: 'PROJECT TRACKER'
 };
+var EXTERNAL_SHEETS = {
+  STEM_USER_REGISTRY: '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA'
+};
 
 // ----------------------------------------------------------------------------
 // 📍 CELL MAPPINGS FOR INVOICE_GENERATOR TAB

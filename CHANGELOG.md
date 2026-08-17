@@ -8,9 +8,22 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
-### 📦 Release Version `v0.6` — *"verification"*
+### 📦 Release Version `v0.7` — *"gas-cicd-pipeline"*
 **Date:** 2026-08-17  
-**Git Tag:** `v0.6`  
+**Git Tag:** `v0.7`  
+
+#### 🧠 Data Logic
+- Established 3-environment silo architecture (`dev`, `test`, `prod`) with automatic `DRY_RUN_MODE` toggling.
+- Added `scripts/setEnv.js` to dynamically inject environment configuration and `.clasp.json` per target Git branch.
+- Created `engine/google-apps-script/constants.gs` exporting global `EXTERNAL_SHEETS` configurations including the STEM User Registry.
+
+#### 🔄 Data Flow
+- Configured automated GitHub Actions workflow (`.github/workflows/gas-ci.yml`) for linting, system integrity checks, environment resolution, and Clasp deployment.
+- Connected Apps Script project naming convention `ST-IN-gen` (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) under GCP Project `st-in-gen` (`972643538415`).
+
+#### 🎨 UI / UX & Documentation
+- Authored comprehensive CI/CD deployment guide ([`documentation/ci_setup.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/ci_setup.md)).
+- Prepared team pipeline onboarding documentation.  
 
 #### 🧠 Data Logic
 - Created automated System Integrity & Validation Suite ([`engine/python-scripts/test_system_integrity.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/python-scripts/test_system_integrity.py)) testing 5 core subsystems:

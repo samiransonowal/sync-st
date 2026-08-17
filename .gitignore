@@ -16,3 +16,7 @@ Thumbs.db
 # Node dependencies
 node_modules/
 
+# Clasp local configs
+.clasp.json
+.clasprc.json
+

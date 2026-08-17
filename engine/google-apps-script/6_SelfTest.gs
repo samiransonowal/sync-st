@@ -126,6 +126,23 @@ function runSelfTest() {
   }
 
   // --------------------------------------------------------------------------
+  // TEST 7: STEM USER REGISTRY sheet reachable
+  // --------------------------------------------------------------------------
+  total++;
+  try {
+    var stemId = EXTERNAL_SHEETS.STEM_USER_REGISTRY;
+    if (!stemId) throw new Error('EXTERNAL_SHEETS.STEM_USER_REGISTRY not defined');
+    var stemSs = SpreadsheetApp.openById(stemId);
+    var sheet = stemSs.getSheets()[0];
+    Logger.log('[PASS] Test 7: STEM registry sheet reachable – ' + sheet.getName());
+    results.push('[PASS] T7: STEM registry reachable');
+    passed++;
+  } catch (e) {
+    Logger.log('[FAIL] Test 7: ' + e.message);
+    results.push('[FAIL] T7: ' + e.message);
+  }
+
+  // --------------------------------------------------------------------------
   // TEST 6: GST Tax Math — Intra-state (CGST+SGST) and Inter-state (IGST)
   // --------------------------------------------------------------------------
   total++;
