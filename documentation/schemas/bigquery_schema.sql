@@ -13,7 +13,29 @@ OPTIONS (
 );
 
 -- ----------------------------------------------------------------------------
--- 2. DIMENSION TABLES
+-- 2. RAW STAGING & FIREBASE INGESTION TABLES
+-- ----------------------------------------------------------------------------
+
+-- A. Raw Legacy Firebase Clients Ingestion
+CREATE TABLE IF NOT EXISTS `st-in-gen.st_fin_com_prog.raw_firebase_clients` (
+  firebase_doc_id STRING OPTIONS(description="Original Firestore Document ID"),
+  raw_client_name STRING OPTIONS(description="Client name string in legacy app"),
+  raw_payload JSON OPTIONS(description="Full unstructured JSON document from Firestore"),
+  ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- B. Raw Legacy Firebase Jobs / Studio Management Ingestion
+CREATE TABLE IF NOT EXISTS `st-in-gen.st_fin_com_prog.raw_firebase_jobs` (
+  firebase_doc_id STRING OPTIONS(description="Original Firestore Document ID"),
+  job_number STRING OPTIONS(description="Legacy Job / Work Order Number"),
+  client_name STRING OPTIONS(description="Client name recorded in Firebase"),
+  project_title STRING OPTIONS(description="Project / Film Title"),
+  raw_payload JSON OPTIONS(description="Full unstructured JSON document from Firestore"),
+  ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- ----------------------------------------------------------------------------
+-- 3. DIMENSION TABLES
 -- ----------------------------------------------------------------------------
 
 -- A. Client Master Dimension
@@ -27,6 +49,7 @@ CREATE TABLE IF NOT EXISTS `st-in-gen.st_fin_com_prog.dim_clients` (
   pan STRING OPTIONS(description="Permanent Account Number"),
   contact_phone STRING OPTIONS(description="Primary billing contact phone"),
   contact_email STRING OPTIONS(description="Primary billing contact email"),
+  data_source STRING DEFAULT 'SHEETS' OPTIONS(description="Origin: SHEETS, FIREBASE_LEGACY, or MERGED"),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 );
 
