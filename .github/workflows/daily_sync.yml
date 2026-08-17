@@ -38,6 +38,6 @@ jobs:
           echo "$SHEETS_TOKEN_JSON" > credentials/private/sheets_token.json
         fi
 
-    - name: Execute BigQuery Sync Pipeline
+    - name: Execute Comptroller Master Engine (Sync + Aging + Reminders + Bank Recon)
       run: |
-        python3 scripts/bigquery_sync_pipeline.py
+        python3 scripts/run_comptroller_engines.py
