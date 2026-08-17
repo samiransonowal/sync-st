@@ -4,11 +4,11 @@
   "description": "Studio Tunnel Invoice Generator (ST-IN-gen) automated CI/CD and engine",
   "private": true,
   "scripts": {
-    "check-env": "python scripts/check_dev_environment.py",
-    "send-email": "python scripts/send_dispatch_email.py",
-    "mock-invoice": "python scripts/generate_mock_invoice_multiformat.py",
+    "check-env": "python3 scripts/check_dev_environment.py",
+    "send-email": "python3 scripts/send_dispatch_email.py",
+    "mock-invoice": "python3 scripts/generate_mock_invoice_multiformat.py",
     "lint": "echo \"[PASS] Linting check passed.\"",
-    "test": "python engine/python-scripts/test_system_integrity.py",
+    "test": "python3 engine/python-scripts/test_system_integrity.py",
     "set-env": "node scripts/setEnv.js",
     "clasp-push": "npx clasp push --force"
   },

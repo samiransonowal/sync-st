@@ -93,3 +93,14 @@ npm run clasp-push
 2. Python validates schemas (`users.yaml`, `users.json`, GSTIN/PAN regex rules).
 3. `scripts/setEnv.js` detects the branch, writes `.clasp.json` with the corresponding `scriptId`, and toggles `DRY_RUN_MODE` in `0_Config.gs`.
 4. Clasp authenticates and deploys the code directly to Google Apps Script.
+
+---
+
+## 7. Git Push & Branch Governance Policy
+
+> [!CAUTION]
+> ### 🛑 MANDATORY GIT PUSH RULES
+> - **Data Ingestion**: Pulling data from any remote repository/source is permitted.
+> - **Push Approval**: Pushing code or commits to Git or GitHub from local workstations using Samiran's identity (`samiransonowal` / `samiran@studiotunnel.com`) **MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`**.
+> - **Main Branch Permanent Lock**: The initial release is pushed synchronously across all branches (`main`, `dev`, `test`). **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH.** All subsequent development must be committed to `dev` or `test` branches via Pull Requests with consent from `lab@studiotunnel.com`.
+

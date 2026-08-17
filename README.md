@@ -25,6 +25,13 @@
 > - `contact@studiotunnel.com`
 > - `tamash@studiotunnel.com`
 
+> [!CAUTION]
+> ### 🛑 MANDATORY GIT PUSH & BRANCH LOCK SAFETY RULE
+> **PUSHING DATA OR COMMITS TO GIT / GITHUB FROM THIS MACHINE UNDER SAMIRAN'S ID MUST NEVER BE DONE WITHOUT PRIOR CONSENT FROM `lab@studiotunnel.com`.**  
+> 1. **Data Ingestion**: Data pulling from any remote source is permitted.
+> 2. **Push Approval**: Pushing code/data from local developer workstations using `samiransonowal` (`samiran@studiotunnel.com`) requires prior explicit consent from `lab@studiotunnel.com`.
+> 3. **Main Branch Lock**: Following the initial synchronized release push, **NEVER PUSH ANYTHING AFTER THIS TO THE `main` BRANCH**. All future changes must target environment branches (`dev` / `test`) via approved Pull Requests.
+
 
 ---
 

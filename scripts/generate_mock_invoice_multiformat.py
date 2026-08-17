@@ -468,15 +468,25 @@ def generate_html_invoice(data, output_path):
 
 
 # -----------------------------------------------------------------------------
-# 2. RENDER VECTOR PDF INVOICE (Via Headless Chrome/Edge)
+# 2. RENDER VECTOR PDF INVOICE (Via Headless Chrome/Edge or ReportLab)
 # -----------------------------------------------------------------------------
 def generate_pdf_invoice(html_path, output_path):
     browsers = [
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        shutil.which("msedge"),
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%PROGRAMFILES%\Google\Chrome\Application\chrome.exe"),
+        shutil.which("google-chrome"),
         shutil.which("chrome"),
-        shutil.which("google-chrome")
+        shutil.which("chromium"),
+        shutil.which("chromium-browser"),
+        shutil.which("msedge")
     ]
     browser_bin = next((b for b in browsers if b and os.path.exists(b)), None)
 
@@ -502,19 +512,145 @@ def generate_pdf_invoice(html_path, output_path):
     # Fallback to ReportLab if browser is unavailable
     try:
         from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet
-        doc = SimpleDocTemplate(str(output_path), pagesize=A4)
+        from reportlab.lib import colors
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+        doc = SimpleDocTemplate(
+            str(output_path),
+            pagesize=A4,
+            leftMargin=36,
+            rightMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
         styles = getSampleStyleSheet()
-        story = [
-            Paragraph("<b>CINELOOM POSTWORKS PVT. LTD. / STUDIO TUNNEL</b>", styles["Title"]),
-            Spacer(1, 12),
-            Paragraph(f"Tax Invoice #{MOCK_INVOICE['invoice']['number']}", styles["Heading2"]),
-            Paragraph(f"Billed to: {MOCK_INVOICE['client']['name']}", styles["Normal"]),
-            Paragraph(f"Grand Total: Rs. {MOCK_INVOICE['financials']['grand_total']:,.2f}", styles["Normal"])
+
+        c = MOCK_INVOICE["company"]
+        cl = MOCK_INVOICE["client"]
+        inv = MOCK_INVOICE["invoice"]
+        fin = MOCK_INVOICE["financials"]
+        b = MOCK_INVOICE["bank"]
+
+        style_normal = ParagraphStyle('NormalText', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor("#1A1A1A"))
+        style_bold = ParagraphStyle('BoldText', parent=style_normal, fontName='Helvetica-Bold')
+        style_title = ParagraphStyle('DocTitle', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor("#1A1A1A"))
+        style_small = ParagraphStyle('SmallText', parent=style_normal, fontSize=8, leading=10, textColor=colors.HexColor("#64748B"))
+        style_header_dark = ParagraphStyle('HDark', parent=style_bold, fontSize=11, textColor=colors.HexColor("#00E599"))
+
+        story = []
+
+        # Header Table
+        header_data = [
+            [
+                Paragraph(f"<b>{c['legal_name']}</b><br/><font size=8 color='#64748b'>{c['address']}<br/>Phone: {c['phone']} | Email: {c['email']}<br/>GSTIN: {c['gstin']} | PAN: {c['pan']} | State: {c['state']}</font>", style_normal),
+                Paragraph("<b>STUDIO TUNNEL</b><br/><font size=7 color='#cccccc'>Color Grading &bull; DI</font>", style_header_dark)
+            ]
         ]
+        t_header = Table(header_data, colWidths=[380, 140])
+        t_header.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('BACKGROUND', (1, 0), (1, 0), colors.HexColor("#1A1A1A")),
+            ('TEXTCOLOR', (1, 0), (1, 0), colors.HexColor("#00E599")),
+            ('PADDING', (1, 0), (1, 0), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(t_header)
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#1A1A1A"), spaceAfter=10))
+
+        story.append(Paragraph("TAX INVOICE", style_title))
+        story.append(Spacer(1, 10))
+
+        # Meta Cards (Bill To & Invoice Details)
+        meta_data = [
+            [
+                Paragraph(f"<b>BILL TO:</b><br/><b>{cl['name']}</b><br/>{cl['address']}<br/>GSTIN: {cl['gstin']} | PAN: {cl['pan']}<br/>State: {cl['state']}<br/>Contact: {cl['contact_person']}", style_normal),
+                Paragraph(f"<b>INVOICE DETAILS:</b><br/><b>Invoice No: {inv['number']}</b><br/>Date: {inv['date']}<br/>Due Date: {inv['due_date']}<br/>Place of Supply: {inv['place_of_supply']}<br/>Project: {inv['project_name']}", style_normal)
+            ]
+        ]
+        t_meta = Table(meta_data, colWidths=[255, 265])
+        t_meta.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        story.append(t_meta)
+        story.append(Spacer(1, 12))
+
+        # Items Table
+        items_data = [
+            [Paragraph("<b>#</b>", style_small), Paragraph("<b>Description of Services</b>", style_small), Paragraph("<b>SAC</b>", style_small), Paragraph("<b>Qty</b>", style_small), Paragraph("<b>Unit</b>", style_small), Paragraph("<b>Rate (Rs.)</b>", style_small), Paragraph("<b>GST (Rs.)</b>", style_small), Paragraph("<b>Total (Rs.)</b>", style_small)]
+        ]
+        for item in MOCK_INVOICE["items"]:
+            items_data.append([
+                Paragraph(str(item["sr_no"]), style_normal),
+                Paragraph(item["description"].replace("\n", "<br/>"), style_normal),
+                Paragraph(str(item["hsn"]), style_normal),
+                Paragraph(str(item["quantity"]), style_normal),
+                Paragraph(item["unit"], style_normal),
+                Paragraph(f"{item['rate']:,.2f}", style_normal),
+                Paragraph(f"{item['gst_amount']:,.2f}", style_normal),
+                Paragraph(f"{item['total_amount']:,.2f}", style_normal)
+            ])
+
+        t_items = Table(items_data, colWidths=[20, 180, 45, 30, 35, 70, 65, 75])
+        t_items.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1A1A1A")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#CCCCCC")),
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (2, 0), (4, -1), 'CENTER'),
+            ('ALIGN', (5, 0), (-1, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+            ('PADDING', (0, 0), (-1, -1), 6),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        story.append(t_items)
+        story.append(Spacer(1, 10))
+
+        # Totals Table
+        totals_data = [
+            ["Sub Total", f"Rs. {fin['subtotal']:,.2f}"],
+            ["IGST @ 18%", f"Rs. {fin['igst']:,.2f}"],
+            ["Grand Total", f"Rs. {fin['grand_total']:,.2f}"],
+            ["Amount Received", f"Rs. {fin['received']:,.2f}"],
+            ["Balance Due", f"Rs. {fin['balance']:,.2f}"]
+        ]
+        t_totals = Table(totals_data, colWidths=[120, 100])
+        t_totals.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('BACKGROUND', (0, 2), (1, 2), colors.HexColor("#1A1A1A")),
+            ('TEXTCOLOR', (0, 2), (1, 2), colors.HexColor("#00E599")),
+            ('FONTNAME', (0, 2), (1, 2), 'Helvetica-Bold'),
+            ('PADDING', (0, 0), (-1, -1), 4),
+            ('LINEBELOW', (0, 4), (1, 4), 1, colors.HexColor("#1A1A1A")),
+        ]))
+
+        # Words & Bank Table
+        words_paragraph = Paragraph(f"<b>Amount in Words:</b><br/><i>{fin['amount_in_words']}</i><br/><br/><b>Payment Details:</b><br/>Bank: {b['name']} | A/C: {b['account_no']}<br/>IFSC: {b['ifsc']} | Branch: {b['branch']}", style_normal)
+        t_bottom = Table([[words_paragraph, t_totals]], colWidths=[300, 220])
+        t_bottom.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        story.append(t_bottom)
+        story.append(Spacer(1, 20))
+
+        # Signature
+        sig_data = [
+            ["", f"For {c['legal_name']}\n\n\n_______________________\nSamiran Sonowal\nAuthorized Signatory"]
+        ]
+        t_sig = Table(sig_data, colWidths=[320, 200])
+        t_sig.setStyle(TableStyle([
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'BOTTOM'),
+        ]))
+        story.append(t_sig)
+
         doc.build(story)
-        print(f"  [OK] Fallback PDF Invoice -> {output_path}")
+        print(f"  [OK] Vector PDF Invoice (ReportLab Enhanced) -> {output_path}")
         return output_path
     except Exception as e:
         print(f"  [FAIL] Could not generate PDF: {e}")
@@ -533,14 +669,26 @@ def generate_excel_invoice(data, output_path):
     ws = wb.active
     ws.title = "Tax Invoice"
 
-    # Theme colors
+    # Ensure grid lines are visible
+    ws.views.sheetView[0].showGridLines = True
+
+    c = data["company"]
+    cl = data["client"]
+    inv = data["invoice"]
+    fin = data["financials"]
+    b = data["bank"]
+
+    # Theme Fills and Fonts
     dark_fill = PatternFill(start_color="1A1A1A", end_color="1A1A1A", fill_type="solid")
-    light_gray_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
-    green_font = Font(name="Lexend", size=14, bold=True, color="00E599")
-    header_font = Font(name="Lexend", size=10, bold=True, color="CCCCCC")
-    bold_dark = Font(name="Lexend", size=11, bold=True, color="0F172A")
+    card_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    accent_green_font = Font(name="Lexend", size=13, bold=True, color="00E599")
+    header_title_font = Font(name="Lexend", size=14, bold=True, color="1A1A1A")
+    header_col_font = Font(name="Lexend", size=10, bold=True, color="CCCCCC")
+    section_label_font = Font(name="Lexend", size=10, bold=True, color="0F172A")
+    bold_dark = Font(name="Lexend", size=10, bold=True, color="0F172A")
     regular_font = Font(name="Lexend", size=10, color="1A1A1A")
-    small_font = Font(name="Lexend", size=9, color="64748B")
+    small_gray = Font(name="Lexend", size=9, color="64748B")
+    italic_gray = Font(name="Lexend", size=9, italic=True, color="475569")
 
     thin_border = Border(
         left=Side(style='thin', color='CBD5E1'),
@@ -550,113 +698,229 @@ def generate_excel_invoice(data, output_path):
     )
 
     # 1. Company Header
-    c = data["company"]
     ws.merge_cells("A1:E1")
     ws["A1"] = c["legal_name"]
-    ws["A1"].font = Font(name="Lexend", size=13, bold=True, color="1A1A1A")
+    ws["A1"].font = header_title_font
 
     ws.merge_cells("F1:H1")
     ws["F1"] = "STUDIO TUNNEL"
     ws["F1"].fill = dark_fill
-    ws["F1"].font = green_font
+    ws["F1"].font = accent_green_font
     ws["F1"].alignment = Alignment(horizontal="center", vertical="center")
 
     ws["A2"] = c["address"]
-    ws["A2"].font = small_font
+    ws["A2"].font = small_gray
     ws["A3"] = f"Phone: {c['phone']} | Email: {c['email']} | GSTIN: {c['gstin']} | State: {c['state']}"
-    ws["A3"].font = small_font
+    ws["A3"].font = small_gray
+    ws["A4"] = f"PAN: {c['pan']} | TAN: {c['tan']} | Default SAC: {c['hsn']}"
+    ws["A4"].font = small_gray
 
     # 2. Document Title
-    ws.merge_cells("A5:H5")
-    ws["A5"] = "TAX INVOICE"
-    ws["A5"].font = Font(name="Lexend", size=14, bold=True, color="0F172A")
-    ws["A5"].alignment = Alignment(horizontal="center")
+    ws.merge_cells("A6:H6")
+    ws["A6"] = "TAX INVOICE"
+    ws["A6"].font = Font(name="Lexend", size=15, bold=True, color="0F172A")
+    ws["A6"].alignment = Alignment(horizontal="center")
 
     # 3. Bill To & Invoice Meta Grid
-    cl = data["client"]
-    inv = data["invoice"]
-
-    ws["A7"] = "BILL TO:"
-    ws["A7"].font = bold_dark
-    ws["A8"] = cl["name"]
-    ws["A8"].font = Font(name="Lexend", size=10, bold=True)
-    ws["A9"] = cl["address"]
-    ws["A9"].font = regular_font
-    ws["A10"] = f"GSTIN: {cl['gstin']} | PAN: {cl['pan']} | State: {cl['state']}"
+    ws["A8"] = "BILL TO:"
+    ws["A8"].font = section_label_font
+    ws["A9"] = cl["name"]
+    ws["A9"].font = Font(name="Lexend", size=11, bold=True, color="0F172A")
+    ws["A10"] = cl["address"]
     ws["A10"].font = regular_font
+    ws["A11"] = f"GSTIN: {cl['gstin']} | PAN: {cl['pan']} | State: {cl['state']}"
+    ws["A11"].font = regular_font
+    ws["A12"] = f"Contact: {cl['contact_person']} ({cl['contact_email']})"
+    ws["A12"].font = regular_font
 
-    ws["E7"] = "INVOICE DETAILS:"
-    ws["E7"].font = bold_dark
-    ws["E8"] = f"Invoice No: {inv['number']}"
-    ws["E8"].font = Font(name="Lexend", size=10, bold=True)
-    ws["E9"] = f"Invoice Date: {inv['date']} | Due Date: {inv['due_date']}"
-    ws["E9"].font = regular_font
-    ws["E10"] = f"Project: {inv['project_name']} ({inv['colorist']})"
-    ws["E10"].font = regular_font
+    ws["F8"] = "INVOICE DETAILS:"
+    ws["F8"].font = section_label_font
+    ws["F9"] = f"Invoice No: {inv['number']}"
+    ws["F9"].font = Font(name="Lexend", size=11, bold=True, color="0F172A")
+    ws["F10"] = f"Invoice Date: {inv['date']} | Due Date: {inv['due_date']}"
+    ws["F10"].font = regular_font
+    ws["F11"] = f"Place of Supply: {inv['place_of_supply']}"
+    ws["F11"].font = regular_font
+    ws["F12"] = f"Project: {inv['project_name']} (Colorist: {inv['colorist']})"
+    ws["F12"].font = regular_font
+
+    # Style Metadata Card Cells with light gray fill
+    for r in range(8, 13):
+        for c_idx in range(1, 5):
+            ws.cell(row=r, column=c_idx).fill = card_fill
+        for c_idx in range(6, 9):
+            ws.cell(row=r, column=c_idx).fill = card_fill
 
     # 4. Item Table Header
     headers = ["#", "Description of Services", "SAC", "Qty", "Unit", "Rate (₹)", "GST Amount (₹)", "Total (₹)"]
-    row_idx = 12
+    header_row = 14
     for col_idx, header in enumerate(headers, 1):
-        cell = ws.cell(row=row_idx, column=col_idx, value=header)
+        cell = ws.cell(row=header_row, column=col_idx, value=header)
         cell.fill = dark_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 3, 4, 5] else ("right" if col_idx >= 6 else "left"))
+        cell.font = header_col_font
+        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 3, 4, 5] else ("right" if col_idx >= 6 else "left"), vertical="center")
 
-    # 5. Items
-    row_idx = 13
+    # 5. Items Loop
+    first_item_row = 15
+    current_row = first_item_row
     for item in data["items"]:
-        ws.cell(row=row_idx, column=1, value=item["sr_no"]).alignment = Alignment(horizontal="center")
-        ws.cell(row=row_idx, column=2, value=item["description"]).font = regular_font
-        ws.cell(row=row_idx, column=3, value=item["hsn"]).alignment = Alignment(horizontal="center")
-        ws.cell(row=row_idx, column=4, value=item["quantity"]).alignment = Alignment(horizontal="center")
-        ws.cell(row=row_idx, column=5, value=item["unit"]).alignment = Alignment(horizontal="center")
+        ws.cell(row=current_row, column=1, value=item["sr_no"]).alignment = Alignment(horizontal="center", vertical="top")
 
-        cell_rate = ws.cell(row=row_idx, column=6, value=item["rate"])
+        desc_cell = ws.cell(row=current_row, column=2, value=item["description"])
+        desc_cell.font = regular_font
+        desc_cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+        ws.cell(row=current_row, column=3, value=item["hsn"]).alignment = Alignment(horizontal="center", vertical="top")
+        ws.cell(row=current_row, column=4, value=item["quantity"]).alignment = Alignment(horizontal="center", vertical="top")
+        ws.cell(row=current_row, column=5, value=item["unit"]).alignment = Alignment(horizontal="center", vertical="top")
+
+        cell_rate = ws.cell(row=current_row, column=6, value=item["rate"])
         cell_rate.number_format = '₹ #,##,##0.00'
-        cell_rate.alignment = Alignment(horizontal="right")
+        cell_rate.alignment = Alignment(horizontal="right", vertical="top")
 
-        cell_gst = ws.cell(row=row_idx, column=7, value=f"=F{row_idx}*0.18")
+        # Dynamic GST Formula
+        cell_gst = ws.cell(row=current_row, column=7, value=f"=F{current_row}*({item['gst_rate']}/100)")
         cell_gst.number_format = '₹ #,##,##0.00'
-        cell_gst.alignment = Alignment(horizontal="right")
+        cell_gst.alignment = Alignment(horizontal="right", vertical="top")
 
-        cell_tot = ws.cell(row=row_idx, column=8, value=f"=F{row_idx}+G{row_idx}")
+        # Dynamic Total Formula
+        cell_tot = ws.cell(row=current_row, column=8, value=f"=F{current_row}+G{current_row}")
         cell_tot.number_format = '₹ #,##,##0.00'
-        cell_tot.alignment = Alignment(horizontal="right")
+        cell_tot.alignment = Alignment(horizontal="right", vertical="top")
 
         for c_idx in range(1, 9):
-            ws.cell(row=row_idx, column=c_idx).border = thin_border
-        row_idx += 1
+            ws.cell(row=current_row, column=c_idx).border = thin_border
+        current_row += 1
+
+    last_item_row = current_row - 1
 
     # 6. Totals Block
-    row_idx += 1
-    ws.cell(row=row_idx, column=6, value="Sub Total").font = bold_dark
-    ws.cell(row=row_idx, column=8, value="=SUM(F13:F13)").number_format = '₹ #,##,##0.00'
+    current_row += 1
+    # Subtotal
+    ws.cell(row=current_row, column=6, value="Sub Total").font = bold_dark
+    ws.cell(row=current_row, column=6).alignment = Alignment(horizontal="right")
+    cell_sub = ws.cell(row=current_row, column=8, value=f"=SUM(F{first_item_row}:F{last_item_row})")
+    cell_sub.number_format = '₹ #,##,##0.00'
+    cell_sub.font = bold_dark
+    cell_sub.alignment = Alignment(horizontal="right")
+    ws.cell(row=current_row, column=8).border = thin_border
 
-    row_idx += 1
-    ws.cell(row=row_idx, column=6, value="IGST @ 18%").font = bold_dark
-    ws.cell(row=row_idx, column=8, value="=SUM(G13:G13)").number_format = '₹ #,##,##0.00'
+    current_row += 1
+    # Tax Row
+    tax_label = "IGST @ 18%" if inv["is_inter_state"] else "GST Total (CGST+SGST @ 18%)"
+    ws.cell(row=current_row, column=6, value=tax_label).font = bold_dark
+    ws.cell(row=current_row, column=6).alignment = Alignment(horizontal="right")
+    cell_tax = ws.cell(row=current_row, column=8, value=f"=SUM(G{first_item_row}:G{last_item_row})")
+    cell_tax.number_format = '₹ #,##,##0.00'
+    cell_tax.font = bold_dark
+    cell_tax.alignment = Alignment(horizontal="right")
+    ws.cell(row=current_row, column=8).border = thin_border
 
-    row_idx += 1
-    cell_lbl = ws.cell(row=row_idx, column=6, value="Grand Total")
-    cell_lbl.fill = dark_fill
-    cell_lbl.font = Font(name="Lexend", size=11, bold=True, color="00E599")
+    current_row += 1
+    # Grand Total
+    ws.cell(row=current_row, column=6, value="Grand Total").fill = dark_fill
+    ws.cell(row=current_row, column=6).font = Font(name="Lexend", size=11, bold=True, color="00E599")
+    ws.cell(row=current_row, column=6).alignment = Alignment(horizontal="right")
 
-    cell_gt = ws.cell(row=row_idx, column=8, value="=SUM(H13:H13)")
+    cell_gt = ws.cell(row=current_row, column=8, value=f"=SUM(H{first_item_row}:H{last_item_row})")
     cell_gt.fill = dark_fill
     cell_gt.font = Font(name="Lexend", size=11, bold=True, color="00E599")
     cell_gt.number_format = '₹ #,##,##0.00'
+    cell_gt.alignment = Alignment(horizontal="right")
+    ws.cell(row=current_row, column=8).border = thin_border
 
-    # Auto column widths
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or '')) for cell in col)
-        col_letter = get_column_letter(col[0].column)
-        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
-    ws.column_dimensions["B"].width = 38
+    current_row += 1
+    # Amount Received
+    ws.cell(row=current_row, column=6, value="Amount Received").font = regular_font
+    ws.cell(row=current_row, column=6).alignment = Alignment(horizontal="right")
+    cell_rec = ws.cell(row=current_row, column=8, value=fin['received'])
+    cell_rec.number_format = '₹ #,##,##0.00'
+    cell_rec.font = regular_font
+    cell_rec.alignment = Alignment(horizontal="right")
+
+    current_row += 1
+    # Balance Due
+    ws.cell(row=current_row, column=6, value="Balance Due").font = Font(name="Lexend", size=11, bold=True, color="0F172A")
+    ws.cell(row=current_row, column=6).alignment = Alignment(horizontal="right")
+    cell_bal = ws.cell(row=current_row, column=8, value=f"=H{current_row-2}-H{current_row-1}")
+    cell_bal.number_format = '₹ #,##,##0.00'
+    cell_bal.font = Font(name="Lexend", size=11, bold=True, color="0F172A")
+    cell_bal.alignment = Alignment(horizontal="right")
+    ws.cell(row=current_row, column=8).border = thin_border
+
+    # 7. Amount in Words & Notes Section
+    current_row += 2
+    ws.merge_cells(f"A{current_row}:E{current_row}")
+    ws[f"A{current_row}"] = f"Invoice Amount in Words: {fin['amount_in_words']}"
+    ws[f"A{current_row}"].font = italic_gray
+    ws[f"A{current_row}"].fill = card_fill
+
+    current_row += 2
+    ws[f"A{current_row}"] = "BANK TRANSFER DETAILS:"
+    ws[f"A{current_row}"].font = section_label_font
+    ws[f"F{current_row}"] = f"For {c['legal_name']}"
+    ws[f"F{current_row}"].font = bold_dark
+
+    current_row += 1
+    ws[f"A{current_row}"] = f"Bank Name: {b['name']} | Account No: {b['account_no']} | IFSC: {b['ifsc']}"
+    ws[f"A{current_row}"].font = regular_font
+    ws[f"F{current_row}"] = f"{inv['line_producer']} (Authorized Signatory)"
+    ws[f"F{current_row}"].font = regular_font
+
+    current_row += 1
+    ws[f"A{current_row}"] = f"Account Holder: {b['holder']} | Branch: {b['branch']}"
+    ws[f"A{current_row}"].font = regular_font
+
+    # Column Width Optimizations
+    ws.column_dimensions["A"].width = 6
+    ws.column_dimensions["B"].width = 44
+    ws.column_dimensions["C"].width = 12
+    ws.column_dimensions["D"].width = 8
+    ws.column_dimensions["E"].width = 8
+    ws.column_dimensions["F"].width = 18
+    ws.column_dimensions["G"].width = 18
+    ws.column_dimensions["H"].width = 20
 
     wb.save(output_path)
     print(f"  [OK] Excel Spreadsheet Invoice -> {output_path}")
     return output_path
+
+
+# -----------------------------------------------------------------------------
+# XML HELPERS FOR DOCX FORMATTING
+# -----------------------------------------------------------------------------
+def set_docx_cell_shading(cell, color_hex):
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{color_hex}"/>')
+    tcPr.append(shd)
+
+def set_docx_cell_margins(cell, top=100, bottom=100, left=150, right=150):
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcMar = OxmlElement('w:tcMar')
+    for m, val in [('top', top), ('bottom', bottom), ('left', left), ('right', right)]:
+        node = OxmlElement(f'w:{m}')
+        node.set(qn('w:w'), str(val))
+        node.set(qn('w:type'), 'dxa')
+        tcMar.append(node)
+    tcPr.append(tcMar)
+
+def set_docx_cell_borders(cell, top="CBD5E1", bottom="CBD5E1", left=None, right=None, sz="4"):
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcBorders = OxmlElement('w:tcBorders')
+    borders = {'top': top, 'bottom': bottom, 'left': left, 'right': right}
+    for b_name, b_val in borders.items():
+        if b_val is not None:
+            node = OxmlElement(f'w:{b_name}')
+            node.set(qn('w:val'), 'single')
+            node.set(qn('w:sz'), str(sz))
+            node.set(qn('w:space'), '0')
+            node.set(qn('w:color'), b_val)
+            tcBorders.append(node)
+        else:
+            node = OxmlElement(f'w:{b_name}')
+            node.set(qn('w:val'), 'nil')
+            tcBorders.append(node)
+    tcPr.append(tcBorders)
 
 
 # -----------------------------------------------------------------------------
@@ -668,90 +932,194 @@ def generate_docx_invoice(data, output_path):
         return None
 
     doc = Document()
+
+    # Set page margins to 0.6 inch (~15mm)
+    sections = doc.sections
+    for section in sections:
+        section.top_margin = Inches(0.6)
+        section.bottom_margin = Inches(0.6)
+        section.left_margin = Inches(0.6)
+        section.right_margin = Inches(0.6)
+
     c = data["company"]
     cl = data["client"]
     inv = data["invoice"]
     fin = data["financials"]
     b = data["bank"]
 
-    # Header
-    p = doc.add_paragraph()
-    run = p.add_run(f"{c['legal_name']}  |  STUDIO TUNNEL\n")
-    run.bold = True
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+    # 1. Header Table (Company info on Left, Brand Badge on Right)
+    header_table = doc.add_table(rows=1, cols=2)
+    header_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    c_left, c_right = header_table.rows[0].cells
+    c_left.width = Inches(4.8)
+    c_right.width = Inches(2.2)
 
-    p_sub = doc.add_paragraph()
-    p_sub.add_run(f"{c['address']}\nPhone: {c['phone']} | Email: {c['email']} | GSTIN: {c['gstin']}")
-    p_sub.runs[0].font.size = Pt(9)
-    p_sub.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8B)
+    p_left = c_left.paragraphs[0]
+    r_cname = p_left.add_run(f"{c['legal_name']}\n")
+    r_cname.bold = True
+    r_cname.font.size = Pt(12)
+    r_cname.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
 
-    # Title
+    r_cinfo = p_left.add_run(f"{c['address']}\nPhone: {c['phone']} | Email: {c['email']}\nGSTIN: {c['gstin']} | PAN: {c['pan']} | State: {c['state']}\nTAN: {c['tan']} | SAC: {c['hsn']}")
+    r_cinfo.font.size = Pt(8.5)
+    r_cinfo.font.color.rgb = RGBColor(0x64, 0x74, 0x8B)
+
+    p_right = c_right.paragraphs[0]
+    p_right.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r_badge = p_right.add_run("  STUDIO TUNNEL  \n")
+    r_badge.bold = True
+    r_badge.font.size = Pt(13)
+    r_badge.font.color.rgb = RGBColor(0x00, 0xE5, 0x99)
+    set_docx_cell_shading(c_right, "1A1A1A")
+    set_docx_cell_margins(c_right, top=120, bottom=120, left=150, right=150)
+
+    r_sub = p_right.add_run("Color Grading • DI • Finishing")
+    r_sub.font.size = Pt(8)
+    r_sub.font.color.rgb = RGBColor(0xCC, 0xCC, 0xCC)
+
+    # 2. Document Title
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title.paragraph_format.space_before = Pt(12)
+    p_title.paragraph_format.space_after = Pt(12)
     r_title = p_title.add_run("TAX INVOICE")
     r_title.bold = True
     r_title.font.size = Pt(16)
+    r_title.font.color.rgb = RGBColor(0x0F, 0x17, 0x2A)
 
-    # Bill To & Invoice Info Table
+    # 3. Metadata Table (Bill To & Invoice Details)
     meta_table = doc.add_table(rows=1, cols=2)
     meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    cell_left, cell_right = meta_table.rows[0].cells
+    m_left, m_right = meta_table.rows[0].cells
+    m_left.width = Inches(3.6)
+    m_right.width = Inches(3.4)
 
-    p_left = cell_left.paragraphs[0]
-    p_left.add_run("BILL TO:\n").bold = True
-    p_left.add_run(f"{cl['name']}\n{cl['address']}\nGSTIN: {cl['gstin']} | PAN: {cl['pan']}\nState: {cl['state']}")
+    set_docx_cell_shading(m_left, "F8FAFC")
+    set_docx_cell_shading(m_right, "F8FAFC")
+    set_docx_cell_margins(m_left, top=100, bottom=100, left=120, right=120)
+    set_docx_cell_margins(m_right, top=100, bottom=100, left=120, right=120)
+    set_docx_cell_borders(m_left, top="E2E8F0", bottom="E2E8F0", left="E2E8F0", right="E2E8F0")
+    set_docx_cell_borders(m_right, top="E2E8F0", bottom="E2E8F0", left="E2E8F0", right="E2E8F0")
 
-    p_right = cell_right.paragraphs[0]
-    p_right.add_run("INVOICE DETAILS:\n").bold = True
-    p_right.add_run(f"Invoice No: {inv['number']}\nDate: {inv['date']}\nDue Date: {inv['due_date']}\nPlace of Supply: {inv['place_of_supply']}\nProject: {inv['project_name']}")
+    p_bto = m_left.paragraphs[0]
+    p_bto.add_run("BILL TO:\n").bold = True
+    p_bto.runs[0].font.size = Pt(9.5)
+    p_bto.runs[0].font.color.rgb = RGBColor(0x0F, 0x17, 0x2A)
+    p_bto.add_run(f"{cl['name']}\n").bold = True
+    p_bto.runs[1].font.size = Pt(10)
+    p_bto.add_run(f"{cl['address']}\nGSTIN: {cl['gstin']} | PAN: {cl['pan']}\nState: {cl['state']}\nContact: {cl['contact_person']}")
+    p_bto.runs[2].font.size = Pt(8.5)
 
-    doc.add_paragraph()
+    p_idet = m_right.paragraphs[0]
+    p_idet.add_run("INVOICE DETAILS:\n").bold = True
+    p_idet.runs[0].font.size = Pt(9.5)
+    p_idet.runs[0].font.color.rgb = RGBColor(0x0F, 0x17, 0x2A)
+    p_idet.add_run(f"Invoice No: {inv['number']}\n").bold = True
+    p_idet.runs[1].font.size = Pt(10)
+    p_idet.add_run(f"Date: {inv['date']} | Due Date: {inv['due_date']}\nPlace of Supply: {inv['place_of_supply']}\nProject: {inv['project_name']}\nColorist: {inv['colorist']}")
+    p_idet.runs[2].font.size = Pt(8.5)
 
-    # Item Table
-    item_table = doc.add_table(rows=1, cols=6)
+    p_space = doc.add_paragraph()
+    p_space.paragraph_format.space_before = Pt(8)
+    p_space.paragraph_format.space_after = Pt(4)
+
+    # 4. Item Table (8 Columns)
+    item_table = doc.add_table(rows=1, cols=8)
     item_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     hdr_cells = item_table.rows[0].cells
-    hdr_titles = ["#", "Description", "SAC", "Qty", "Rate (₹)", "Total (₹)"]
+    hdr_titles = ["#", "Description of Services", "SAC", "Qty", "Unit", "Rate (₹)", "GST Amount (₹)", "Total (₹)"]
+    col_widths = [Inches(0.3), Inches(2.7), Inches(0.6), Inches(0.4), Inches(0.4), Inches(0.85), Inches(0.85), Inches(0.9)]
+
     for i, title in enumerate(hdr_titles):
-        hdr_cells[i].text = title
-        hdr_cells[i].paragraphs[0].runs[0].bold = True
+        hdr_cells[i].width = col_widths[i]
+        set_docx_cell_shading(hdr_cells[i], "1A1A1A")
+        set_docx_cell_margins(hdr_cells[i], top=80, bottom=80, left=60, right=60)
+        p = hdr_cells[i].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT if i >= 5 else (WD_ALIGN_PARAGRAPH.CENTER if i in [0, 2, 3, 4] else WD_ALIGN_PARAGRAPH.LEFT)
+        run = p.add_run(title)
+        run.bold = True
+        run.font.size = Pt(8.5)
+        run.font.color.rgb = RGBColor(0xCC, 0xCC, 0xCC)
 
     for item in data["items"]:
         row_cells = item_table.add_row().cells
-        row_cells[0].text = str(item["sr_no"])
-        row_cells[1].text = item["description"]
-        row_cells[2].text = str(item["hsn"])
-        row_cells[3].text = str(item["quantity"])
-        row_cells[4].text = f"₹ {item['rate']:,.2f}"
-        row_cells[5].text = f"₹ {item['total_amount']:,.2f}"
+        vals = [
+            str(item["sr_no"]),
+            item["description"],
+            str(item["hsn"]),
+            str(item["quantity"]),
+            item["unit"],
+            f"₹ {item['rate']:,.2f}",
+            f"₹ {item['gst_amount']:,.2f}",
+            f"₹ {item['total_amount']:,.2f}"
+        ]
+        for i, val in enumerate(vals):
+            row_cells[i].width = col_widths[i]
+            set_docx_cell_margins(row_cells[i], top=80, bottom=80, left=60, right=60)
+            set_docx_cell_borders(row_cells[i], top="E2E8F0", bottom="E2E8F0", left=None, right=None)
+            p = row_cells[i].paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT if i >= 5 else (WD_ALIGN_PARAGRAPH.CENTER if i in [0, 2, 3, 4] else WD_ALIGN_PARAGRAPH.LEFT)
+            run = p.add_run(val)
+            run.font.size = Pt(8.5)
+            run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
 
-    doc.add_paragraph()
+    p_sp2 = doc.add_paragraph()
+    p_sp2.paragraph_format.space_before = Pt(8)
 
-    # Totals
-    p_tot = doc.add_paragraph()
-    p_tot.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_tot.add_run(f"Sub Total: ₹ {fin['subtotal']:,.2f}\n")
-    p_tot.add_run(f"IGST @ 18%: ₹ {fin['igst']:,.2f}\n")
-    r_gt = p_tot.add_run(f"Grand Total: ₹ {fin['grand_total']:,.2f}\n")
+    # 5. Financial Totals & Words Block
+    tot_table = doc.add_table(rows=1, cols=2)
+    tot_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t_left, t_right = tot_table.rows[0].cells
+    t_left.width = Inches(4.2)
+    t_right.width = Inches(2.8)
+
+    p_w = t_left.paragraphs[0]
+    p_w.add_run("Amount in Words:\n").bold = True
+    p_w.runs[0].font.size = Pt(9)
+    r_win = p_w.add_run(f"{fin['amount_in_words']}\n\n")
+    r_win.italic = True
+    r_win.font.size = Pt(9)
+    r_win.font.color.rgb = RGBColor(0x47, 0x55, 0x69)
+
+    p_w.add_run("Terms & Conditions:\n").bold = True
+    p_w.runs[2].font.size = Pt(8.5)
+    r_tms = p_w.add_run("1. Payment due within 15 days of invoice date.\n2. Remittance preferred via Electronic Transfer.\n3. Subject to Mumbai Jurisdiction.")
+    r_tms.font.size = Pt(8)
+    r_tms.font.color.rgb = RGBColor(0x64, 0x74, 0x8B)
+
+    p_t = t_right.paragraphs[0]
+    p_t.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_t.add_run(f"Sub Total: ₹ {fin['subtotal']:,.2f}\n").font.size = Pt(9)
+    p_t.add_run(f"IGST @ 18%: ₹ {fin['igst']:,.2f}\n").font.size = Pt(9)
+
+    r_gt = p_t.add_run(f"Grand Total: ₹ {fin['grand_total']:,.2f}\n")
     r_gt.bold = True
-    r_gt.font.size = Pt(13)
+    r_gt.font.size = Pt(11)
+    r_gt.font.color.rgb = RGBColor(0x0F, 0x17, 0x2A)
 
-    # Words
-    p_words = doc.add_paragraph()
-    p_words.add_run("Amount in Words: ").bold = True
-    p_words.add_run(fin["amount_in_words"]).italic = True
+    p_t.add_run(f"Amount Received: ₹ {fin['received']:,.2f}\n").font.size = Pt(8.5)
+    r_bal = p_t.add_run(f"Balance Due: ₹ {fin['balance']:,.2f}")
+    r_bal.bold = True
+    r_bal.font.size = Pt(10)
 
-    # Banking & Signatory
-    footer_table = doc.add_table(rows=1, cols=2)
-    f_left, f_right = footer_table.rows[0].cells
-    p_bank = f_left.paragraphs[0]
-    p_bank.add_run("PAYMENT DETAILS:\n").bold = True
-    p_bank.add_run(f"Bank: {b['name']}\nAccount: {b['account_no']}\nIFSC: {b['ifsc']}\nHolder: {b['holder']}")
+    # 6. Banking & Signatory Block
+    p_sp3 = doc.add_paragraph()
+    p_sp3.paragraph_format.space_before = Pt(12)
 
-    p_sig = f_right.paragraphs[0]
+    bank_table = doc.add_table(rows=1, cols=2)
+    bank_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    b_left, b_right = bank_table.rows[0].cells
+    b_left.width = Inches(4.2)
+    b_right.width = Inches(2.8)
+
+    p_bk = b_left.paragraphs[0]
+    p_bk.add_run("Bank Transfer Details:\n").bold = True
+    p_bk.runs[0].font.size = Pt(9)
+    p_bk.add_run(f"Bank Name: {b['name']}\nAccount No: {b['account_no']}\nIFSC Code: {b['ifsc']}\nAccount Holder: {b['holder']}\nBranch: {b['branch']}").font.size = Pt(8.5)
+
+    p_sig = b_right.paragraphs[0]
     p_sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_sig.add_run(f"For {c['legal_name']}\n\n\nSamiran Sonowal\nAuthorized Signatory")
+    p_sig.add_run(f"For {c['legal_name']}\n\n\n\n___________________________\nSamiran Sonowal\nAuthorized Signatory").font.size = Pt(8.5)
 
     doc.save(output_path)
     print(f"  [OK] Word Document Invoice -> {output_path}")

@@ -202,10 +202,15 @@ def main():
     # 5. Google Cloud SDK (gcloud CLI - Optional)
     # -------------------------------------------------------------------------
     gcloud_bin = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if not gcloud_bin:
+        user_home_gcloud = Path.home() / "google-cloud-sdk" / "bin" / ("gcloud.cmd" if platform.system() == "Windows" else "gcloud")
+        if user_home_gcloud.exists():
+            gcloud_bin = str(user_home_gcloud)
+
     if gcloud_bin:
         ok, gcloud_out = run_cmd_direct([gcloud_bin, "--version"])
         first_line = gcloud_out.split('\n')[0] if gcloud_out else "Installed"
-        results.append(("Google Cloud SDK (gcloud)", "PASS", f"{first_line}"))
+        results.append(("Google Cloud SDK (gcloud)", "PASS", f"{first_line} ({gcloud_bin})"))
     else:
         results.append(("Google Cloud SDK (gcloud)", "WARN", "Optional (Used for advance GCP IAM management)"))
 

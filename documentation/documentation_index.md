@@ -30,6 +30,7 @@ Index of active architectural specifications and source document references for 
 ## 👥 Organization Directory & External Sheets
 
 - **Master YAML Directory:** [`organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)
+- **IAM & Owner Permissions Matrix:** [`organization/iam_permissions_matrix.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen/documentation/organization/iam_permissions_matrix.md)
 - **Google Admin Raw Export:** [`organization/user_log.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/user_log.json)
 - **STEM External User Registry:** [`organization/stem_user_registry.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/stem_user_registry.md)
 - **Synced Public JSON Matrix:** [`credentials/public/users.json`](file:///d:/Studio%20Tunnel/INVOICE_APP/credentials/public/users.json)
