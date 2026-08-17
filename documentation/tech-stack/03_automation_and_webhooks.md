@@ -39,10 +39,24 @@ The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**,
    - Generates live HTML web documents and vector PDF files, saves to Google Drive (`INVOICES_GENERATED`), sets domain-level viewer permissions, and dispatches email via Gmail API.
 
 6. **`4_MenuUI.gs`**:
-   - Adds custom `🚀 Studio Tunnel` top menu bar in Google Sheets.
+   - Adds custom `🚀 Studio Tunnel` top menu bar in Google Sheets with one-click PDF generation, internal review email dispatch, and cloud self-test suite.
 
 7. **`5_DiscordNotifier.gs`**:
    - Posts rich embed notification cards to Discord channel `#invoices-log` in Studio Tunnel green.
+
+---
+
+## 🛑 Outbound Email Safety Enforcement Policy
+
+> **CRITICAL OPERATIONAL CONSTRAINT:**  
+> **Until explicitly notified otherwise, this automation will NEVER send any emails directly to external clients under any circumstances.**  
+> 
+> All invoice generation and email automation dispatches are hard-locked to route exclusively to authorized internal Studio Tunnel addresses:
+> - `finance@studiotunnel.com`
+> - `samiran@studiotunnel.com`
+> - `contact@studiotunnel.com`
+> - `tamash@studiotunnel.com`
+
 
 8. **`6_SelfTest.gs`**:
    - Automated 7-point in-script diagnostic suite validating DRY_RUN guard, company regex, sheet tabs, Drive folder reachability, and STEM user registry access.

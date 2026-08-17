@@ -56,6 +56,23 @@ var COMPANY_INFO = {
 };
 
 // ----------------------------------------------------------------------------
+// 🛑 STRICT OUTBOUND EMAIL SAFETY POLICY (MANDATORY OPERATIONAL RULE)
+// ----------------------------------------------------------------------------
+// CRITICAL: UNTIL EXPLICITLY NOTIFIED OTHERWISE, THIS AUTOMATION MUST NEVER
+// SEND EMAILS DIRECTLY TO EXTERNAL CLIENTS UNDER ANY CIRCUMSTANCES.
+// All generated invoices, draft previews, and email dispatches are strictly
+// routed to internal Studio Tunnel finance & review addresses only.
+// ----------------------------------------------------------------------------
+var STRICT_INTERNAL_ONLY_EMAIL_MODE = true;
+
+var AUTHORIZED_INTERNAL_EMAIL_RECIPIENTS = [
+  'finance@studiotunnel.com',
+  'samiran@studiotunnel.com',
+  'contact@studiotunnel.com',
+  'tamash@studiotunnel.com'
+];
+
+// ----------------------------------------------------------------------------
 // 👥 COLLABORATOR EMAIL ROLES
 // ----------------------------------------------------------------------------
 var ROLES = {

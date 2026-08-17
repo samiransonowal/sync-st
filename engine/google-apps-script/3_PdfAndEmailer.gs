@@ -122,32 +122,60 @@ function generateAndEmailInvoice() {
     return;
   }
 
-  if (!data.client.email) {
-    SpreadsheetApp.getUi().alert('⚠️ Client email is missing in the Invoice Generator sheet.');
+  // -------------------------------------------------------------------------
+  // 🛑 STRICT INTERNAL-ONLY EMAIL SAFETY ENFORCEMENT
+  // -------------------------------------------------------------------------
+  // CRITICAL: All outbound invoice emails are strictly routed to internal
+  // Studio Tunnel finance & review addresses. NEVER sent directly to clients.
+  // -------------------------------------------------------------------------
+  var isInternalRouting = (typeof STRICT_INTERNAL_ONLY_EMAIL_MODE === 'undefined' || STRICT_INTERNAL_ONLY_EMAIL_MODE === true);
+  var targetRecipient;
+  var subjectPrefix = '';
+
+  if (isInternalRouting) {
+    var recipientList = (typeof AUTHORIZED_INTERNAL_EMAIL_RECIPIENTS !== 'undefined' && AUTHORIZED_INTERNAL_EMAIL_RECIPIENTS.length > 0)
+      ? AUTHORIZED_INTERNAL_EMAIL_RECIPIENTS
+      : ['finance@studiotunnel.com', 'samiran@studiotunnel.com', 'contact@studiotunnel.com', 'tamash@studiotunnel.com'];
+    targetRecipient = recipientList.join(',');
+    subjectPrefix = '[INTERNAL REVIEW / COPY] ';
+    Logger.log('🛑 [SAFETY ENFORCED] Outbound email redirected to internal list: ' + targetRecipient);
+  } else {
+    targetRecipient = data.client.email;
+  }
+
+  if (!targetRecipient) {
+    SpreadsheetApp.getUi().alert('⚠️ Recipient email is missing in the Invoice Generator sheet.');
     return;
   }
 
-  const subject = 'Tax Invoice #' + data.inv.no + ' from ' + data.company.brand;
+  const subject = subjectPrefix + 'Tax Invoice #' + data.inv.no + ' from ' + data.company.brand + ' (Client: ' + data.client.name + ')';
   const body = 
-    'Dear ' + data.client.name + ',\n\n' +
+    'Dear Team,\n\n' +
+    (isInternalRouting ? '⚠️ INTERNAL COPY: This invoice was generated automatically. External client delivery is disabled.\n' +
+    'Intended Client: ' + data.client.name + ' (' + (data.client.email || 'No email provided') + ')\n\n' : 'Dear ' + data.client.name + ',\n\n') +
     'Please find attached Tax Invoice #' + data.inv.no + ' dated ' + data.inv.date + ' for ₹' + data.financials.grandTotal + '.\n\n' +
-    'You can also view your live web invoice directly here:\n' + docs.htmlUrl + '\n\n' +
+    'Live web invoice link:\n' + docs.htmlUrl + '\n\n' +
     'Bank Payment Details:\n' +
     'Bank: ' + data.company.bank.name + '\n' +
     'Account No: ' + data.company.bank.accNo + '\n' +
     'IFSC: ' + data.company.bank.ifsc + '\n' +
     'Account Holder: ' + data.company.legalName + '\n\n' +
-    'Thank you for doing business with us!\n\n' +
     'Best regards,\n' +
     data.company.brand + '\n' +
     'Phone: ' + data.company.phone;
 
-  GmailApp.sendEmail(data.client.email, subject, body, {
+  GmailApp.sendEmail(targetRecipient, subject, body, {
     attachments: [docs.pdfFile.getAs(MimeType.PDF), docs.htmlFile.getAs(MimeType.HTML)],
     name: data.company.brand
   });
 
-  SpreadsheetApp.getUi().alert('📧 Email sent to ' + data.client.email + ' with PDF and HTML invoice!');
+  var alertMsg = isInternalRouting
+    ? '📧 Internal invoice copy dispatched to Studio Tunnel Finance & Review team:\n\n' +
+      targetRecipient.split(',').join('\n') + '\n\n' +
+      '⚠️ Direct external client dispatch is STRICTLY DISABLED per safety policy.'
+    : '📧 Email sent to ' + targetRecipient + ' with PDF and HTML invoice!';
+
+  SpreadsheetApp.getUi().alert(alertMsg);
 }
 
 /**

@@ -12,6 +12,10 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 **Date:** 2026-08-17  
 **Git Tag:** `v0.8`  
 
+#### 🛑 Outbound Email Safety Enforcement
+- **MANDATORY POLICY ENFORCED:** Until explicitly notified otherwise, all automated email dispatches are strictly hard-locked to NEVER send directly to external clients.
+- Automated email dispatches in [`3_PdfAndEmailer.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/3_PdfAndEmailer.gs) and [`0_Config.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/0_Config.gs) are strictly redirected to authorized internal Studio Tunnel addresses: `finance@studiotunnel.com`, `samiran@studiotunnel.com`, `contact@studiotunnel.com`, `tamash@studiotunnel.com`.
+
 #### 🧠 Data Logic & Ingestion
 - Created Firebase Web App Ingestion & Delta Sync Specification ([`documentation/data-flow/firebase_ingestion_specification.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/data-flow/firebase_ingestion_specification.md)) covering collections (`clients`, `jobs`, `estimates`, `leads`, `team`, `rate_cards`).
 - Designed incremental delta sync lifecycle filtering on `updated_at` timestamps to operate strictly inside Firestore Spark Free Tier (<50 reads/day).

@@ -14,7 +14,17 @@
 **Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
-**GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)
+**GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)  
+
+> [!CAUTION]
+> ### 🛑 MANDATORY OUTBOUND EMAIL SAFETY RULE
+> **UNTIL EXPLICITLY NOTIFIED OTHERWISE, THIS AUTOMATION WILL NEVER SEND EMAILS DIRECTLY TO EXTERNAL CLIENTS UNDER ANY CIRCUMSTANCES.**  
+> All generated invoices, draft previews, and email dispatches are strictly locked and routed exclusively to authorized internal Studio Tunnel addresses:
+> - `finance@studiotunnel.com`
+> - `samiran@studiotunnel.com`
+> - `contact@studiotunnel.com`
+> - `tamash@studiotunnel.com`
+
 
 ---
 
