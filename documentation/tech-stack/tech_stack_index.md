@@ -28,3 +28,6 @@ This directory documents the technical choices, frameworks, databases, APIs, and
 
 7. **[`07_developer_environment_and_os_support.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/07_developer_environment_and_os_support.md)**:
    - Cross-platform workstation diagnostic (`scripts/check_dev_environment.py`), OS support matrix (Windows 11, macOS, Debian/Ubuntu, Rocky Linux / VFX Studio standard), and Antigravity/VS Code setup.
+
+8. **[`08_gcp_apis_and_free_tier_limits.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/08_gcp_apis_and_free_tier_limits.md)**:
+   - Comprehensive inventory of all enabled Google APIs, Spark & BigQuery free-tier quota limits, skipped paid services, and ₹0/month cost-control guarantees.

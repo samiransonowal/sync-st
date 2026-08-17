@@ -8,9 +8,23 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
-### 📦 Release Version `v0.7` — *"gas-cicd-pipeline"*
+### 📦 Release Version `v0.8` — *"services_apis_enabled"*
 **Date:** 2026-08-17  
-**Git Tag:** `v0.7`  
+**Git Tag:** `v0.8`  
+
+#### 🧠 Data Logic & Ingestion
+- Created Firebase Web App Ingestion & Delta Sync Specification ([`documentation/data-flow/firebase_ingestion_specification.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/data-flow/firebase_ingestion_specification.md)) covering collections (`clients`, `jobs`, `estimates`, `leads`, `team`, `rate_cards`).
+- Designed incremental delta sync lifecycle filtering on `updated_at` timestamps to operate strictly inside Firestore Spark Free Tier (<50 reads/day).
+- Defined BigQuery raw staging tables `raw_firebase_clients` and `raw_firebase_jobs` with unified views.
+
+#### 🔄 Data Flow & API Infrastructure
+- Created GCP Enabled APIs, Free-Tier Quotas & Zero-Cost Financial Ledger ([`documentation/tech-stack/08_gcp_apis_and_free_tier_limits.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/08_gcp_apis_and_free_tier_limits.md)).
+- Documented complete inventory of 12 Google APIs (Gmail, Apps Script, Drive, Sheets, BigQuery, Firestore, Firebase, People, Calendar, Admin SDK) with exact free quotas.
+- Formalized zero-surprise-billing safeguards: skipped paid Secret Manager, zero VM compute, 100% Google Workspace & GCP India Free Tier (₹0.00/month).
+
+#### 🎨 UI / UX & Documentation
+- Updated master documentation and tech-stack indexes to include modules 07, 08, and data flow blueprints.
+  
 
 #### 🧠 Data Logic
 - Established 3-environment silo architecture (`dev`, `test`, `prod`) with automatic `DRY_RUN_MODE` toggling.

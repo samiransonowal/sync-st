@@ -46,7 +46,9 @@ Index of active architectural specifications and source document references for 
 - **[`tech-stack/05_security_and_credentials.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/05_security_and_credentials.md)** — Security, OAuth & Credential Isolation
 - **[`tech-stack/06_verification_and_dry_runs.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/06_verification_and_dry_runs.md)** — 5-Layer Testing Architecture
 - **[`tech-stack/07_developer_environment_and_os_support.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/07_developer_environment_and_os_support.md)** — Cross-Platform OS Support & Workstation Diagnostics
+- **[`tech-stack/08_gcp_apis_and_free_tier_limits.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/08_gcp_apis_and_free_tier_limits.md)** — GCP Enabled APIs, Quota Limits & ₹0 Cost Control
 - **[`tech-stack/tech_stack_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/tech_stack_index.md)** — Tech Stack Master Index
+- **[`data-flow/firebase_ingestion_specification.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/data-flow/firebase_ingestion_specification.md)** — Legacy Firebase Firestore Ingestion & Delta Sync Spec
 
 ---
 

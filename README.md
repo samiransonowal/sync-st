@@ -1,6 +1,6 @@
 # ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
 
-**Release Version:** `v0.7` (*gas-cicd-pipeline*)  
+**Release Version:** `v0.8` (*services_apis_enabled*)  
 **Shortcode:** `ST-IN-gen`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
@@ -124,6 +124,7 @@ python engine/python-scripts/sync_users.py
 
 ## 🏷️ Release History Summary
 
+- **v0.8 (`services_apis_enabled`)**: GCP Enabled APIs & Zero-Cost Financial Ledger (`08_gcp_apis_and_free_tier_limits.md`), legacy Firebase web app ingestion specification (`firebase_ingestion_specification.md`), and raw staging schema for Firestore collections.
 - **v0.7 (`gas-cicd-pipeline`)**: Automated Google Apps Script CI/CD deployment (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) with branch-to-project mapping, cross-platform workstation diagnostic suite (`scripts/check_dev_environment.py`), STEM User Registry integration (`constants.gs`), and full OS support documentation.
 - **v0.6 (`verification`)**: Created System Integrity & Validation Suite (`test_system_integrity.py` - 100% pass), BigQuery data flow dry runs, and tech stack verification module (`06_verification_and_dry_runs.md`).
 - **v0.5 (`user-details`)**: Provisioned exact verified Google Workspace Admin Directory data (`customer_id: C00yqau03`), created formatted `user_log.json`, and integrated account aliases/phones into `users.yaml` & `sync_users.py`.
