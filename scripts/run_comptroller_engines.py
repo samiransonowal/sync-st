@@ -64,7 +64,8 @@ def run_all():
                     "remark": r[21] if len(r) > 21 else ""
                 })
 
-        process_aging_and_reminders(parsed_invoices, dry_run=False)
+        # Run in simulation / test mode by default until user approval
+        process_aging_and_reminders(parsed_invoices, dry_run=True)
 
     except Exception as e:
         print(f"❌ Error during payment aging engine: {e}")
