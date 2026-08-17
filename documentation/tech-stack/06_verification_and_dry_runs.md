@@ -12,31 +12,34 @@
 
 ```text
  ┌─────────────────────────────────────────────────────────────────────┐
- │ LAYER 1 — STATIC INTEGRITY (Local Python, pre-deployment)           │
- │  • YAML & JSON user directory alignment (users.yaml ↔ users.json)  │
- │  • GSTIN (27AAMCC8604R1ZV) & PAN (AAMCC8604R) regex bounds         │
- │  • IST Timezone & serial YYYYMMDD date formatter bounds             │
- │  • Intra (9%/9%) & Inter (18%) GST + TDS (10%) tax math            │
+ │ LAYER 1 — STATIC INTEGRITY & OS DEV ENVIRONMENT (Local Python)      │
+ │  • Dev Workstation Diagnostic: scripts/check_dev_environment.py     │
+ │  • OS support: Windows 11, macOS, Debian/Ubuntu, Rocky Linux (VFX)  │
+ │  • YAML & JSON user directory alignment (users.yaml ↔ users.json)   │
+ │  • GSTIN (27AAMCC8604R1ZV) & PAN (AAMCC8604R) regex bounds          │
+ │  • IST Timezone & serial YYYYMMDD date formatter bounds              │
+ │  • Intra (9%/9%) & Inter (18%) GST + TDS (10%) tax math             │
  └──────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
  ┌─────────────────────────────────────────────────────────────────────┐
- │ LAYER 2 — GAS SELF-TESTS (engine/google-apps-script/6_SelfTest.gs) │
- │  • DRY_RUN_MODE is active guard                                     │
- │  • COMPANY_INFO.GSTIN & PAN regex (mirrored from Python Layer 1)   │
- │  • All 4 required sheet tabs exist (GENERATOR, ACCOUNTS, LOG, PT)  │
- │  • INVOICES_GENERATED Drive folder reachable by script              │
- │  • formatDateYYYYMMDD() produces valid 8-digit string               │
- │  • GST intra/inter-state & TDS math (same bounds as Layer 1)       │
+ │ LAYER 2 — GAS SELF-TESTS (engine/google-apps-script/6_SelfTest.gs)  │
+ │  • Test 1: DRY_RUN_MODE is active guard                             │
+ │  • Test 2: COMPANY_INFO.GSTIN & PAN regex bounds                    │
+ │  • Test 3: Required sheet tabs exist (GENERATOR, ACCOUNTS, LOG, PT) │
+ │  • Test 4: INVOICES_GENERATED Drive folder reachable by script       │
+ │  • Test 5: formatDateYYYYMMDD() produces valid 8-digit string        │
+ │  • Test 6: GST intra/inter-state & TDS math                         │
+ │  • Test 7: STEM External User Registry spreadsheet reachability    │
  └──────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
  ┌─────────────────────────────────────────────────────────────────────┐
- │ LAYER 3 — DRY RUN INVOICE FLOW (GAS, DRY_RUN_MODE = true)          │
- │  • PDF + HTML generated normally in Drive (visual check)           │
- │  • Gmail send SUPPRESSED — logs "[DRY RUN] Email skipped"          │
- │  • Discord ping SUPPRESSED — logs "[DRY RUN] Discord skipped"      │
- │  • Invoice_Log row written with "[DRY RUN]" prefix                 │
+ │ LAYER 3 — DRY RUN INVOICE FLOW (GAS, DRY_RUN_MODE = true)           │
+ │  • PDF + HTML generated normally in Drive (visual check)            │
+ │  • Gmail send SUPPRESSED — logs "[DRY RUN] Email skipped"           │
+ │  • Discord ping SUPPRESSED — logs "[DRY RUN] Discord skipped"       │
+ │  • Invoice_Log row written with "[DRY RUN]" prefix                  │
  └──────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
