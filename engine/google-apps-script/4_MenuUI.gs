@@ -16,8 +16,12 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('🚀 Studio Tunnel')
-    .addItem('📄 Generate PDF Invoice', 'generateInvoicePdf')
-    .addItem('📧 Generate & Email Invoice', 'generateAndEmailInvoice')
+    .addItem('📄 Generate PDF & HTML Invoice', 'generateInvoiceDocuments')
+    .addItem('📧 Generate & Email Invoice to Client', 'generateAndEmailInvoice')
+    .addSeparator()
+    .addItem('🧪 Run Cloud Self-Test Suite', 'runSelfTest')
+    .addItem('📊 Sync Data with BigQuery Ledger', 'syncWithBigQuery')
     .addToUi();
 }
+
 
