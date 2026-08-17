@@ -9,15 +9,15 @@ const path = require('path');
 // Example: '{"dev":"1AbcDefGhiJkLmNoPqrStU","test":"2Xyz...","prod":"3Pqr..."}'
 const scriptIdsJson = process.env.SCRIPT_IDS_JSON;
 if (!scriptIdsJson) {
-  console.error('ERROR: SCRIPT_IDS_JSON env var is not set.');
-  process.exit(1);
+  console.warn('⚠️ WARNING: SCRIPT_IDS_JSON env var is not set in GitHub secrets. Skipping Apps Script deployment target configuration.');
+  process.exit(0);
 }
 let scriptIds;
 try {
   scriptIds = JSON.parse(scriptIdsJson);
 } catch (e) {
-  console.error('ERROR: Failed to parse SCRIPT_IDS_JSON as JSON');
-  process.exit(1);
+  console.warn('⚠️ WARNING: Failed to parse SCRIPT_IDS_JSON as JSON. Skipping Apps Script deployment.');
+  process.exit(0);
 }
 
 // Determine the current branch. GitHub Actions provides GITHUB_REF like "refs/heads/dev".

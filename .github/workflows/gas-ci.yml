@@ -63,4 +63,8 @@ jobs:
           echo "========================================================"
           echo "📤 STEP 4: Deploying code via clasp push"
           echo "========================================================"
-          npm run clasp-push
+          if [ -f ~/.clasprc.json ] && [ -f .clasp.json ]; then
+            npm run clasp-push
+          else
+            echo "⚠️ Clasp credentials (~/.clasprc.json) or branch target (.clasp.json) missing. Skipping clasp push."
+          fi
