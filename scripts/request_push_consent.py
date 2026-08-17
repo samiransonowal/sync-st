@@ -49,8 +49,12 @@ def get_git_info():
 
 def get_gmail_service(repo_root):
     creds = None
-    token_path = repo_root / "credentials" / "private" / "gmail_token.json"
-    client_secret_path = repo_root / "credentials" / "private" / "client_secret_972643538415-iotqsas6uh5uanjjgdmal16phvfnsvup.apps.googleusercontent.com.json"
+    private_dir = repo_root / "credentials" / "private"
+    token_path = private_dir / "gmail_token.json"
+    
+    # Find any client_secret_*.json file in credentials/private
+    client_secret_candidates = list(private_dir.glob("client_secret_*.json"))
+    client_secret_path = client_secret_candidates[0] if client_secret_candidates else (private_dir / "client_secret_972643538415.json")
 
     if token_path.exists():
         try:
@@ -68,7 +72,7 @@ def get_gmail_service(repo_root):
 
     if not creds or not creds.valid:
         if not client_secret_path.exists():
-            print("[WARN] Client secret not found; cannot send push approval email automatically.")
+            print(f"[WARN] Client secret not found at {client_secret_path}; cannot send push approval email automatically.")
             return None, None
 
         with open(client_secret_path, 'r', encoding='utf-8') as f:
@@ -88,9 +92,63 @@ def get_gmail_service(repo_root):
             "prompt": "consent"
         }
         auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(auth_params)
-        return None, auth_url
 
-    return build('gmail', 'v1', credentials=creds), None
+        print("\n" + "=" * 75, flush=True)
+        print("🔑 GOOGLE CLOUD OAUTH AUTHORIZATION (Project: st-in-gen)", flush=True)
+        print("=" * 75, flush=True)
+        print("1. Opening Google sign-in page in your browser...")
+        print(f"2. Sign in with: {SENDER_EMAIL}")
+        print("3. Click 'Allow / Continue' to grant Gmail send permission.")
+        print("4. Copy the Authorization Code (or address bar URL) and paste it below.")
+        print("=" * 75, flush=True)
+        print(f"\n👉 Direct Link:\n{auth_url}\n", flush=True)
+        print("=" * 75, flush=True)
+
+        try:
+            import webbrowser
+            webbrowser.open(auth_url, new=2)
+        except Exception:
+            pass
+
+        auth_code = input("👉 Paste the Authorization Code (or press Enter to skip automatic email): ").strip()
+        if not auth_code:
+            print("[INFO] Automatic email skipped.")
+            return None
+
+        if "code=" in auth_code:
+            parsed = urllib.parse.urlparse(auth_code)
+            params = urllib.parse.parse_qs(parsed.query)
+            if "code" in params:
+                auth_code = params["code"][0]
+
+        token_url = "https://oauth2.googleapis.com/token"
+        data = urllib.parse.urlencode({
+            "code": auth_code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code"
+        }).encode('utf-8')
+
+        req = urllib.request.Request(token_url, data=data, method="POST")
+        with urllib.request.urlopen(req) as resp:
+            token_response = json.loads(resp.read().decode('utf-8'))
+
+        creds = Credentials(
+            token=token_response.get("access_token"),
+            refresh_token=token_response.get("refresh_token"),
+            token_uri=token_url,
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=SCOPES
+        )
+
+        token_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(token_path, 'w', encoding='utf-8') as f:
+            f.write(creds.to_json())
+        print("[OK] OAuth token saved to credentials/private/gmail_token.json\n", flush=True)
+
+    return build('gmail', 'v1', credentials=creds)
 
 
 def create_consent_email(branch, commit_hash, commit_msg, consent_url):
@@ -183,7 +241,7 @@ def main():
     print(f"  Consent  : {consent_url}")
     print("=" * 75 + "\n")
 
-    service, auth_url = get_gmail_service(repo_root)
+    service = get_gmail_service(repo_root)
 
     if service:
         msg = create_consent_email(branch, commit_hash, commit_msg, consent_url)
