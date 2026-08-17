@@ -17,6 +17,7 @@ Respects admin opt-out: Skips sending if Notes/Remarks contain '[PAUSE REMINDERS
 
 import os
 import sys
+import re
 import base64
 from datetime import datetime, timezone
 from pathlib import Path
@@ -152,6 +153,17 @@ def process_aging_and_reminders(invoices, dry_run=False):
         amt = inv.get('amount', '0.00')
         pay_status = inv.get('payment_status', 'Unpaid').lower()
         notes = inv.get('notes', '') + " " + inv.get('remark', '')
+
+        # Clean and sanitize email header string (handle newlines, space separators)
+        raw_email = inv.get('email', '').strip()
+        email_list = []
+        if raw_email:
+            for item in re.split(r'[\s,\n\r;]+', raw_email):
+                item_clean = item.strip()
+                if item_clean and "@" in item_clean and "." in item_clean:
+                    email_list.append(item_clean)
+        
+        email = ", ".join(email_list)
 
         # Skip paid or written-off invoices
         if pay_status in ('paid', 'cleared', 'written-off'):

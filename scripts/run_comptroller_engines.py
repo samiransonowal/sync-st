@@ -123,6 +123,26 @@ def run_all():
     except Exception as e:
         print(f"❌ Error during bank reconciliation stage: {e}")
 
+    # Step 4: Email Intelligent Agent Listener & Monthly CA Dispatch Trigger
+    print("\n>>> [STAGE 4] Running Email Intelligent Agent & Monthly CA Compliance Checker...")
+    try:
+        from email_agent_listener import process_incoming_email_commands
+        from ca_compliance_dispatcher import dispatch_ca_compliance_package
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date()
+        
+        # Trigger CA package automatically on 1st of month
+        if today.day == 1:
+            print("Today is the 1st of the month! Triggering Monthly CA Compliance Dispatcher...")
+            dispatch_ca_compliance_package(dry_run=True)
+        
+        # Listen for unread admin email commands
+        process_incoming_email_commands()
+
+    except Exception as e:
+        print(f"❌ Error during email agent listener stage: {e}")
+
     print("\n================================================================================")
     print("✨ COMPTROLLER MASTER ENGINE RUN COMPLETED!")
     print("================================================================================")
