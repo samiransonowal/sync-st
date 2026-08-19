@@ -125,8 +125,9 @@ def run_system_tests():
         assert "st_fin_com_prog_test" in config_content, "Missing test dataset in 0_Config.gs"
         assert "st_fin_com_prog_pml" in config_content, "Missing pml dataset in 0_Config.gs"
         assert "st-in-gen" in config_content, "Missing single GCP project st-in-gen in 0_Config.gs"
+        assert "ACCOUNTS_ID" in config_content and "PROJECT_TRACKER_ID" in config_content, "Missing dedicated 3-tier Google Sheets config in 0_Config.gs"
 
-        print("[PASS] Test 6: 3-Tier Environment Standards (Dev, Test, PML) & BQ Datasets Verified")
+        print("[PASS] Test 6: 3-Tier Standards (Dev, Test, PML), BQ Datasets & Dedicated Google Sheets Verified")
         passed_tests += 1
     except Exception as e:
         print(f"[FAIL] Test 6: 3-Tier Environment Verification -> {e}")

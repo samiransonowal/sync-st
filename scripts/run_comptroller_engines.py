@@ -46,11 +46,12 @@ def run_all(env='dev', confirm_pml=False):
     print("\n>>> [STAGE 2] Running Payment Aging & Reminder Dispatch Engine...")
     try:
         # Import sheets service helper
-        from scripts.bigquery_sync_pipeline import get_sheets_service, ACCOUNTS_SHEET_ID
+        from scripts.bigquery_sync_pipeline import get_sheets_service, SHEETS_TIERS
         sheets_service = get_sheets_service()
+        acct_sheet_id = SHEETS_TIERS.get(env.lower(), SHEETS_TIERS['dev'])['accounts_id']
 
         res = sheets_service.spreadsheets().values().get(
-            spreadsheetId=ACCOUNTS_SHEET_ID,
+            spreadsheetId=acct_sheet_id,
             range="'Invoices & Dispatch'!A2:AA"
         ).execute()
         acct_rows = res.get('values', [])

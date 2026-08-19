@@ -27,7 +27,7 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 | **GCP Project** | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) |
 | **BigQuery Dataset** | `st_fin_com_prog_dev` | `st_fin_com_prog_test` | `st_fin_com_prog_pml` |
 | **GCP Region** | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) |
-| **Google Sheets** | Sandbox Dev copy / Mock sheets | Sandbox Staging copy | Live Master (`PROJECT TRACKER`, `ACCOUNTS`) |
+| **Google Sheets Suite** | 📗 **Dev Sheets Suite** (`DEV_ACCOUNTS`, `DEV_PROJECT_TRACKER`, `DEV_STEM`) | 📙 **Test Sheets Suite** (`TEST_ACCOUNTS`, `TEST_PROJECT_TRACKER`, `TEST_STEM`) | 📕 **PML Master Sheets Suite** (`PML_ACCOUNTS`, `PML_PROJECT_TRACKER`, `PML_STEM`) |
 | **Outbound Email** | Suppressed / Internal only | Suppressed / Internal only | Internal review routing + 2-Party prompt |
 
 ---
@@ -49,15 +49,31 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 
 ---
 
-### B. 📊 Google Sheets & Apps Script
-1. **Dynamic Environment Banner**:
+### B. 📊 Dedicated Google Sheets & Apps Script Architecture
+1. **3 Dedicated Sets of Google Sheets**:
+   - **DEV Set (Branch: `dev`)**:
+     - `DEV_ACCOUNTS_SPREADSHEET_ID`: Development copy / sandbox ledger.
+     - `DEV_PROJECT_TRACKER_SPREADSHEET_ID`: Dev daily bookings log.
+     - `DEV_STEM_USER_REGISTRY_ID`: Dev user permissions registry.
+     - Bound GAS project: `ST-IN-gen-dev`.
+   - **TEST Set (Branch: `test`)**:
+     - `TEST_ACCOUNTS_SPREADSHEET_ID`: Isolated automated CI & staging ledger.
+     - `TEST_PROJECT_TRACKER_SPREADSHEET_ID`: Staging daily bookings log.
+     - `TEST_STEM_USER_REGISTRY_ID`: Staging user permissions registry.
+     - Bound GAS project: `ST-IN-gen-test`.
+   - **PML Set (Branch: `pml`)**:
+     - `PML_ACCOUNTS_SPREADSHEET_ID` (`1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A`): Official financial ledger and live invoice repository.
+     - `PML_PROJECT_TRACKER_SPREADSHEET_ID` (`1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0`): Live operations tracker.
+     - `PML_STEM_USER_REGISTRY_ID` (`1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA`): Master user registry.
+     - Bound GAS project: `ST-IN-gen-pml`.
+2. **Dynamic Environment Banner**:
    - When any Google Spreadsheet is opened, the custom menu dynamically reflects the active tier:
      - `🚀 Studio Tunnel [DEV]`
      - `🚀 Studio Tunnel [TEST]`
      - `🚀 Studio Tunnel [PML]`
-2. **Environment & Policy Status Inspector**:
+3. **Environment & Policy Status Inspector**:
    - Accessible via `🚀 Studio Tunnel [...]` > `🛡️ Environment & Governance Status`.
-   - Displays active tier, BigQuery target dataset, and active safety rules.
+   - Displays active tier, BigQuery target dataset, active sheet IDs, and active safety rules.
 3. **Execution Guards**:
    - In `DEV` and `TEST`, `DRY_RUN_MODE = true` ensures no external client emails, Drive overwrites, or live ledger writes can occur.
    - In `PML`, triggering `📧 Generate & Email Invoice to Client` displays an interactive **2-Party Production Confirmation Dialog** requiring explicit user confirmation before dispatching.

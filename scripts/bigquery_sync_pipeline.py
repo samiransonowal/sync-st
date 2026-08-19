@@ -23,14 +23,34 @@ import argparse
 SERVICE_ACCOUNT_FILE = 'credentials/private/service_account.json'
 SHEETS_TOKEN_FILE = 'credentials/private/sheets_token.json'
 
-PROJECT_TRACKER_ID = '1zwcCthO3ysTa3dQAftmchZ-dFjZsWLp76isbWUBYUHY'
-ACCOUNTS_SHEET_ID = '1tp2YOK2Z3QSf_8Q9ngioF1t3bHZVI5eGXEUu5WZ7yms'
-
+# 3-Tier Isolated BigQuery Datasets & Dedicated Google Sheets
 DATASET_TIERS = {
     'dev': 'st_fin_com_prog_dev',
     'test': 'st_fin_com_prog_test',
     'pml': 'st_fin_com_prog_pml'
 }
+
+SHEETS_TIERS = {
+    'dev': {
+        'accounts_id': os.environ.get('DEV_ACCOUNTS_SPREADSHEET_ID', '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A'),
+        'project_tracker_id': os.environ.get('DEV_PROJECT_TRACKER_SPREADSHEET_ID', '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0'),
+        'stem_registry_id': os.environ.get('DEV_STEM_USER_REGISTRY_ID', '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA')
+    },
+    'test': {
+        'accounts_id': os.environ.get('TEST_ACCOUNTS_SPREADSHEET_ID', '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A'),
+        'project_tracker_id': os.environ.get('TEST_PROJECT_TRACKER_SPREADSHEET_ID', '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0'),
+        'stem_registry_id': os.environ.get('TEST_STEM_USER_REGISTRY_ID', '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA')
+    },
+    'pml': {
+        'accounts_id': os.environ.get('PML_ACCOUNTS_SPREADSHEET_ID', '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A'),
+        'project_tracker_id': os.environ.get('PML_PROJECT_TRACKER_SPREADSHEET_ID', '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0'),
+        'stem_registry_id': os.environ.get('PML_STEM_USER_REGISTRY_ID', '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA')
+    }
+}
+
+# Fallback default IDs
+PROJECT_TRACKER_ID = SHEETS_TIERS['dev']['project_tracker_id']
+ACCOUNTS_SHEET_ID = SHEETS_TIERS['dev']['accounts_id']
 
 def get_sheets_service():
     scopes = [
@@ -48,25 +68,32 @@ def get_bigquery_client():
     return bigquery.Client(credentials=creds, project=creds.project_id)
 
 def sync(env='dev', confirm_pml=False):
-    dataset_id = DATASET_TIERS.get(env.lower(), 'st_fin_com_prog_dev')
+    tier = env.lower()
+    dataset_id = DATASET_TIERS.get(tier, 'st_fin_com_prog_dev')
+    sheets_config = SHEETS_TIERS.get(tier, SHEETS_TIERS['dev'])
+    pt_sheet_id = sheets_config['project_tracker_id']
+    acct_sheet_id = sheets_config['accounts_id']
     
     # 🔒 PML 2-Party Confirmation Check
-    if env.lower() == 'pml' and not confirm_pml:
+    if tier == 'pml' and not confirm_pml:
         print("\n🛑 MANDATORY 2-PARTY CONFIRMATION REQUIRED FOR PML:")
         print("Live sync against PML (Production Main Live) requires passing `--confirm-pml`.")
         sys.exit(1)
 
     print("================================================================================")
-    print(f"STARTING BACKEND SYNCHRONIZATION PIPELINE [{env.upper()}] -> Dataset: `{dataset_id}`")
+    print(f"STARTING BACKEND SYNCHRONIZATION PIPELINE [{env.upper()}]")
+    print(f"• BigQuery Dataset  : `{dataset_id}`")
+    print(f"• Project Tracker ID: `{pt_sheet_id}`")
+    print(f"• Accounts Sheet ID : `{acct_sheet_id}`")
     print("================================================================================")
 
     sheets_service = get_sheets_service()
     bq_client = get_bigquery_client()
 
     # 1. Fetch raw Project Tracker data
-    print("\n[Step 1] Reading Project Tracker sheet data...")
+    print(f"\n[Step 1] Reading Project Tracker sheet data (`{pt_sheet_id}`)...")
     pt_result = sheets_service.spreadsheets().values().get(
-        spreadsheetId=PROJECT_TRACKER_ID,
+        spreadsheetId=pt_sheet_id,
         range="'Daily Bookings Log'!A2:U"
     ).execute()
     pt_rows = pt_result.get('values', [])
@@ -77,7 +104,7 @@ def sync(env='dev', confirm_pml=False):
         return
 
     # 2. Ingest into BigQuery `raw_project_tracker`
-    print("\n[Step 2] Ingesting raw entries into BigQuery `st_fin_com_prog.raw_project_tracker`...")
+    print(f"\n[Step 2] Ingesting raw entries into BigQuery `{dataset_id}.raw_project_tracker`...")
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     bq_rows_to_insert = []
     
@@ -119,9 +146,9 @@ def sync(env='dev', confirm_pml=False):
     print(f"Successfully inserted/updated {len(bq_rows_to_insert)} raw rows in BigQuery `{table_id}`.")
 
     # 3. Read existing Accounts Sheet records to prevent duplicates
-    print("\n[Step 3] Fetching existing Accounts Sheet entries to prevent duplicates...")
+    print(f"\n[Step 3] Fetching existing Accounts Sheet entries (`{acct_sheet_id}`)...")
     acct_result = sheets_service.spreadsheets().values().get(
-        spreadsheetId=ACCOUNTS_SHEET_ID,
+        spreadsheetId=acct_sheet_id,
         range="'Invoices & Dispatch'!A2:AA"
     ).execute()
     existing_acct_rows = acct_result.get('values', [])
@@ -242,9 +269,9 @@ def sync(env='dev', confirm_pml=False):
             })
 
     if new_invoice_rows:
-        print(f"Pushing {len(new_invoice_rows)} newly synchronized invoice rows into Accounts Sheet...")
+        print(f"Pushing {len(new_invoice_rows)} newly synchronized invoice rows into Accounts Sheet (`{acct_sheet_id}`)...")
         sheets_service.spreadsheets().values().append(
-            spreadsheetId=ACCOUNTS_SHEET_ID,
+            spreadsheetId=acct_sheet_id,
             range="'Invoices & Dispatch'!A2",
             valueInputOption="USER_ENTERED",
             body={"values": new_invoice_rows}

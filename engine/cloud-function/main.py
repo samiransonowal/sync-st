@@ -6,9 +6,9 @@ import os
 import datetime
 
 # Ingestion configuration & dynamic dataset routing (Dev, Test, PML)
-PROJECT_TRACKER_ID = os.environ.get('PROJECT_TRACKER_ID', '1zwcCthO3ysTa3dQAftmchZ-dFjZsWLp76isbWUBYUHY')
-ACCOUNTS_SHEET_ID = os.environ.get('ACCOUNTS_SHEET_ID', '1tp2YOK2Z3QSf_8Q9ngioF1t3bHZVI5eGXEUu5WZ7yms')
-DATASET_ID = os.environ.get('BIGQUERY_DATASET_ID', 'st_fin_com_prog_dev')
+PROJECT_TRACKER_ID = os.environ.get('PROJECT_TRACKER_ID', os.environ.get('DEV_PROJECT_TRACKER_SPREADSHEET_ID', '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0'))
+ACCOUNTS_SHEET_ID = os.environ.get('ACCOUNTS_SHEET_ID', os.environ.get('DEV_ACCOUNTS_SPREADSHEET_ID', '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A'))
+DATASET_ID = os.environ.get('BIGQUERY_DATASET_ID', os.environ.get('BIGQUERY_DATASET_DEV', 'st_fin_com_prog_dev'))
 
 @functions_framework.http
 def sync_pipeline_http(request):

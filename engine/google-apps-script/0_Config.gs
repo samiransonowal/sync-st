@@ -12,36 +12,72 @@
 // 3. PML  : Production Main Live (ST-IN-gen-prod -> st_fin_com_prog_pml)
 // ----------------------------------------------------------------------------
 var ENV_CONFIG = {
-  ACTIVE_ENV: 'PML', // 'DEV' | 'TEST' | 'PML'
+  ACTIVE_ENV: 'DEV', // 'DEV' | 'TEST' | 'PML'
   TIERS: {
     DEV: {
       NAME: 'Dev (Development Sandbox)',
       BRANCH: 'dev',
       PROJECT_TITLE: 'ST-IN-gen-dev',
       DRY_RUN: true,
-      DATASET_ID: 'st_fin_com_prog_dev'
+      DATASET_ID: 'st_fin_com_prog_dev',
+      SHEETS: {
+        ACCOUNTS_ID: '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A',
+        PROJECT_TRACKER_ID: '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0',
+        STEM_REGISTRY_ID: '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA'
+      }
     },
     TEST: {
       NAME: 'Test (Automated CI Sandbox)',
       BRANCH: 'test',
       PROJECT_TITLE: 'ST-IN-gen-test',
       DRY_RUN: true,
-      DATASET_ID: 'st_fin_com_prog_test'
+      DATASET_ID: 'st_fin_com_prog_test',
+      SHEETS: {
+        ACCOUNTS_ID: '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A',
+        PROJECT_TRACKER_ID: '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0',
+        STEM_REGISTRY_ID: '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA'
+      }
     },
     PML: {
       NAME: 'PML (Production Main Live)',
       BRANCH: 'pml',
       PROJECT_TITLE: 'ST-IN-gen-pml',
       DRY_RUN: false,
-      DATASET_ID: 'st_fin_com_prog_pml'
+      DATASET_ID: 'st_fin_com_prog_pml',
+      SHEETS: {
+        ACCOUNTS_ID: '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A',
+        PROJECT_TRACKER_ID: '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0',
+        STEM_REGISTRY_ID: '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA'
+      }
     }
   }
 };
 
 // Active environment shortcuts (auto-synced via scripts/setEnv.js during CI/CD)
-var DRY_RUN_MODE = false;
-var BIGQUERY_DATASET_ID = 'st_fin_com_prog_pml';
+var DRY_RUN_MODE = true;
+var BIGQUERY_DATASET_ID = 'st_fin_com_prog_dev';
 var GCP_PROJECT_ID = 'st-in-gen';
+
+// 3-Tier Active Google Sheets Shortcuts
+var ACCOUNTS_SPREADSHEET_ID = '1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A';
+var PROJECT_TRACKER_SPREADSHEET_ID = '1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0';
+var STEM_USER_REGISTRY_ID = '1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA';
+
+/**
+ * Returns the dedicated sheets configuration for the currently active environment tier.
+ * @returns {Object} { ACCOUNTS_ID, PROJECT_TRACKER_ID, STEM_REGISTRY_ID }
+ */
+function getActiveSheetsConfig() {
+  var activeTier = (typeof ENV_CONFIG !== 'undefined' && ENV_CONFIG.ACTIVE_ENV) ? ENV_CONFIG.ACTIVE_ENV : 'DEV';
+  if (ENV_CONFIG && ENV_CONFIG.TIERS && ENV_CONFIG.TIERS[activeTier] && ENV_CONFIG.TIERS[activeTier].SHEETS) {
+    return ENV_CONFIG.TIERS[activeTier].SHEETS;
+  }
+  return {
+    ACCOUNTS_ID: ACCOUNTS_SPREADSHEET_ID,
+    PROJECT_TRACKER_ID: PROJECT_TRACKER_SPREADSHEET_ID,
+    STEM_REGISTRY_ID: STEM_USER_REGISTRY_ID
+  };
+}
 
 // ----------------------------------------------------------------------------
 // 🧪 TEST CLIENT — Used by 6_SelfTest.gs for dry run invoice generation
