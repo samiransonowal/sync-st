@@ -1,16 +1,23 @@
 -- ============================================================================
 -- ST-fin-com-prog (Studio Tunnel Financial Comptroller Program)
 -- BIGQUERY SCHEMA & DDL SPECIFICATION
--- GCP Project: st-in-gen (972643538415)
--- Dataset: st_fin_com_prog (Region: asia-south1 Mumbai)
+-- GCP Project: st-in-gen (972643538415) — Single GCP Project
+-- 3-Tier Datasets:
+--   1. Dev  : `st-in-gen.st_fin_com_prog_dev`
+--   2. Test : `st-in-gen.st_fin_com_prog_test`
+--   3. PML  : `st-in-gen.st_fin_com_prog_pml` (alias: `st_fin_com_prog`)
+-- Location: asia-south1 (Mumbai)
 -- ============================================================================
 
--- 1. CREATE MASTER DATASET
-CREATE SCHEMA IF NOT EXISTS `st-in-gen.st_fin_com_prog`
-OPTIONS (
-  location = 'asia-south1',
-  description = 'Studio Tunnel Financial Comptroller Master Data Warehouse'
-);
+-- 1. CREATE DATASET (Execute for dev, test, or pml as needed)
+CREATE SCHEMA IF NOT EXISTS `st-in-gen.st_fin_com_prog_dev`
+OPTIONS (location = 'asia-south1', description = 'Studio Tunnel Development Sandbox Dataset');
+
+CREATE SCHEMA IF NOT EXISTS `st-in-gen.st_fin_com_prog_test`
+OPTIONS (location = 'asia-south1', description = 'Studio Tunnel Automated CI Test Sandbox Dataset');
+
+CREATE SCHEMA IF NOT EXISTS `st-in-gen.st_fin_com_prog_pml`
+OPTIONS (location = 'asia-south1', description = 'Studio Tunnel Production Main Live (PML) Financial Ledger Dataset');
 
 -- ----------------------------------------------------------------------------
 -- 2. RAW STAGING & FIREBASE INGESTION TABLES

@@ -5,12 +5,43 @@
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 🧪 DRY RUN MODE — SET TO false FOR LIVE PRODUCTION
-// When true: PDF + HTML are generated normally, Invoice_Log is written.
-//            Gmail sends and Discord pings are SKIPPED (safe for testing).
-// When false: Full production flow (email sent, Discord notified).
+// 🌐 3-TIER ENVIRONMENT ARCHITECTURE (Dev, Test, PML)
 // ----------------------------------------------------------------------------
-var DRY_RUN_MODE = true;
+// 1. Dev  : Development Sandbox (ST-IN-gen-dev -> st_fin_com_prog_dev)
+// 2. Test : Automated CI Sandbox (ST-IN-gen-test -> st_fin_com_prog_test)
+// 3. PML  : Production Main Live (ST-IN-gen-prod -> st_fin_com_prog_pml)
+// ----------------------------------------------------------------------------
+var ENV_CONFIG = {
+  ACTIVE_ENV: 'PML', // 'DEV' | 'TEST' | 'PML'
+  TIERS: {
+    DEV: {
+      NAME: 'Dev (Development Sandbox)',
+      BRANCH: 'dev',
+      PROJECT_TITLE: 'ST-IN-gen-dev',
+      DRY_RUN: true,
+      DATASET_ID: 'st_fin_com_prog_dev'
+    },
+    TEST: {
+      NAME: 'Test (Automated CI Sandbox)',
+      BRANCH: 'test',
+      PROJECT_TITLE: 'ST-IN-gen-test',
+      DRY_RUN: true,
+      DATASET_ID: 'st_fin_com_prog_test'
+    },
+    PML: {
+      NAME: 'PML (Production Main Live)',
+      BRANCH: 'pml',
+      PROJECT_TITLE: 'ST-IN-gen-pml',
+      DRY_RUN: false,
+      DATASET_ID: 'st_fin_com_prog_pml'
+    }
+  }
+};
+
+// Active environment shortcuts (auto-synced via scripts/setEnv.js during CI/CD)
+var DRY_RUN_MODE = false;
+var BIGQUERY_DATASET_ID = 'st_fin_com_prog_pml';
+var GCP_PROJECT_ID = 'st-in-gen';
 
 // ----------------------------------------------------------------------------
 // 🧪 TEST CLIENT — Used by 6_SelfTest.gs for dry run invoice generation

@@ -72,15 +72,15 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 | Branch | Permission Level | Consent Requirement | Purpose / Scope |
 | :--- | :--- | :--- | :--- |
-| **`dev` (Development)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
-| **`test` (Testing)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
-| **`prod` / `main` (Production)** | `APPROVAL REQUIRED` | **Consent required from `lab@`** | Production deployment requires approval email dispatch & "Give Consent" button click by `lab@studiotunnel.com` |
+| **`dev` (Dev)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
+| **`test` (Test)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
+| **`pml` (PML)** | `APPROVAL REQUIRED` | **Consent required from `lab@`** | Production deployment requires approval email dispatch & "Give Consent" button click by `lab@studiotunnel.com` |
 
 > [!CAUTION]
 > ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
 > 1. **`dev` & `test` Branches**: Pushing to development (`dev`) and testing (`test`) branches does **not** require any prior approval or permission. Samiran (`samiran@studiotunnel.com`) has unrestricted push access to `dev` and `test`.
-> 2. **`prod` (`main`) Production Branch**: Pushing or promoting code to the production branch (`prod` / `main`) **REQUIRES PRIOR CONSENT FROM `lab@studiotunnel.com`**.
-> 3. **Production Consent Mechanism**: For production pushes, `lab@studiotunnel.com` receives an automated approval request email sent from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the interactive **"Give Consent"** button or hyperlink inside the email.
+> 2. **`pml` (PML - Production Main Live) Branch**: Pushing or promoting code to the `pml` branch **REQUIRES PRIOR CONSENT FROM `lab@studiotunnel.com`**.
+> 3. **Production Consent Mechanism**: For PML pushes, `lab@studiotunnel.com` receives an automated approval request email sent from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the interactive **"Give Consent"** button or hyperlink inside the email.
 
 ---
 

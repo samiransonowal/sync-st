@@ -85,14 +85,18 @@ function syncWithBigQuery() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var logSheet = ss.getSheetByName(SHEET_NAMES.LOG);
     var rowCount = logSheet ? logSheet.getLastRow() - 1 : 0;
+    var activeTier = (typeof ENV_CONFIG !== 'undefined' && ENV_CONFIG.ACTIVE_ENV) ? ENV_CONFIG.ACTIVE_ENV : 'DEV';
+    var targetDataset = (typeof BIGQUERY_DATASET_ID !== 'undefined') ? BIGQUERY_DATASET_ID : 'st_fin_com_prog_dev';
+    var gcpProject = (typeof GCP_PROJECT_ID !== 'undefined') ? GCP_PROJECT_ID : 'st-in-gen';
     
-    Logger.log('[BIGQUERY SYNC] Checking rows to sync: ' + rowCount);
+    Logger.log('[BIGQUERY SYNC] Environment: ' + activeTier + ' | Checking rows to sync: ' + rowCount);
     ui.alert(
-      '📊 BigQuery Data Warehouse Sync\n\n' +
-      '• Target Dataset: st-in-gen.st_fin_com_prog\n' +
+      '📊 BigQuery Data Warehouse Sync (' + activeTier + ')\n\n' +
+      '• Target GCP Project: ' + gcpProject + '\n' +
+      '• Target Dataset: ' + gcpProject + '.' + targetDataset + '\n' +
       '• Region: asia-south1 (Mumbai)\n' +
       '• Log Records Staged: ' + rowCount + '\n\n' +
-      'Status: Ready. Automated sync runs via BigQuery Data Transfer.'
+      'Status: Ready. Automated sync routes to isolated ' + activeTier + ' dataset.'
     );
   } catch (e) {
     ui.alert('⚠️ BigQuery Sync Notice: ' + e.message);

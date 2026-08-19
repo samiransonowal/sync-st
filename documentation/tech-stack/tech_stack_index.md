@@ -31,3 +31,6 @@ This directory documents the technical choices, frameworks, databases, APIs, and
 
 8. **[`08_gcp_apis_and_free_tier_limits.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/08_gcp_apis_and_free_tier_limits.md)**:
    - Comprehensive inventory of all enabled Google APIs, Spark & BigQuery free-tier quota limits, skipped paid services, and ₹0/month cost-control guarantees.
+
+9. **[`ingestion-pipeline/sheets_to_bigquery_pipeline_guide.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/ingestion-pipeline/sheets_to_bigquery_pipeline_guide.md)**:
+   - Google Sheets to BigQuery Ingestion Architecture, event-driven vs batch schedules, data contracts, and Phase 2 implementation roadmap.

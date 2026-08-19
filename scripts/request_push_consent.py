@@ -235,7 +235,7 @@ def main():
     print("🔒 ST-IN-gen — DISPATCH PRODUCTION GIT PUSH CONSENT REQUEST EMAIL")
     print("=" * 75)
     print("  [POLICY] Push to 'dev' & 'test' branches is UNRESTRICTED for Samiran.")
-    print("  [POLICY] Production ('prod' / 'main') deployment requires approval from lab@studiotunnel.com.")
+    print("  [POLICY] PML ('pml') production deployment requires approval from lab@studiotunnel.com.")
     print("-" * 75)
     print(f"  Sender   : {SENDER_EMAIL}")
     print(f"  Recipient: {RECIPIENT_EMAIL}")

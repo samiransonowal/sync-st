@@ -8,11 +8,11 @@ This guide documents the automated Google Apps Script CI/CD pipeline for **ST-IN
 
 The deployment architecture uses three isolated Google Apps Script projects tied to specific Git branches:
 
-| Environment | Branch | Apps Script Title | Mode / Permissions |
-|-------------|--------|-------------------|-------------------|
-| **Development** | `dev` | `ST-IN-gen-dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Testing / Staging** | `test` | `ST-IN-gen-test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
-| **Production** | `prod` (or `main`) | `ST-IN-gen-prod` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
+| Environment Tier | Git Branch | Apps Script Title | BigQuery Dataset ID | Mode / Permissions |
+|---|---|---|---|---|
+| **Dev** | `dev` | `ST-IN-gen-dev` | `st_fin_com_prog_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `ST-IN-gen-test` | `st_fin_com_prog_test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
+| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
 
 ---
 
@@ -40,9 +40,9 @@ clasp create --title "ST-IN-gen-dev" --type standalone --rootDir ./engine/google
 clasp create --title "ST-IN-gen-test" --type standalone --rootDir ./engine/google-apps-script
 # -> Output provides <TEST_SCRIPT_ID>
 
-# Create PROD project
-clasp create --title "ST-IN-gen-prod" --type standalone --rootDir ./engine/google-apps-script
-# -> Output provides <PROD_SCRIPT_ID>
+# Create PML project
+clasp create --title "ST-IN-gen-pml" --type standalone --rootDir ./engine/google-apps-script
+# -> Output provides <PML_SCRIPT_ID>
 ```
 
 Construct the `SCRIPT_IDS_JSON` configuration:
@@ -50,8 +50,7 @@ Construct the `SCRIPT_IDS_JSON` configuration:
 {
   "dev": "<DEV_SCRIPT_ID>",
   "test": "<TEST_SCRIPT_ID>",
-  "prod": "<PROD_SCRIPT_ID>",
-  "main": "<PROD_SCRIPT_ID>"
+  "pml": "<PML_SCRIPT_ID>"
 }
 ```
 
@@ -89,7 +88,7 @@ npm run clasp-push
 
 ## 6. Pipeline Workflow Summary
 
-1. Pushes to `dev`, `test`, or `prod` trigger `.github/workflows/gas-ci.yml`.
+1. Pushes to `dev`, `test`, or `pml` trigger `.github/workflows/gas-ci.yml`.
 2. Python validates schemas (`users.yaml`, `users.json`, GSTIN/PAN regex rules).
 3. `scripts/setEnv.js` detects the branch, writes `.clasp.json` with the corresponding `scriptId`, and toggles `DRY_RUN_MODE` in `0_Config.gs`.
 4. Clasp authenticates and deploys the code directly to Google Apps Script.
@@ -101,6 +100,6 @@ npm run clasp-push
 > [!CAUTION]
 > ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
 > - **`dev` & `test` Branches**: Free, unrestricted commit and push permission for Samiran (`samiran@studiotunnel.com`). **No prior permission required.**
-> - **`prod` (`main`) Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the production branch requires prior explicit consent from `lab@studiotunnel.com`.
+> - **`pml` Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the `pml` branch requires prior explicit consent from `lab@studiotunnel.com`.
 > - **Production Consent Email**: To grant production push permission, `lab@studiotunnel.com` receives an automated approval email from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the **"Give Consent"** button or hyperlink inside the email.
 

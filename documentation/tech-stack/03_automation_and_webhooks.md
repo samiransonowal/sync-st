@@ -11,13 +11,13 @@ The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**,
 
 ---
 
-## Environment Architecture (3-Silo Setup)
+## Environment Architecture (3-Tier Dev, Test, PML Setup)
 
-| Environment | Branch | Apps Script Title | Mode |
-|---|---|---|---|
-| **Development** | `dev` | `ST-IN-gen-dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Testing / Staging** | `test` | `ST-IN-gen-test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
-| **Production** | `prod` / `main` | `ST-IN-gen-prod` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
+| Tier | Branch | Apps Script Title | BigQuery Dataset ID | Mode |
+|---|---|---|---|---|
+| **Dev** | `dev` | `ST-IN-gen-dev` | `st_fin_com_prog_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `ST-IN-gen-test` | `st_fin_com_prog_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
+| **PML** *(Production Main Live)* | `main` / `pml` | `ST-IN-gen-prod` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
 
 ---
 

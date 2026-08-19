@@ -111,6 +111,27 @@ def run_system_tests():
         print(f"[FAIL] Test 5: Tax Math -> {e}")
 
     # -------------------------------------------------------------------------
+    # TEST 6: 3-Tier Environment Architecture & BigQuery Dataset Standards
+    # -------------------------------------------------------------------------
+    total_tests += 1
+    try:
+        config_gs_path = os.path.join(repo_root, "engine", "google-apps-script", "0_Config.gs")
+        with open(config_gs_path, "r", encoding="utf-8") as f:
+            config_content = f.read()
+
+        # Verify 3-tier definitions exist in 0_Config.gs
+        assert "DEV" in config_content and "TEST" in config_content and "PML" in config_content, "Missing 3-tier definitions in 0_Config.gs"
+        assert "st_fin_com_prog_dev" in config_content, "Missing dev dataset in 0_Config.gs"
+        assert "st_fin_com_prog_test" in config_content, "Missing test dataset in 0_Config.gs"
+        assert "st_fin_com_prog_pml" in config_content, "Missing pml dataset in 0_Config.gs"
+        assert "st-in-gen" in config_content, "Missing single GCP project st-in-gen in 0_Config.gs"
+
+        print("[PASS] Test 6: 3-Tier Environment Standards (Dev, Test, PML) & BQ Datasets Verified")
+        passed_tests += 1
+    except Exception as e:
+        print(f"[FAIL] Test 6: 3-Tier Environment Verification -> {e}")
+
+    # -------------------------------------------------------------------------
     # SUMMARY
     # -------------------------------------------------------------------------
     print("=" * 70)

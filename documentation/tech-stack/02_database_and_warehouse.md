@@ -4,9 +4,15 @@
 
 We chose **Google BigQuery** as our primary relational data warehouse and modeling engine.
 
-- **GCP Project:** `st-in-gen` (`972643538415`)
-- **Dataset ID:** `st_fin_com_prog`
+- **GCP Project:** `st-in-gen` (`972643538415`) — *Single GCP Project*
 - **Location:** `asia-south1` (Mumbai, India)
+
+### 3-Tier Isolated Dataset Architecture
+| Tier | Git Branch | Dataset ID | Role / Purpose |
+|---|---|---|---|
+| **Dev** | `dev` | `st_fin_com_prog_dev` | Rapid feature development & isolated script testing |
+| **Test** | `test` | `st_fin_com_prog_test` | Automated integration test sandbox |
+| **PML** *(Production Main Live)* | `main` / `pml` | `st_fin_com_prog_pml` *(alias: `st_fin_com_prog`)* | Live operational tax ledger & official reports |
 
 ---
 
