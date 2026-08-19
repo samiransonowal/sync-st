@@ -1,6 +1,6 @@
 {
   "name": "st-in-gen",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Studio Tunnel Invoice Generator (ST-IN-gen) automated CI/CD and engine",
   "private": true,
   "scripts": {

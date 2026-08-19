@@ -1,7 +1,7 @@
 // ============================================================================
 // CINELOOM POSTWORKS PVT. LTD. / STUDIO TUNNEL
 // MASTER CONFIGURATION & CONSTANTS
-// Program: ST-fin-com-prog (v0.5 inclusion)
+// Program: ST-fin-com-prog (v0.9 inclusion)
 // ============================================================================
 
 // ----------------------------------------------------------------------------

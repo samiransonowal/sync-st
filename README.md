@@ -1,6 +1,6 @@
 # ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
 
-**Release Version:** `v0.8` (*services_apis_enabled*)  
+**Release Version:** `v0.9` (*3tier-governance-dedicated-sheets*)  
 **Shortcode:** `ST-IN-gen`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
@@ -9,8 +9,8 @@
 **GCP Project ID:** `st-in-gen` (Project Number: `972643538415`)  
 **Master Organization Directory (YAML):** [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)  
 **Workstation Diagnostic Suite:** `python scripts/check_dev_environment.py` *(10/10 Passed)*  
-**System Verification Suite:** `python engine/python-scripts/test_system_integrity.py` *(5/5 Passed)*  
-**BigQuery Dry-Run Engine:** `python engine/python-scripts/dry_run_bigquery.py` *(Passed)*  
+**System Verification Suite:** `python engine/python-scripts/test_system_integrity.py` *(6/6 Passed)*  
+**BigQuery Multi-Tier Dry-Run Engine:** `python engine/python-scripts/dry_run_bigquery.py --env all` *(Passed across Dev, Test, PML)*  
 **Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  

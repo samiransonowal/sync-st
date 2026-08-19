@@ -8,6 +8,34 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
+### 📦 Release Version `v0.9` — *"3tier-governance-dedicated-sheets"*
+**Date:** 2026-08-19  
+**Git Tag:** `v0.9` / `v0.9.0`  
+
+#### 🛡️ 3-Tier Architecture & Governance Mandate
+- **Permanent Default Branch (`dev`)**: Configured `dev` as the official default branch on GitHub and local development workstations. All feature branches, experiments, and daily development start on `dev`.
+- **Restricted Testing Sandbox (`test`)**: Mandated that work or promotion to `test` is permitted only after local test validation and explicit human escalation.
+- **Production Main Live (`pml`)**: Standardized nomenclature from `main` to `pml` (`ST-IN-gen-pml`, dataset `st_fin_com_prog_pml`). Mandated 2-party confirmation (Author + GCP Admin `lab@studiotunnel.com`) before any production push or live dispatch.
+
+#### 📊 3 Dedicated Sets of Google Sheets Suites
+- **Isolated Spreadsheet Suites per Tier**:
+  - `DEV`: `DEV_ACCOUNTS_SPREADSHEET_ID`, `DEV_PROJECT_TRACKER_SPREADSHEET_ID`, `DEV_STEM_USER_REGISTRY_ID`
+  - `TEST`: `TEST_ACCOUNTS_SPREADSHEET_ID`, `TEST_PROJECT_TRACKER_SPREADSHEET_ID`, `TEST_STEM_USER_REGISTRY_ID`
+  - `PML`: `PML_ACCOUNTS_SPREADSHEET_ID`, `PML_PROJECT_TRACKER_SPREADSHEET_ID`, `PML_STEM_USER_REGISTRY_ID`
+- **Dynamic CI/CD Injection ([`scripts/setEnv.js`](file:///d:/Studio%20Tunnel/INVOICE_APP/scripts/setEnv.js))**: Injects tier-specific sheet IDs, `DRY_RUN_MODE`, `BIGQUERY_DATASET_ID`, and `.clasp.json` script IDs based on the active Git branch.
+- **Dynamic Sheets UI ([`4_MenuUI.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/4_MenuUI.gs))**: Top menu bar dynamically displays active environment badge (`🚀 Studio Tunnel [DEV|TEST|PML]`) with interactive `🛡️ Environment & Governance Status` inspector dialog and interactive 2-Party confirmation prompt in PML.
+
+#### 🗄️ Google BigQuery 3-Tier Dataset Isolation
+- Established 3 isolated BigQuery datasets under single GCP Project `st-in-gen` in `asia-south1` (Mumbai): `st_fin_com_prog_dev`, `st_fin_com_prog_test`, `st_fin_com_prog_pml`.
+- Upgraded DDL initializer ([`scripts/setup_bigquery_tables.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/scripts/setup_bigquery_tables.py)) and sync pipeline ([`scripts/bigquery_sync_pipeline.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/scripts/bigquery_sync_pipeline.py)) with `--env dev|test|pml|all` CLI support and `--confirm-pml` execution guardrails.
+
+#### 🧪 System Verification & Architecture Specs
+- Upgraded System Integrity Suite ([`test_system_integrity.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/python-scripts/test_system_integrity.py)) to 6/6 tests passing (100%), asserting 3-tier environment standards, isolated datasets, and dedicated Google Sheets.
+- Added Test 7 in Apps Script Self-Test doctor ([`6_SelfTest.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/6_SelfTest.gs)).
+- Authored master cross-architecture mandate ([`cross_architecture_3tier_mandate.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/cross_architecture_3tier_mandate.md)) and Sheets-to-BigQuery ingestion guide.
+
+---
+
 ### 📦 Release Version `v0.8` — *"services_apis_enabled"*
 **Date:** 2026-08-17  
 **Git Tag:** `v0.8`  
