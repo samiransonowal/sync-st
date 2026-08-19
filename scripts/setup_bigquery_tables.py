@@ -1,35 +1,28 @@
 #!/usr/bin/env python3
 """
 setup_bigquery_tables.py
-Initializes BigQuery dataset `st_fin_com_prog` and creates standard star schema tables.
+3-Tier BigQuery Architecture Table Initializer:
+- Dev: st_fin_com_prog_dev (Default development dataset)
+- Test: st_fin_com_prog_test (Automated CI testing dataset)
+- PML: st_fin_com_prog_pml (Production Main Live dataset — requires --confirm-pml)
 """
 
 import os
+import sys
+import argparse
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
 SERVICE_ACCOUNT_FILE = 'credentials/private/service_account.json'
-DATASET_ID = 'st_fin_com_prog'
+REGION = 'asia-south1'
 
-def main():
-    if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        print(f"Error: {SERVICE_ACCOUNT_FILE} not found.")
-        return
+DATASET_TIERS = {
+    'dev': 'st_fin_com_prog_dev',
+    'test': 'st_fin_com_prog_test',
+    'pml': 'st_fin_com_prog_pml'
+}
 
-    credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-    
-    print(f"Connected to BigQuery Project: {client.project}")
-
-    # 1. Create Dataset if not exists
-    dataset_ref = bigquery.DatasetReference(client.project, DATASET_ID)
-    dataset = bigquery.Dataset(dataset_ref)
-    dataset.location = "US"  # Default location
-    dataset = client.create_dataset(dataset, exists_ok=True)
-    print(f"Dataset {DATASET_ID} verified/created.")
-
-    # 2. Define Table Schemas
-    
+def get_schemas():
     # Raw Project Tracker Ingestion Table
     raw_pt_schema = [
         bigquery.SchemaField("sr", "STRING"),
@@ -81,18 +74,54 @@ def main():
         bigquery.SchemaField("created_at", "TIMESTAMP"),
     ]
 
-    tables = {
+    return {
         "raw_project_tracker": raw_pt_schema,
         "dim_invoices": invoices_schema
     }
 
+def setup_tier(client, tier_name, dataset_id):
+    print(f"\n--- Initializing Tier: [{tier_name.upper()}] Dataset: `{client.project}.{dataset_id}` (Region: {REGION}) ---")
+    dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
+    dataset.location = REGION
+    dataset = client.create_dataset(dataset, exists_ok=True)
+    print(f"  ✓ Dataset `{dataset_id}` verified/created.")
+
+    tables = get_schemas()
     for table_name, schema in tables.items():
         table_ref = dataset_ref.table(table_name)
         table = bigquery.Table(table_ref, schema=schema)
         table = client.create_table(table, exists_ok=True)
-        print(f"Table `{DATASET_ID}.{table_name}` verified/created.")
+        print(f"  ✓ Table `{dataset_id}.{table_name}` verified/created.")
 
-    print("\nBigQuery Dataset & Tables initialized successfully!")
+def main():
+    parser = argparse.ArgumentParser(description="3-Tier BigQuery Schema Initializer")
+    parser.add_argument('--env', choices=['dev', 'test', 'pml', 'all'], default='dev',
+                        help="Target environment tier (Default: dev)")
+    parser.add_argument('--confirm-pml', action='store_true',
+                        help="Mandatory 2-Party confirmation flag to initialize or modify PML (Production Main Live)")
+    args = parser.parse_args()
+
+    # Governance check for PML
+    if args.env in ['pml', 'all'] and not args.confirm_pml:
+        print("\n🛑 MANDATORY 2-PARTY CONFIRMATION REQUIRED FOR PML:")
+        print("To initialize or modify PML (Production Main Live) BigQuery tables, you must pass `--confirm-pml`.")
+        sys.exit(1)
+
+    if not os.path.exists(SERVICE_ACCOUNT_FILE):
+        print(f"Error: {SERVICE_ACCOUNT_FILE} not found.")
+        sys.exit(1)
+
+    credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+    print(f"Connected to BigQuery Project: {client.project}")
+
+    target_tiers = [args.env] if args.env != 'all' else ['dev', 'test', 'pml']
+
+    for t in target_tiers:
+        setup_tier(client, t, DATASET_TIERS[t])
+
+    print("\n✅ BigQuery 3-tier initialization completed successfully!")
 
 if __name__ == '__main__':
     main()

@@ -18,19 +18,27 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "engine" / "python-scripts"))
 
+import argparse
+
 from scripts.bigquery_sync_pipeline import sync as run_sync_pipeline
 from payment_aging_engine import process_aging_and_reminders
 from bank_reconciliation_matcher import match_bank_records, clean_amount
 
-def run_all():
+def run_all(env='dev', confirm_pml=False):
+    # Governance check for PML
+    if env.lower() == 'pml' and not confirm_pml:
+        print("\n🛑 MANDATORY 2-PARTY CONFIRMATION REQUIRED FOR PML:")
+        print("Running master comptroller against PML (Production Main Live) requires `--confirm-pml`.")
+        sys.exit(1)
+
     print("================================================================================")
-    print("🚀 CINELOOM FINANCIAL COMPTROLLER MASTER ENGINE RUNNER")
+    print(f"🚀 CINELOOM FINANCIAL COMPTROLLER MASTER ENGINE RUNNER [{env.upper()}]")
     print("================================================================================\n")
 
     # Step 1: Run Sync Pipeline
-    print(">>> [STAGE 1] Running Backend Synchronization Pipeline...")
+    print(f">>> [STAGE 1] Running Backend Synchronization Pipeline ({env.upper()})...")
     try:
-        run_sync_pipeline()
+        run_sync_pipeline(env=env, confirm_pml=confirm_pml)
     except Exception as e:
         print(f"❌ Error during sync pipeline: {e}")
 
@@ -148,4 +156,10 @@ def run_all():
     print("================================================================================")
 
 if __name__ == '__main__':
-    run_all()
+    parser = argparse.ArgumentParser(description="Cineloom Financial Comptroller Master Runner")
+    parser.add_argument('--env', choices=['dev', 'test', 'pml'], default='dev',
+                        help="Target environment tier (Default: dev)")
+    parser.add_argument('--confirm-pml', action='store_true',
+                        help="Mandatory 2-Party confirmation flag for PML (Production Main Live)")
+    args = parser.parse_args()
+    run_all(env=args.env, confirm_pml=args.confirm_pml)

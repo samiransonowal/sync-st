@@ -34,3 +34,6 @@ This directory documents the technical choices, frameworks, databases, APIs, and
 
 9. **[`ingestion-pipeline/sheets_to_bigquery_pipeline_guide.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/tech-stack/ingestion-pipeline/sheets_to_bigquery_pipeline_guide.md)**:
    - Google Sheets to BigQuery Ingestion Architecture, event-driven vs batch schedules, data contracts, and Phase 2 implementation roadmap.
+
+10. **[`../organization/cross_architecture_3tier_mandate.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/cross_architecture_3tier_mandate.md)**:
+   - Universal 3-tier governance mandate across Git, Google Sheets, Apps Script, BigQuery, and Python automation engines.

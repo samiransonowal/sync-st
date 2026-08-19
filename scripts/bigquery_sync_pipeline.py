@@ -16,6 +16,9 @@ from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
 from google.cloud import bigquery
 
+import sys
+import argparse
+
 # File Paths & Environment Setup
 SERVICE_ACCOUNT_FILE = 'credentials/private/service_account.json'
 SHEETS_TOKEN_FILE = 'credentials/private/sheets_token.json'
@@ -23,7 +26,11 @@ SHEETS_TOKEN_FILE = 'credentials/private/sheets_token.json'
 PROJECT_TRACKER_ID = '1zwcCthO3ysTa3dQAftmchZ-dFjZsWLp76isbWUBYUHY'
 ACCOUNTS_SHEET_ID = '1tp2YOK2Z3QSf_8Q9ngioF1t3bHZVI5eGXEUu5WZ7yms'
 
-DATASET_ID = 'st_fin_com_prog'
+DATASET_TIERS = {
+    'dev': 'st_fin_com_prog_dev',
+    'test': 'st_fin_com_prog_test',
+    'pml': 'st_fin_com_prog_pml'
+}
 
 def get_sheets_service():
     scopes = [
@@ -40,9 +47,17 @@ def get_bigquery_client():
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
     return bigquery.Client(credentials=creds, project=creds.project_id)
 
-def sync():
+def sync(env='dev', confirm_pml=False):
+    dataset_id = DATASET_TIERS.get(env.lower(), 'st_fin_com_prog_dev')
+    
+    # 🔒 PML 2-Party Confirmation Check
+    if env.lower() == 'pml' and not confirm_pml:
+        print("\n🛑 MANDATORY 2-PARTY CONFIRMATION REQUIRED FOR PML:")
+        print("Live sync against PML (Production Main Live) requires passing `--confirm-pml`.")
+        sys.exit(1)
+
     print("================================================================================")
-    print("STARTING BACKEND SYNCHRONIZATION PIPELINE (Sheets -> BigQuery -> Accounts Sheet)")
+    print(f"STARTING BACKEND SYNCHRONIZATION PIPELINE [{env.upper()}] -> Dataset: `{dataset_id}`")
     print("================================================================================")
 
     sheets_service = get_sheets_service()
@@ -97,7 +112,7 @@ def sync():
         })
 
     # Clear and insert into raw_project_tracker table
-    table_id = f"{bq_client.project}.{DATASET_ID}.raw_project_tracker"
+    table_id = f"{bq_client.project}.{dataset_id}.raw_project_tracker"
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
     load_job = bq_client.load_table_from_json(bq_rows_to_insert, table_id, job_config=job_config)
     load_job.result()
@@ -240,15 +255,21 @@ def sync():
 
     # 5. Load dimensional invoices into BigQuery `dim_invoices`
     if dim_invoices_to_insert:
-        print("\n[Step 5] Inserting dimensional records into BigQuery `st_fin_com_prog.dim_invoices`...")
-        dim_table_id = f"{bq_client.project}.{DATASET_ID}.dim_invoices"
+        print(f"\n[Step 5] Inserting dimensional records into BigQuery `{dataset_id}.dim_invoices`...")
+        dim_table_id = f"{bq_client.project}.{dataset_id}.dim_invoices"
         load_job = bq_client.load_table_from_json(dim_invoices_to_insert, dim_table_id)
         load_job.result()
         print(f"Successfully inserted {len(dim_invoices_to_insert)} records into BigQuery `{dim_table_id}`.")
 
     print("\n================================================================================")
-    print("BACKEND SYNCHRONIZATION PIPELINE COMPLETED SUCCESSFULLY!")
+    print(f"BACKEND SYNCHRONIZATION PIPELINE [{env.upper()}] COMPLETED SUCCESSFULLY!")
     print("================================================================================")
 
 if __name__ == '__main__':
-    sync()
+    parser = argparse.ArgumentParser(description="BigQuery Sync Pipeline with 3-tier Governance")
+    parser.add_argument('--env', choices=['dev', 'test', 'pml'], default='dev',
+                        help="Target environment tier (Default: dev)")
+    parser.add_argument('--confirm-pml', action='store_true',
+                        help="Mandatory 2-Party confirmation flag for PML (Production Main Live)")
+    args = parser.parse_args()
+    sync(env=args.env, confirm_pml=args.confirm_pml)

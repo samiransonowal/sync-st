@@ -119,7 +119,27 @@ function generateAndEmailInvoice() {
       'Would have sent to: ' + (data.client.email || '(no email on sheet)') + '\n\n' +
       'Set DRY_RUN_MODE = false in 0_Config.gs to enable live sends.'
     );
-    return;
+  }
+
+  // -------------------------------------------------------------------------
+  // 🔒 PML 2-PARTY CONFIRMATION GUARD
+  // -------------------------------------------------------------------------
+  var activeTier = (typeof ENV_CONFIG !== 'undefined' && ENV_CONFIG.ACTIVE_ENV) ? ENV_CONFIG.ACTIVE_ENV : 'DEV';
+  if (activeTier === 'PML') {
+    var ui = SpreadsheetApp.getUi();
+    var response = ui.alert(
+      '🔒 MANDATORY 2-PARTY PRODUCTION CONFIRMATION',
+      'You are operating in PML (Production Main Live).\n\n' +
+      'Invoice: #' + data.inv.no + ' (' + data.client.name + ')\n' +
+      'Amount: ₹' + data.financials.grandTotal + '\n\n' +
+      'Do you confirm that you have 2-party authorization to dispatch this live financial transaction?',
+      ui.ButtonSet.YES_NO
+    );
+    if (response !== ui.Button.YES) {
+      Logger.log('[PML GUARD] Live dispatch cancelled by user.');
+      ui.alert('🛑 Production dispatch cancelled. Transaction not sent.');
+      return;
+    }
   }
 
   // -------------------------------------------------------------------------

@@ -166,6 +166,29 @@ function runSelfTest() {
   }
 
   // --------------------------------------------------------------------------
+  // TEST 7: 3-Tier Architecture (Dev, Test, PML) & BigQuery Dataset Isolation
+  // --------------------------------------------------------------------------
+  total++;
+  try {
+    if (typeof ENV_CONFIG === 'undefined') throw new Error('ENV_CONFIG object missing in 0_Config.gs');
+    var requiredTiers = ['DEV', 'TEST', 'PML'];
+    for (var i = 0; i < requiredTiers.length; i++) {
+      var tier = requiredTiers[i];
+      if (!ENV_CONFIG[tier]) throw new Error('ENV_CONFIG missing tier definition: ' + tier);
+      if (!ENV_CONFIG[tier].DATASET_ID) throw new Error('Missing DATASET_ID for tier: ' + tier);
+    }
+    if (typeof BIGQUERY_DATASET_ID === 'undefined' || !BIGQUERY_DATASET_ID) {
+      throw new Error('BIGQUERY_DATASET_ID is not configured');
+    }
+    Logger.log('[PASS] Test 7: 3-Tier standards (DEV/TEST/PML) and BigQuery dataset (' + BIGQUERY_DATASET_ID + ') verified');
+    results.push('[PASS] T7: 3-Tier architecture & BigQuery dataset isolated');
+    passed++;
+  } catch (e) {
+    Logger.log('[FAIL] Test 7: ' + e.message);
+    results.push('[FAIL] T7: ' + e.message);
+  }
+
+  // --------------------------------------------------------------------------
   // SUMMARY
   // --------------------------------------------------------------------------
   Logger.log('======================================================================');
