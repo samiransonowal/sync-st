@@ -68,19 +68,21 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 ---
 
-### E. 🐙 GitHub Repository & Branch Push Governance (`IN-gen`)
+### E. 🐙 GitHub Repository & Branch Governance Mandate (`IN-gen`)
 
-| Branch | Permission Level | Consent Requirement | Purpose / Scope |
+| Branch | Default Status | Permission Level | Promotion / Access Mandate |
 | :--- | :--- | :--- | :--- |
-| **`dev` (Dev)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
-| **`test` (Test)** | `UNRESTRICTED` | **No permission required** | Direct commit and push access for Samiran (`samiran@studiotunnel.com`) |
-| **`pml` (PML)** | `APPROVAL REQUIRED` | **Consent required from `lab@`** | Production deployment requires approval email dispatch & "Give Consent" button click by `lab@studiotunnel.com` |
+| **`dev` (Dev)** | ⭐️ **DEFAULT BRANCH** | `UNRESTRICTED DEV` | Primary base branch for all feature work, iterative coding, and dry-run tests. |
+| **`test` (Test)** | Auxiliary Sandbox | `HUMAN ESCALATION ONLY` | **STRICTLY RESTRICTED:** Work or promotion to `test` is only permitted after manual testing verification and explicit human escalation. |
+| **`pml` (PML)** | Production Main Live | `2-PARTY CONFIRMATION` | **MANDATORY 2-PARTY SIGN-OFF:** Pushing or promoting code to `pml` requires dual confirmation from the Lead Developer/Author AND explicit consent from GCP Admin (`lab@studiotunnel.com`). |
 
 > [!CAUTION]
-> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
-> 1. **`dev` & `test` Branches**: Pushing to development (`dev`) and testing (`test`) branches does **not** require any prior approval or permission. Samiran (`samiran@studiotunnel.com`) has unrestricted push access to `dev` and `test`.
-> 2. **`pml` (PML - Production Main Live) Branch**: Pushing or promoting code to the `pml` branch **REQUIRES PRIOR CONSENT FROM `lab@studiotunnel.com`**.
-> 3. **Production Consent Mechanism**: For PML pushes, `lab@studiotunnel.com` receives an automated approval request email sent from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the interactive **"Give Consent"** button or hyperlink inside the email.
+> ### 🛑 PROJECT-WIDE BRANCH PROMOTION & GOVERNANCE MANDATE
+> 1. **Default Branch Standard (`dev`)**: `dev` is the permanent default branch on GitHub and local development workstations. All feature work and initial builds must originate on `dev`.
+> 2. **Escalation Protocol for `test`**: Nobody may push or attempt to work on the `test` branch without prior human review, local test execution pass, and formal escalation.
+> 3. **Mandatory 2-Party Confirmation for `pml` (Production Main Live)**: Deploying to production (`pml`) requires strict dual authorization:
+>    - **Party 1:** Requesting Engineer / Studio Owner (`samiran@studiotunnel.com` / `jay@studiotunnel.com`).
+>    - **Party 2:** GCP Administrator (`lab@studiotunnel.com`) via the interactive push consent system (`scripts/request_push_consent.py`).
 
 ---
 

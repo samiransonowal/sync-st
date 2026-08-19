@@ -95,11 +95,13 @@ npm run clasp-push
 
 ---
 
-## 7. Git Push & Branch Governance Policy
+## 7. Git Push & Branch Governance Mandate
 
 > [!CAUTION]
-> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
-> - **`dev` & `test` Branches**: Free, unrestricted commit and push permission for Samiran (`samiran@studiotunnel.com`). **No prior permission required.**
-> - **`pml` Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the `pml` branch requires prior explicit consent from `lab@studiotunnel.com`.
-> - **Production Consent Email**: To grant production push permission, `lab@studiotunnel.com` receives an automated approval email from `samiran@studiotunnel.com` (via `python scripts/request_push_consent.py`) and clicks the **"Give Consent"** button or hyperlink inside the email.
+> ### 🛑 BRANCH PROMOTION & GOVERNANCE MANDATE
+> - **`dev` Branch (Permanent Default)**: Primary branch for all development work. Direct commits and iterative feature branches must originate here.
+> - **`test` Branch (Restricted Sandbox)**: **HUMAN ESCALATION MANDATORY.** Attempting to work on or push to `test` is permitted only after explicit human testing verification and formal escalation.
+> - **`pml` Branch (Production Main Live)**: **2-PARTY CONFIRMATION REQUIRED.** Promoting or deploying to `pml` requires dual authorization:
+>   1. Lead Developer / Studio Owner (`jay@studiotunnel.com` / `samiran@studiotunnel.com`).
+>   2. GCP Admin (`lab@studiotunnel.com`) via interactive push consent button inside the dispatched notification (`python scripts/request_push_consent.py`).
 

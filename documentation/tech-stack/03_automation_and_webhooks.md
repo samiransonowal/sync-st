@@ -17,7 +17,7 @@ The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**,
 |---|---|---|---|---|
 | **Dev** | `dev` | `ST-IN-gen-dev` | `st_fin_com_prog_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
 | **Test** | `test` | `ST-IN-gen-test` | `st_fin_com_prog_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
-| **PML** *(Production Main Live)* | `main` / `pml` | `ST-IN-gen-prod` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
+| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
 
 ---
 

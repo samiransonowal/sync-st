@@ -12,7 +12,7 @@ We chose **Google BigQuery** as our primary relational data warehouse and modeli
 |---|---|---|---|
 | **Dev** | `dev` | `st_fin_com_prog_dev` | Rapid feature development & isolated script testing |
 | **Test** | `test` | `st_fin_com_prog_test` | Automated integration test sandbox |
-| **PML** *(Production Main Live)* | `main` / `pml` | `st_fin_com_prog_pml` *(alias: `st_fin_com_prog`)* | Live operational tax ledger & official reports |
+| **PML** *(Production Main Live)* | `pml` | `st_fin_com_prog_pml` | Live operational tax ledger & official reports |
 
 ---
 

@@ -26,10 +26,10 @@
 > - `tamash@studiotunnel.com`
 
 > [!CAUTION]
-> ### 🛑 BRANCH PUSH PERMISSION & CONSENT POLICY
-> - **`dev` & `test` Branches**: Free, unrestricted commit and push access for Samiran (`samiran@studiotunnel.com`). **No prior permission required.**
-> - **`prod` (`main`) Production Branch**: **APPROVAL REQUIRED.** Pushing or promoting code to the production branch requires prior explicit consent from `lab@studiotunnel.com`.
-> - **Production Consent Email**: To grant production push permission, `lab@studiotunnel.com` receives an automated email sent from `samiran@studiotunnel.com` and clicks on the **"Give Consent"** button or hyperlink inside the email.
+> ### 🛑 BRANCH PROMOTION & GOVERNANCE MANDATE
+> - **`dev` Branch (Permanent Default)**: Primary branch for all development work. Direct commits and iterative feature branches must originate here.
+> - **`test` Branch (Restricted Sandbox)**: **HUMAN ESCALATION MANDATORY.** Attempting to work on or push to `test` is permitted only after explicit human testing verification and formal escalation.
+> - **`pml` Branch (Production Main Live)**: **2-PARTY CONFIRMATION REQUIRED.** Promoting or deploying to `pml` requires dual authorization from the Lead Developer/Author AND GCP Admin (`lab@studiotunnel.com`) via the interactive push consent system.
 
 
 ---
