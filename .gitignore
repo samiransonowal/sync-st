@@ -23,3 +23,5 @@ node_modules/
 # Local Generated Artifacts & Mock Invoices
 output/
 
+
+sample-documents/
