@@ -25,7 +25,8 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 | **GAS UI Menu** | `🚀 Studio Tunnel [DEV]` | `🚀 Studio Tunnel [TEST]` | `🚀 Studio Tunnel [PML]` |
 | **Dry Run Safeguard** | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = false` |
 | **GCP Project** | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) |
-| **BigQuery Dataset** | `st_fin_com_prog_dev` | `st_fin_com_prog_test` | `st_fin_com_prog_pml` |
+| **BigQuery Dataset** | `st_comptroller_dev` | `st_comptroller_test` | `st_comptroller_pml` |
+| **Firebase Firestore** | `st_comptroller_dev` collection prefix | `st_comptroller_test` collection prefix | `st_comptroller_pml` collection prefix |
 | **GCP Region** | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) |
 | **Google Sheets Suite** | 📗 **Dev Sheets Suite** (`DEV_ACCOUNTS`, `DEV_PROJECT_TRACKER`, `DEV_STEM`) | 📙 **Test Sheets Suite** (`TEST_ACCOUNTS`, `TEST_PROJECT_TRACKER`, `TEST_STEM`) | 📕 **PML Master Sheets Suite** (`PML_ACCOUNTS`, `PML_PROJECT_TRACKER`, `PML_STEM`) |
 | **Outbound Email** | Suppressed / Internal only | Suppressed / Internal only | Internal review routing + 2-Party prompt |
@@ -62,8 +63,8 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
      - `TEST_STEM_USER_REGISTRY_ID`: Staging user permissions registry.
      - Bound GAS project: `ST-IN-gen-test`.
    - **PML Set (Branch: `pml`)**:
-     - `PML_ACCOUNTS_SPREADSHEET_ID` (`1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A`): Official financial ledger and live invoice repository.
-     - `PML_PROJECT_TRACKER_SPREADSHEET_ID` (`1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0`): Live operations tracker.
+     - : Official financial ledger and live invoice repository.
+     - : Live operations tracker.
      - `PML_STEM_USER_REGISTRY_ID` (`1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA`): Master user registry.
      - Bound GAS project: `ST-IN-gen-pml`.
 2. **Dynamic Environment Banner**:
@@ -84,35 +85,26 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 1. **1 Single GCP Project (`st-in-gen`)**:
    - All environments reside inside project `st-in-gen` in region `asia-south1` (Mumbai).
 2. **3 Isolated Datasets**:
-   - `st-in-gen.st_fin_com_prog_dev`: For experimental schema adjustments and test data.
-   - `st-in-gen.st_fin_com_prog_test`: For automated integration test suites.
-   - `st-in-gen.st_fin_com_prog_pml`: For live operational tax invoices, bank reconciliation records, and financial statements.
-3. **DDL & Ingestion Enforcement**:
-   - `scripts/setup_bigquery_tables.py --env <dev|test|pml>`
-   - `scripts/bigquery_sync_pipeline.py --env <dev|test|pml>`
-   - Any CLI command targeting `pml` will automatically halt and require `--confirm-pml`.
+   - `st-in-gen.st_comptroller_dev`: For experimental schema adjustments and test data.
+   - `st-in-gen.st_comptroller_test`: For automated integration test suites.
+   - `st-in-gen.st_comptroller_pml`: For live operational tax invoices, bank reconciliation records, and financial statements.
+3. **DDL & Sync Enforcement**:
+   - Schema updates and BigQuery sync are managed via Cloud Functions and Apps Script integrations.
+   - Any pipeline run targeting `pml` requires dual authorization flags.
 
 ---
 
-### D. 🐍 Python Automation & Master Comptroller
-All background engines (`payment_aging_engine`, `ca_compliance_dispatcher`, `bank_reconciliation_matcher`, `run_comptroller_engines.py`) default to `dev`:
-```bash
-# Default (Dev sandbox — 100% safe):
-python scripts/run_comptroller_engines.py
-
-# Test environment (Human escalation):
-python scripts/run_comptroller_engines.py --env test
-
-# PML production run (Requires 2-party confirmation flag):
-python scripts/run_comptroller_engines.py --env pml --confirm-pml
-```
+### D. 🚀 Cloud-Native Orchestration & Schedulers
+All background engines (`payment_aging_engine`, `ca_compliance_dispatcher`, `bank_reconciliation_matcher`) run on managed cloud runtimes:
+- **Triggers**: Google Cloud Scheduler triggers.
+- **Runtimes**: Node.js/TypeScript Cloud Functions and Google Apps Script event handlers.
+- **No Local Workstations**: Execution on local dev machines is strictly forbidden for production/staging flows.
 
 ---
 
 ## 4. Verification & Audit Trail
 
-| Test Script | Execution Command | Assertion |
+| Test Component | Execution Command / Hook | Assertion |
 |---|---|---|
-| **System Integrity Suite** | `python engine/python-scripts/test_system_integrity.py` | 6/6 tests passing across GSTIN, users, PAN, and 3-tier datasets. |
 | **Apps Script Self-Test** | `6_SelfTest.gs` -> `runSelfTest()` | 7/7 tests passing including T7 (3-Tier & BigQuery dataset isolation). |
-| **BigQuery Multi-Tier Dry Run** | `python engine/python-scripts/dry_run_bigquery.py --env all` | Simulates isolated SQL insertion across Dev, Test, and PML. |
+| **Cloud Function Dry Run**| Test invocation in GCP Console | Asserts REST integration with BigQuery and Google Drive APIs. |

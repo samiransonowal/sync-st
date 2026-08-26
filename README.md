@@ -1,20 +1,15 @@
-# ST-fin-com-prog — Studio Tunnel Financial Comptroller Program
+# st-comptroller — Financial Comptroller Program
 
 **Release Version:** `v0.9` (*3tier-governance-dedicated-sheets*)  
-**Shortcode:** `ST-IN-gen`  
+**Shortcode:** `st-comptroller`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
-**Lead Developer:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
-**Studio Owner & Lead Collaborator:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
+**Lead Developer:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
+**Collaborator:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
 **GCP Administration Account:** `lab@studiotunnel.com`  
 **GCP Project ID:** `st-in-gen` (Project Number: `972643538415`)  
-**Master Organization Directory (YAML):** [`documentation/organization/users.yaml`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/organization/users.yaml)  
-**Workstation Diagnostic Suite:** `python scripts/check_dev_environment.py` *(10/10 Passed)*  
-**System Verification Suite:** `python engine/python-scripts/test_system_integrity.py` *(6/6 Passed)*  
-**BigQuery Multi-Tier Dry-Run Engine:** `python engine/python-scripts/dry_run_bigquery.py --env all` *(Passed across Dev, Test, PML)*  
-**Design System:** [`engine/google-apps-script/DesignSystem.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/DesignSystem.gs)  
-**Documentation Index:** [`documentation/documentation_index.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/documentation_index.md)  
-**Changelog & Version History:** [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md)  
-**GitHub Repository:** [github.com/jd-tunnel/IN-gen](https://github.com/jd-tunnel/IN-gen)  
+**Documentation Index:** [`documentation/documentation_index.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/documentation/documentation_index.md)  
+**Changelog & Version History:** [`CHANGELOG.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/CHANGELOG.md)  
+**GitHub Repository:** [github.com/samiransonowal/st-comptroller](https://github.com/samiransonowal/st-comptroller)  
 
 > [!CAUTION]
 > ### 🛑 MANDATORY OUTBOUND EMAIL SAFETY RULE
@@ -36,13 +31,16 @@
 
 ## 🚀 Overview
 
-`ST-fin-com-prog` is the automated financial comptroller, vector PDF invoice generation system, and CI/CD deployment engine for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
+`st-comptroller` is the automated financial comptroller, vector PDF invoice generation system, and CI/CD deployment engine for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
 
-It features a **Hybrid Architecture**:
-1. **Google Sheets (`PROJECT TRACKER`, `ACCOUNTS` & `STEM User Registry`)**: Human-friendly data input doorway for Samiran, Line Producers, and project managers.
-2. **Google BigQuery (`st-in-gen.st_fin_com_prog`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
+---
+
+## 🏗 System Architecture & Technology Stack
+
+1. **Google Apps Script (JavaScript V8)**: Dynamic UI bindings, custom trigger hooks, and vector PDF rendering engine (`engine/google-apps-script`).
+2. **Google BigQuery (`st-in-gen.st_comptroller`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
 3. **Google Looker Studio**: Executive financial reporting portal & real-time overdue chase list dashboards.
-4. **Google Apps Script Master Engine (`ST-IN-gen`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, Gmail routing, and Discord `#invoices-log` alerts.
+4. **Google Apps Script Master Engine (`ST-IN-gen`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, and Gmail routing.
 5. **Automated 3-Silo CI/CD Pipeline**: Branch-mapped deployments (`dev`, `test`, `prod`) to isolated Google Apps Script cloud projects via GitHub Actions.
 
 ---
@@ -76,7 +74,7 @@ INVOICE_APP/
 │   │   ├── 2_InvoiceParser.gs          <-- Sheet range & line-item parser
 │   │   ├── 3_PdfAndEmailer.gs          <-- Vector HTML & PDF generator with Drive permissions
 │   │   ├── 4_MenuUI.gs                 <-- Google Sheets top menu bar
-│   │   ├── 5_DiscordNotifier.gs        <-- Discord embed notifications
+
 │   │   ├── 6_SelfTest.gs               <-- 7-point in-script self-test & reachability suite
 │   │   ├── DesignSystem.gs             <-- Lexend typography & color contrast spec
 │   │   ├── HTMLTemplate.html           <-- Vector HTML invoice print template

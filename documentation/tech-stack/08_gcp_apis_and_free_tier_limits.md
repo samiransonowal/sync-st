@@ -44,7 +44,7 @@ Below is the verified ledger of all APIs enabled for GCP project `st-in-gen` (`9
 
 ## 3. Detailed Usage vs. Free Ceiling Analysis
 
-### A. BigQuery Capacity Planning (`st_fin_com_prog`)
+### A. BigQuery Capacity Planning (`st_comptroller`)
 * **Storage Limit:** 10 GB free per month in region `asia-south1` (Mumbai).
   * *Actual Footprint:* 1 full year of Studio Tunnel financial records (~1,000 jobs, 500 invoices, 3,000 bank credits) consumes less than **25 Megabytes** (~0.25% of the free ceiling).
 * **Query Scan Limit:** 1,000 Gigabytes (1 Terabyte) free per month.

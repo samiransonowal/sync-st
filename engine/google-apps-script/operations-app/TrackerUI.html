@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1E1E1E;
+      --primary: #BB86FC;
+      --text-main: #FFFFFF;
+      --text-muted: #A0A0A0;
+      --border: #333333;
+      --danger: #cf6679;
+      --success: #03dac6;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+    .card {
+      background-color: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      width: 100%;
+      max-width: 480px;
+    }
+    h2 { margin-top: 0; color: var(--primary); text-align: center; }
+    p { text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* Login & PIN Styles */
+    .user-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+    .user-btn {
+      padding: 0.75rem; background: #2C2C2C; border: 1px solid var(--border);
+      color: white; border-radius: 8px; cursor: pointer; text-align: center; font-weight: 600;
+    }
+    .user-btn:hover { border-color: var(--primary); }
+    
+    .pin-display {
+      letter-spacing: 1rem; font-size: 2rem; text-align: center;
+      margin: 1rem 0; font-family: monospace; min-height: 2.5rem;
+    }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .key-btn {
+      padding: 1rem; background: #2C2C2C; border: none; border-radius: 8px;
+      color: white; font-size: 1.25rem; font-weight: 600; cursor: pointer;
+    }
+    .key-btn:hover { background: #383838; }
+
+    /* Main App Styles */
+    .hidden { display: none !important; }
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); }
+    input, select, textarea {
+      width: 100%; padding: 0.75rem; border-radius: 6px;
+      border: 1px solid var(--border); background-color: #2C2C2C;
+      color: var(--text-main); font-family: 'Inter', sans-serif; box-sizing: border-box;
+    }
+    .preset-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .preset-btn {
+      flex: 1; padding: 0.4rem; background: #2C2C2C; border: 1px solid var(--border);
+      color: var(--primary); border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    }
+    .preset-btn:hover { background: #383838; border-color: var(--primary); }
+
+    button.submit-btn {
+      width: 100%; padding: 1rem; background-color: var(--primary);
+      color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;
+    }
+    button.test-btn {
+      width: 100%; padding: 0.75rem; background-color: transparent;
+      color: var(--text-muted); border: 1px dashed var(--border); border-radius: 6px;
+      font-weight: 600; cursor: pointer; margin-top: 1rem;
+    }
+    button.test-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .toast { display: none; padding: 1rem; margin-top: 1rem; border-radius: 6px; text-align: center; font-size: 0.9rem; }
+    .toast.success { background-color: var(--success); color: #000; }
+    .toast.error { background-color: var(--danger); color: #000; }
+
+    .test-log-box {
+      background: #121212; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.75rem; margin-top: 1rem; font-family: monospace; font-size: 0.75rem;
+      max-height: 150px; overflow-y: auto; color: #03dac6;
+    }
+
+    .checkbox-group {
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;
+    }
+    .checkbox-group input { width: auto; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- STEP 1: USER SELECTION -->
+  <div id="userSelectScreen" class="card">
+    <h2>Select Profile</h2>
+    <p>Choose your identity to log in</p>
+    <div id="userList" class="user-list">
+      <div style="grid-column: span 2; text-align: center;">Loading staff registry...</div>
+    </div>
+  </div>
+
+  <!-- STEP 2: PIN ENTRY -->
+  <div id="pinScreen" class="card hidden">
+    <h2 id="selectedUserName">User PIN</h2>
+    <p>Enter your 4-digit PIN</p>
+    <div id="pinDisplay" class="pin-display">••••</div>
+    <div class="keypad">
+      <button class="key-btn" onclick="pressNum('1')">1</button>
+      <button class="key-btn" onclick="pressNum('2')">2</button>
+      <button class="key-btn" onclick="pressNum('3')">3</button>
+      <button class="key-btn" onclick="pressNum('4')">4</button>
+      <button class="key-btn" onclick="pressNum('5')">5</button>
+      <button class="key-btn" onclick="pressNum('6')">6</button>
+      <button class="key-btn" onclick="pressNum('7')">7</button>
+      <button class="key-btn" onclick="pressNum('8')">8</button>
+      <button class="key-btn" onclick="pressNum('9')">9</button>
+      <button class="key-btn" onclick="clearPin()">C</button>
+      <button class="key-btn" onclick="pressNum('0')">0</button>
+      <button class="key-btn" onclick="backscreen()">←</button>
+    </div>
+    <div id="pinError" class="toast error" style="margin-top: 1rem;">Invalid PIN!</div>
+  </div>
+
+  <!-- STEP 3: MAIN APP (TASK LOGGING & CLOSING) -->
+  <div id="mainAppScreen" class="card hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <span id="userBadge" style="font-weight: 600; color: var(--primary);">User</span>
+      <a href="#" onclick="logout()" style="color: var(--text-muted); font-size: 0.8rem;">Logout</a>
+    </div>
+    
+    <h2>Log / Close Studio Task</h2>
+    <form id="trackerForm" onsubmit="submitForm(event)">
+      <div class="form-group">
+        <label for="projectCode">Project / Booking (Studio Bookings)</label>
+        <select id="projectCode" required></select>
+      </div>
+
+      <div class="form-group">
+        <label for="taskType">Task Type</label>
+        <select id="taskType" required>
+          <option value="Booking">Booking (Colorist)</option>
+          <option value="Conform">Conform</option>
+          <option value="Assist">Assist (Pre/Post)</option>
+          <option value="Mastering">Mastering (Long Format)</option>
+          <option value="Rendering">Rendering</option>
+          <option value="Extra Shots">Extra Shots / Grade</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="display: flex; gap: 1rem;">
+        <div style="flex:1">
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+        </div>
+        <div style="flex:1">
+          <label for="actualHrs">Actual Time Taken (Hrs)</label>
+          <input type="number" id="actualHrs" step="0.5" placeholder="e.g. 2.5" required>
+          <div class="preset-row">
+            <button type="button" class="preset-btn" onclick="setTimePreset(1.0)">1.0h</button>
+            <button type="button" class="preset-btn" onclick="setTimePreset(2.0)">2.0h</button>
+            <button type="button" class="preset-btn" onclick="setTimePreset(3.5)">3.5h</button>
+            <button type="button" class="preset-btn" onclick="setTimePreset(4.0)">4.0h</button>
+            <button type="button" class="preset-btn" onclick="setTimePreset(8.0)">8.0h</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes / Task Scope</label>
+        <textarea id="notes" rows="2" placeholder="Enter session notes or task scope..."></textarea>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="isClosed">
+        <label for="isClosed" style="margin-bottom:0; color:#FFFFFF; cursor:pointer;">Mark task as COMPLETED & CLOSED</label>
+      </div>
+
+      <button type="submit" id="submitBtn" class="submit-btn">Log & Close Task</button>
+      <div id="toastMsg" class="toast"></div>
+    </form>
+
+    <!-- AUTOMATED VERIFICATION SELF-TEST SUITE TRIGGER -->
+    <button type="button" onclick="runSelfTest()" class="test-btn">⚡ Run System Self-Test Verification</button>
+    <div id="testLogContainer" class="test-log-box hidden"></div>
+  </div>
+
+  <script>
+    let selectedUser = null;
+    let enteredPin = "";
+
+    document.getElementById('date').valueAsDate = new Date();
+
+    // Fetch User Registry & Active Projects
+    google.script.run.withSuccessHandler(populateUsers).getStaffRegistry();
+    google.script.run.withSuccessHandler(populateProjects).getActiveProjects();
+
+    function populateUsers(users) {
+      const list = document.getElementById('userList');
+      list.innerHTML = '';
+      users.forEach(u => {
+        let btn = document.createElement('div');
+        btn.className = 'user-btn';
+        btn.textContent = u.name;
+        btn.onclick = () => selectUser(u);
+        list.appendChild(btn);
+      });
+    }
+
+    function selectUser(user) {
+      selectedUser = user;
+      document.getElementById('selectedUserName').textContent = user.name;
+      document.getElementById('userSelectScreen').classList.add('hidden');
+      document.getElementById('pinScreen').classList.remove('hidden');
+      clearPin();
+    }
+
+    function pressNum(num) {
+      if (enteredPin.length < 4) {
+        enteredPin += num;
+        updatePinDisplay();
+        if (enteredPin.length === 4) verifyPin();
+      }
+    }
+
+    function clearPin() {
+      enteredPin = "";
+      updatePinDisplay();
+    }
+
+    function updatePinDisplay() {
+      document.getElementById('pinDisplay').textContent = "•".repeat(enteredPin.length) || "••••";
+    }
+
+    function backscreen() {
+      document.getElementById('pinScreen').classList.add('hidden');
+      document.getElementById('userSelectScreen').classList.remove('hidden');
+    }
+
+    function verifyPin() {
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.valid) {
+            document.getElementById('pinScreen').classList.add('hidden');
+            document.getElementById('mainAppScreen').classList.remove('hidden');
+            document.getElementById('userBadge').textContent = selectedUser.name;
+          } else {
+            document.getElementById('pinError').style.display = 'block';
+            setTimeout(() => { document.getElementById('pinError').style.display = 'none'; }, 2000);
+            clearPin();
+          }
+        })
+        .verifyUserPin(selectedUser.id, enteredPin);
+    }
+
+    function logout() {
+      selectedUser = null;
+      document.getElementById('mainAppScreen').classList.add('hidden');
+      document.getElementById('userSelectScreen').classList.remove('hidden');
+    }
+
+    function populateProjects(projects) {
+      const select = document.getElementById('projectCode');
+      select.innerHTML = '<option value="" disabled selected>Select Studio Booking / Project</option>';
+      if (Array.isArray(projects)) {
+        projects.forEach(p => {
+          let opt = document.createElement('option');
+          opt.value = typeof p === 'string' ? p.split(' | ')[0] : p.id;
+          opt.textContent = typeof p === 'string' ? p : `${p.id} | ${p.name}`;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function setTimePreset(hrs) {
+      document.getElementById('actualHrs').value = hrs;
+    }
+
+    function submitForm(e) {
+      e.preventDefault();
+      const actualHrsVal = parseFloat(document.getElementById('actualHrs').value);
+      if (!actualHrsVal || actualHrsVal <= 0) {
+        alert("Please enter the actual time (in Hours) taken to complete/mark for this task.");
+        return;
+      }
+
+      const data = {
+        projectCode: document.getElementById('projectCode').value,
+        taskType: document.getElementById('taskType').value,
+        date: document.getElementById('date').value,
+        assignedArtist: selectedUser.name,
+        actualHrs: actualHrsVal,
+        isClosed: document.getElementById('isClosed').checked,
+        notes: document.getElementById('notes').value
+      };
+
+      google.script.run
+        .withSuccessHandler(res => {
+          const toast = document.getElementById('toastMsg');
+          toast.textContent = res.message;
+          toast.className = 'toast ' + (res.success ? 'success' : 'error');
+          toast.style.display = 'block';
+          if(res.success) document.getElementById('trackerForm').reset();
+          setTimeout(() => { toast.style.display = 'none'; }, 5000);
+        })
+        .processTaskEntry(data);
+    }
+
+    function runSelfTest() {
+      const container = document.getElementById('testLogContainer');
+      container.classList.remove('hidden');
+      container.innerHTML = 'Running verification test suite on fresh spreadsheet...';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.logs) {
+            container.innerHTML = res.logs.join('<br>');
+          } else {
+            container.innerHTML = JSON.stringify(res);
+          }
+        })
+        .runVerificationSuite();
+    }
+  </script>
+</body>
+</html>

@@ -49,7 +49,7 @@ The project now maintains 3 isolated cloud environments mapped to Git branches:
 |---|---|---|---|
 | **Development** | `dev` | `ST-IN-gen-dev` | `DRY_RUN_MODE = true` (Iterative coding & isolated sandbox writes) |
 | **Staging / Testing** | `test` | `ST-IN-gen-test` | `DRY_RUN_MODE = true` (Pre-production dry-run verification) |
-| **Production** | `prod` / `main` | `ST-IN-gen-prod` | `DRY_RUN_MODE = false` (Live vector PDFs, Gmail & Discord alerts) |
+| **Production** | `prod` / `main` | `ST-IN-gen-prod` | `DRY_RUN_MODE = false` (Live vector PDFs, Gmail alerts) |
 
 ---
 

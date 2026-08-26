@@ -1,27 +1,46 @@
-# 02 — Database & Warehouse Technical Choice
+# 02 — Database & Warehouse Technical Architecture (Hybrid OLTP/OLAP)
 
 ## Overview
 
-We chose **Google BigQuery** as our primary relational data warehouse and modeling engine.
+`st-comptroller` uses a **Hybrid OLTP/OLAP Data Architecture**:
+- **Firebase Firestore** serves as the **Operational Database (OLTP)** for real-time reads/writes, web portal interactions, and status triggers.
+- **Google BigQuery** serves as the **Analytical Data Warehouse (OLAP)** for tax compliance (GST/TDS), statutory auditing, and historical reporting.
 
 - **GCP Project:** `st-in-gen` (`972643538415`) — *Single GCP Project*
 - **Location:** `asia-south1` (Mumbai, India)
 
+---
+
+## 2.1 Operational Database (Firebase Firestore — Real-Time OLTP)
+
+Firestore provides sub-second document access and real-time bi-directional synchronization with the Firebase Web App.
+
+### Core Collections & Document Schemas
+- **`/projects/{UUID}`**: Operational bookings synced from Google Sheets Project Tracker (`project_id`, `client_name`, `booking_hours`, `hourly_rate`, `status`).
+- **`/invoices/{UUID}`**: Master invoice registry (`invoice_number`, `invoice_date`, `subtotal`, `tax_amount`, `grand_total`, `pdf_drive_url`, `status`).
+- **`/expenses/{UUID}`**: Operational and capital expenditure ledger (`expense_date`, `category`, `amount`, `vendor`, `project_code`).
+- **`/clients/{client_id}`**: Canonical client registry (`canonical_name`, `gstin`, `pan`, `billing_address`).
+
+---
+
+## 2.2 Data Warehouse (Google BigQuery — Analytical OLAP)
+
+Replicated in real-time from Firestore via the official **Firebase Extension: Stream Firestore to BigQuery**.
+
 ### 3-Tier Isolated Dataset Architecture
 | Tier | Git Branch | Dataset ID | Role / Purpose |
 |---|---|---|---|
-| **Dev** | `dev` | `st_fin_com_prog_dev` | Rapid feature development & isolated script testing |
-| **Test** | `test` | `st_fin_com_prog_test` | Automated integration test sandbox |
-| **PML** *(Production Main Live)* | `pml` | `st_fin_com_prog_pml` | Live operational tax ledger & official reports |
+| **Dev** | `dev` | `st_comptroller_dev` | Rapid feature development & isolated script testing |
+| **Test** | `test` | `st_comptroller_test` | Automated integration test sandbox |
+| **PML** *(Production Main Live)* | `pml` | `st_comptroller_pml` | Live operational tax ledger & official reports |
 
 ---
 
 ## Schema Architecture (Star Schema & Raw Staging)
 
-### 1. Raw Ingestion & Legacy Staging
-- **`raw_project_tracker`**: Raw row ingest from active Google Sheets.
-- **`raw_firebase_clients`**: Unstructured JSON payloads from legacy Firebase studio app.
-- **`raw_firebase_jobs`**: Historical jobs & quotes imported from Firestore.
+### 1. Streaming Firestore Replicas
+- **`projects_raw_changelog`**: Real-time event log streamed from `/projects`.
+- **`invoices_raw_changelog`**: Real-time event log streamed from `/invoices`.
 
 ### 2. Dimension Tables
 - **`dim_clients`**: Unified canonical client registry (`client_id`, `canonical_name`, `gstin`, `state_code`, `pan`, `data_source`).
@@ -34,8 +53,8 @@ We chose **Google BigQuery** as our primary relational data warehouse and modeli
 ---
 
 ## Cost & Capacity Planning (GCP India Free Tier)
-- **Active Storage:** 10 GB free per month in `asia-south1`.
-- **Query Processing:** 1 TB scanned free per month.
-- **Secrets Management:** Kept in GitHub Secrets & local git-ignored files to guarantee ₹0 cost without requiring a credit card or billing account.
-- **Estimated Monthly Cost:** ₹0 (Fully within free tier limits).
+- **Firestore Free Ceilings:** 50,000 reads/day, 20,000 writes/day, 1 GB storage (fully covers daily operational loads).
+- **BigQuery Active Storage:** 10 GB free per month in `asia-south1`.
+- **BigQuery Query Processing:** 1 TB scanned free per month.
+- **Estimated Monthly Cost:** ₹0 (Fully within GCP free tier limits).
 

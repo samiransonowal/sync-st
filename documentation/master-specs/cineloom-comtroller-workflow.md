@@ -1,35 +1,43 @@
 ---
 name: "cineloom-comptroller-workflow"
-description: "Target Outcomes, Current Accounts Workflow, Spreadsheet Overhaul Plan, and Functional Architecture for ST-fin-com-prog (Studio Tunnel Financial Comptroller Agent)."
+description: "Target Outcomes, Current Accounts Workflow, Spreadsheet Overhaul Plan, and Functional Architecture for st-comptroller (Studio Tunnel / Cineloom Postworks Financial Comptroller Agent)."
 ---
 
-# ST-fin-com-prog — Agent Core Target Outcomes & Operational Workflows
+# st-comptroller — Agent Core Target Outcomes & Operational Workflows
 
-This specification outlines the strategic financial outcomes, current accounts operational workflow, spreadsheet overhaul schedule, and target capabilities for the **Studio Tunnel Financial Comptroller Agent (`ST-fin-com-prog`)** operating across Studio Tunnel / Cineloom Postworks Pvt Ltd.
+This specification outlines the strategic financial outcomes, current accounts operational workflow, spreadsheet overhaul schedule, and target capabilities for the **st-comptroller Agent** operating across Studio Tunnel / Cineloom Postworks Pvt Ltd.
 
 ---
 
 ## 1. Executive Overview & Architecture
 
-The Comptroller Agent acts as an autonomous financial co-pilot and automated ledger manager. It bridges operational spreadsheets (**Project Tracker** & **Accounts Sheet**), bank statements, automated client communications, expense management, statutory tax tracking, and natural language email commands into **BigQuery** and **Google Looker Studio**.
+The Comptroller Agent acts as an autonomous financial co-pilot and automated ledger manager. It bridges operational spreadsheets (**Project Tracker** & **Accounts Sheet**), bank statements, automated client communications, expense management, statutory tax tracking, and natural language email commands into a **Hybrid OLTP/OLAP Data Architecture** (`Google Sheets -> Firebase Firestore <-> Firebase Web App -> Google BigQuery`).
 
 ```mermaid
 flowchart TD
-    Producer[Line Producer / Team] -->|Daily Logins & Hours| TrackerSheet[New Project Tracker Sheet]
-    TrackerSheet -->|Automated Pipeline / Apps Script| AccountsSheet[New Accounts Master Sheet]
-    
-    Email[Email Agent Interface] --> AgentCore[Comptroller Agent Engine]
-    AccountsSheet --> AgentCore
-    Bank[HDFC Bank Statements / Monday Recon] --> Recon[Custom Client Recon Logic Engine]
-    
-    AgentCore --> Invoicing[Invoice & Estimate Generation]
-    AgentCore --> Reminders[21st Day Automated Reminders & 30-Day Cycle Tracking]
-    AgentCore --> Expenses[Expense & Liability Ledger]
-    AgentCore --> Tax Engine[GST Payable & TDS Tracking]
-    Recon --> Cashflow[Cashflow & Financial Health Reports]
-    
-    AgentCore --> WareHouse[(BigQuery DW: st_fin_com_prog)]
-    WareHouse --> Dashboards[Looker Studio & Executive Summaries]
+    subgraph Data Ingestion Layer
+        Producer[Line Producer] -->|Data Entry with UUID| Sheets[Google Sheets: Project Tracker]
+        Admin[Admin] -->|Data Entry with UUID| AccSheets[Google Sheets: Accounts Master]
+    end
+
+    subgraph Operational Database (Real-time OLTP)
+        Sheets -- "Apps Script onEdit Trigger" --> Firestore[(Firebase Firestore)]
+        AccSheets -- "Apps Script onEdit Trigger" --> Firestore
+    end
+
+    subgraph User Interface & Real-time Web App
+        Firestore <-->|Bi-directional Sync| WebApp[Firebase Web App Dashboard]
+    end
+
+    subgraph Serverless Cloud Functions (Automated Modules)
+        Firestore -- "Status == Ready to Bill" --> PDFGen[Invoice PDF Generator]
+        Firestore -- "Daily Scheduled Query" --> Reminders[21-Day Reminder Engine]
+        BankCSV[HDFC Bank Statements] --> Recon[Reconciliation Engine] --> Firestore
+    end
+
+    subgraph Data Warehouse & Analytics (OLAP)
+        Firestore -- "Firebase Extension (Stream)" --> BigQuery[(Google BigQuery DW)]
+    end
 ```
 
 ---
@@ -40,21 +48,24 @@ flowchart TD
 1. **Line Producer Project Tracker**:
    - Managed directly by the Line Producer.
    - Captures billable hours, project scope, colorist assignments, and client company details for billing.
-2. **Accounts Sheet Bridge (`IMPORTRANGE`)**:
-   - Accounts Sheet imports project data via Google Sheets `=IMPORTRANGE(...)` formulas.
-   - Assembles required invoice details, shipping addresses, and tax parameters to prepare and dispatch client invoices.
-3. **Invoice Date Anchor**:
+2. **Real-time Firestore Bridge (Replacing `IMPORTRANGE`)**:
+   - Google Sheets `onEdit` Apps Script triggers push row updates in real-time to **Firebase Firestore** collections (`/projects`, `/invoices`).
+   - Replaces fragile `=IMPORTRANGE(...)` formulas, keeping Google Sheets, Firebase Web App, and BigQuery seamlessly synced.
+3. **Mandatory Column A UUID Primary Key**:
+   - Every row across all Google Sheets tabs MUST feature a `UUID` as Column A (e.g. `PRJ-8F92A1` or standard UUIDv4).
+   - An Apps Script trigger automatically populates Column A with a new UUID when a new row is entered, serving as the document key in Firestore and `PRIMARY KEY` in BigQuery.
+4. **Invoice Date Anchor**:
    - The `Invoice Date` is used as the primary baseline timestamp to track payment cycles and monitor receivables.
-4. **Monday Bank Statement Reconciliation**:
-   - Conducted every Monday to compare bank statement credits (HDFC) against open accounts receivable to verify cleared payments, deducted TDS, and outstanding client balances.
+5. **Monday Bank Statement Reconciliation**:
+   - Conducted every Monday to compare bank statement credits (HDFC) against open accounts receivable in Firestore to verify cleared payments, deducted TDS, and outstanding client balances.
 
-### 2.2 Current Spreadsheet Infrastructure
-Located and referenced in [`credentials.env.example`](file:///Users/samiransonowal/Documents/GitHub/IN-gen/credentials/public/credentials.env.example#L75-L87):
+### 2.2 Target Spreadsheet Infrastructure (Fresh Initialization)
+Configured via [`credentials.env.example`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/credentials/public/credentials.env.example):
 
-| Spreadsheet Role | Spreadsheet Title | Spreadsheet ID / URL |
+| Spreadsheet Role | Spreadsheet Title | Status |
 | :--- | :--- | :--- |
-| **Master Accounts Sheet** | `ACCOUNTS_CINELOOM POSTWORKS_2026_ANTIGRAVITY` | [`1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A`](https://docs.google.com/spreadsheets/d/1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A/edit?gid=0#gid=0) |
-| **Upstream Project Tracker** | `PROJECT TRACKER_CINELOOM POSTWORKS_ANTIGRAVITY` | [`1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0`](https://docs.google.com/spreadsheets/d/1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0/edit?pli=1&gid=0#gid=0) |
+| **Master Accounts Sheet** | `ACCOUNTS_CINELOOM_POSTWORKS_MASTER` | Fresh Template Pending Creation |
+| **Upstream Project Tracker** | `PROJECT_TRACKER_CINELOOM_POSTWORKS_MASTER` | Fresh Template Pending Creation |
 
 ---
 
@@ -63,41 +74,47 @@ Located and referenced in [`credentials.env.example`](file:///Users/samiransonow
 To resolve formula fragility and broken `=IMPORTRANGE(...)` dependencies while preserving complete per-column queryability for reporting and analytics, we have re-established explicit, uncombined column structures across both spreadsheets:
 
 ### 3.1 Project Tracker (Daily Bookings Log Schema)
-Every field is strictly maintained in its own dedicated column:
-- `SR.` (Sequence number)
-- `DATE / INVOICE DATE` (Entry timestamp)
-- `PROJECT NAME` (Unique project title)
-- `PRODUCTION HOUSE / CLIENT` (Client entity)
-- `DIRECTOR` (Director name)
-- `DOP` (Director of Photography)
-- `COLORIST` (Assigned colorist/artist)
-- `BOOKING HRS` (Scheduled hours)
-- `ASSIST HRS` (Assistant hours)
-- `TOTAL HRS` (Total billable hours)
-- `RATE` (Hourly billing rate)
-- `DISCOUNT` (Applicable discount)
-- `TOTAL AMOUNT` (Calculated net total)
-- `POC NAME` (Point of contact)
-- `EMAIL ID` (Billing email)
-- `PHONE NO.` (Contact phone)
-- `GST NO.` (Client GSTIN)
-- `PAN NO.` (Client PAN)
-- `BILLING ADDRESS` (Full corporate address)
-- `Notes / Scope` (Deliverable scope and milestone notes)
+Every field is strictly assigned a programmatic **Column ID (Field Key)** to ensure column order independence and precise data mapping across Google Sheets, Firestore, and BigQuery:
+
+| Column | Sheet Header Title | Programmatic Column ID | Data Type | Key / Constraint | Description |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **A** | `UUID` | `project_id` | `STRING (UUID)` | **PRIMARY KEY** | System Unique ID (Auto-generated: e.g. `PRJ-8F92A1`) |
+| **B** | `SR.` | `sr_num` | `INTEGER` | Required | Line item sequence number |
+| **C** | `DATE / INVOICE DATE` | `entry_date` | `DATE (YYYY-MM-DD)` | Required | Booking / entry date baseline |
+| **D** | `PROJECT NAME` | `project_name` | `STRING` | Required | Unique project / commercial title |
+| **E** | `PRODUCTION HOUSE / CLIENT` | `client_name` | `STRING` | Required | Client corporate entity / Production house |
+| **F** | `DIRECTOR` | `director_name` | `STRING` | Optional | Director name |
+| **G** | `DOP` | `dop_name` | `STRING` | Optional | Director of Photography name |
+| **H** | `COLORIST` | `colorist_name` | `STRING` | Required | Assigned colorist / artist |
+| **I** | `BOOKING HRS` | `booking_hours` | `NUMERIC(5,2)` | Required | Scheduled billable grading hours |
+| **J** | `ASSIST HRS` | `assist_hours` | `NUMERIC(5,2)` | Optional | Assistant billable hours |
+| **K** | `TOTAL HRS` | `total_hours` | `NUMERIC(5,2)` | Calculated | Total billable hours (`BOOKING + ASSIST`) |
+| **L** | `RATE` | `hourly_rate` | `CURRENCY (INR)` | Required | Hourly rate in INR |
+| **M** | `DISCOUNT` | `discount_amount` | `CURRENCY (INR)` | Optional | Discount deduction amount |
+| **N** | `TOTAL AMOUNT` | `total_amount` | `CURRENCY (INR)` | Calculated | Net total before GST (`(TOTAL HRS * RATE) - DISCOUNT`) |
+| **O** | `POC NAME` | `poc_name` | `STRING` | Required | Client Point of Contact name |
+| **P** | `EMAIL ID` | `poc_email` | `STRING (EMAIL)` | Required | Client billing email address |
+| **Q** | `PHONE NO.` | `poc_phone` | `STRING` | Optional | Client contact phone number |
+| **R** | `GST NO.` | `client_gstin` | `STRING (GSTIN)` | Required | Client 15-digit GSTIN |
+| **S** | `PAN NO.` | `client_pan` | `STRING (PAN)` | Optional | Client 10-character PAN |
+| **T** | `BILLING ADDRESS` | `billing_address` | `TEXT` | Required | Full corporate registered billing address |
+| **U** | `Notes / Scope` | `notes_scope` | `TEXT` | Optional | Milestone scope notes & deliverable specifications |
 
 ### 3.2 Accounts Sheet (Doorway Tabs Schema)
 
+Every tab strictly maintains an immutable `UUID` as its primary key:
+
 #### **Tab 1: `Invoices & Dispatch`**
-- `SR.` | `INV NO.` | `INVOICE DATE` | `PROJECT NAME` | `COMPANY / CLIENT` | `COLORIST` | `HRS` | `PER HR RATE` | `DISCOUNT` | `TOTAL AMOUNT` | `GST BILL AMOUNT` | `POC NAME` | `EMAIL ID` | `PHONE NO.` | `GST NO.` | `PAN NO.` | `BILLING ADDRESS` | `Notes` | `PO No.` | `BILL STATUS` | `PAYMENT STATUS` | `Remark` | `Due of payment` | `TDS @10%` | `Payment Receival Date` | `AMOUNT RECEIVED` | `PENDING`
+- `UUID` / `INVOICE_ID` | `SR.` | `INV NO.` | `INVOICE DATE` | `PROJECT NAME` | `COMPANY / CLIENT` | `COLORIST` | `HRS` | `PER HR RATE` | `DISCOUNT` | `TOTAL AMOUNT` | `GST BILL AMOUNT` | `POC NAME` | `EMAIL ID` | `PHONE NO.` | `GST NO.` | `PAN NO.` | `BILLING ADDRESS` | `Notes` | `PO No.` | `BILL STATUS` | `PAYMENT STATUS` | `Remark` | `Due of payment` | `TDS @10%` | `Payment Receival Date` | `AMOUNT RECEIVED` | `PENDING`
 
 #### **Tab 2: `Expenses & Payables`**
-- `Date` | `Expense Category` | `Description / Item` | `Project Code` | `Amount (₹)` | `Paid To / Vendor` | `Payment Mode` | `GST Component` | `Tax Invoice / Bill No.` | `Approval Status` | `Notes / Drive Receipt`
+- `UUID` / `EXPENSE_ID` | `Date` | `Expense Category` | `Description / Item` | `Project Code` | `Amount (₹)` | `Paid To / Vendor` | `Payment Mode` | `GST Component` | `Tax Invoice / Bill No.` | `Approval Status` | `Notes / Drive Receipt`
 
 #### **Tab 3: `Monday Reconciliation Doorway`**
-- `Bank Txn Date` | `HDFC Narration / Reference` | `Credit Amount (₹)` | `Debit Amount (₹)` | `Matched Invoice No.` | `Matched Client Name` | `Expected Net Receipt` | `TDS Deducted` | `Reconciliation Status` | `Notes`
+- `UUID` / `RECON_ID` | `Bank Txn Date` | `HDFC Narration / Reference` | `Credit Amount (₹)` | `Debit Amount (₹)` | `Matched Invoice No.` | `Matched Client Name` | `Expected Net Receipt` | `TDS Deducted` | `Reconciliation Status` | `Notes`
 
 #### **Tab 4: `Loans & Subscriptions`**
-- `Obligation Type` | `Name / Lender / SaaS Tool` | `Account / Policy Reference` | `Monthly EMI / Amount (₹)` | `Due Day of Month` | `Next Due Date` | `Auto-Debit Account` | `Payment Status` | `Notes`
+- `UUID` / `OBLIGATION_ID` | `Obligation Type` | `Name / Lender / SaaS Tool` | `Account / Policy Reference` | `Monthly EMI / Amount (₹)` | `Due Day of Month` | `Next Due Date` | `Auto-Debit Account` | `Payment Status` | `Notes`
 
 ---
 
@@ -133,7 +150,7 @@ Every field is strictly maintained in its own dedicated column:
 
 ### 4.5 Financial Health & Cashflow Reporting
 - **Cashflow Forecasting**: Produce real-time visibility into net cash inflow vs. expected short-term outflows (due bills, salaries, rent, vendor payments).
-- **Executive Summaries**: Generate automated weekly/monthly financial health reports (PDF / Email digest / Looker Studio dashboard) highlighting:
+- **Executive Summaries**: Generate automated weekly/monthly financial health reports (PDF / Email digest / Firebase Web App Dashboard) highlighting:
   - Gross Revenue vs. Net Receipts
   - Burn Rate & Runway Analysis
   - Outstanding Receivables vs. Payables Ratio
@@ -181,27 +198,30 @@ Every field is strictly maintained in its own dedicated column:
 
 | Capability / Outcome | Input Source | Primary Processing Unit | Key Output / Artifact |
 | :--- | :--- | :--- | :--- |
-| **Invoice Generation** | Project Tracker Sheet / Email | PDF Engine + BigQuery `dim_invoices` | Vector PDF Invoices & Drive URL |
-| **30-Day Payment Cycle** | BigQuery `fact_payments` | Aging Engine (`view_chase_list`) | Overdue Status & Aging Metrics |
-| **21st Day Reminders** | BigQuery `view_chase_list` | Dispatcher (Email / Discord) | Automated Client Reminder Notice |
-| **Expense Tracking** | Ingestion Sheet / Email Agent | Expense Ledger (`fact_expenses`) | Categorized Expense Reports & Margin Analysis |
-| **Financial Health Reports**| BigQuery Financial Views | Looker Studio / Email Digest | Executive Cashflow & Burn Dashboard |
+| **Invoice Generation** | Project Tracker / Web App | Firestore Trigger -> PDF Cloud Function | Vector PDF Invoices & Drive URL |
+| **30-Day Payment Cycle** | Firestore `/invoices` | Aging Cloud Function | Overdue Status & Aging Metrics |
+| **21st Day Reminders** | Firestore `/invoices` | Cloud Scheduler -> Dispatcher Function | Automated Client Reminder Notice |
+| **Expense Tracking** | Ingestion Sheet / Email Agent | Expense Cloud Function -> Firestore `/expenses` | Categorized Expense Reports & Margin Analysis |
+| **Financial Health Reports**| Firestore & BigQuery DW | Firebase Web App / Email Digest | Interactive Real-Time Cashflow & Burn Dashboard |
 | **Estimates & Quotations** | Email Agent / Sheet | Quote Generator (`dim_estimates`) | PDF Quotation & One-Click Invoice Sync |
 | **Email Intelligent Agent**| Incoming Email Inbox | NLP Parser & Command Executor | Execution Log & Response Email |
-| **GST & TDS Accounting** | Invoices & Payment Receipts | Statutory Tax Engine | Net GST Payable & TDS Receivable Ledger |
-| **Bank Reconciliation** | HDFC Bank Statements | Custom Reconciliation Algorithm | Automated Transaction-Invoice Match |
+| **GST & TDS Accounting** | BigQuery Stream (`st_comptroller`) | Statutory Tax Engine | Net GST Payable & TDS Receivable Ledger |
+| **Bank Reconciliation** | HDFC Bank Statements | Cloud Function Reconciliation Engine | Automated Transaction-Invoice Match in Firestore |
 | **Loans & Subscriptions** | Recurring Schedule Ledger | Liabilities Ledger (`dim_liabilities`)| Due Alerts & Cash Outflow Schedule |
 
 ---
 
 ## 6. Scheduled Implementation Plan & Next Steps
 
-1. **Task 1: Spreadsheet Template Creation & Migration**:
-   - Generate new Google Spreadsheet templates for **Project Tracker** (daily time log format) and **Accounts Sheet**.
-   - Migrate existing data from old spreadsheet IDs (`1NkRayJ7mBHkBIT_bIXQyOaTPy2zK1QCpTfT_tInL-H0` and `1NgJFSEz1C7F2AG2TRijwLDkFwGeK45iUd_S3PJkwg-A`).
-2. **Task 2: Backend Synchronization Pipeline**:
-   - Replace raw `=IMPORTRANGE(...)` formulas with an Apps Script / BigQuery sync script.
-3. **Task 3: Core Logic Engines Implementation**:
-   - Implement 21st-day payment reminder trigger, 30-day aging engine, and Monday HDFC bank reconciliation matcher.
-4. **Task 4: Email Intelligent Agent Integration**:
+1. **Task 1: Spreadsheet Template Creation (Fresh Start)**:
+   - Generate clean Google Spreadsheet templates for **Project Tracker** (daily time log format) and **Accounts Sheet** with Column A `UUID` primary key auto-generation.
+   - Zero legacy formula/importrange dependencies.
+2. **Task 2: Real-time Firestore Sync & BigQuery Streaming Pipeline**:
+   - Implement Apps Script `onEdit` trigger pushing row updates to Firestore.
+   - Deploy official **Stream Firestore to BigQuery** Firebase Extension for zero-code real-time warehouse replication.
+3. **Task 3: Cloud Functions & Core Logic Implementation**:
+   - Implement 21st-day payment reminder trigger, 30-day aging engine, and Monday HDFC bank reconciliation Cloud Functions over Firestore.
+4. **Task 4: Firebase Web App Dashboard (`st-comptroller-portal`)**:
+   - Build interactive bi-directional dashboard for cash flow charts, invoice status updates, and action triggers.
+5. **Task 5: Email Intelligent Agent Integration**:
    - Configure Gmail API listener to process natural language email commands for quotes, invoicing, and expense logging.

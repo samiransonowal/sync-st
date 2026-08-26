@@ -1,282 +1,485 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Tax Invoice - Studio Tunnel</title>
-  <!-- Google Font: Lexend -->
-  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    @page {
-      size: A4;
-      margin: 15mm 15mm 15mm 15mm;
-    }
-    body {
-      font-family: 'Lexend', sans-serif;
-      color: #1A1A1A; /* 90% Gray for primary text (NO pure #000000) */
-      font-size: 11px;
-      line-height: 1.4;
-      margin: 0;
-      padding: 0;
-      background-color: #FFFFFF; /* Pure White background permitted for paper/invoice */
-    }
-    .header-table {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    .company-name {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #1A1A1A; /* 90% Gray */
-    }
-    .divider-bar {
-      height: 4px;
-      background-color: #1A1A1A; /* Dark divider bar */
-      margin: 8px 0 12px 0;
-    }
-    .title-text {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1A1A1A; /* 90% Gray */
-      text-align: center;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .meta-table {
-      width: 100%;
-      margin-bottom: 15px;
-    }
-    .meta-table td {
-      vertical-align: top;
-      color: #2D2D2D; /* 80% Gray body text */
-    }
-    .section-title {
-      font-weight: 600;
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: #1A1A1A; /* 90% Gray */
-    }
-    .item-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 10px;
-    }
-    .item-table th {
-      background-color: #1A1A1A; /* Dark header block */
-      color: #CCCCCC;            /* 20% Gray for light text on dark background (NO pure #FFFFFF) */
-      font-weight: 600;
-      padding: 8px 8px;
-      text-align: left;
-      font-size: 10px;
-    }
-    .item-table td {
-      padding: 8px 8px;
-      border-bottom: 1px solid #E0E0E0;
-      font-size: 10px;
-      color: #2D2D2D; /* 80% Gray body text */
-    }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    
-    .totals-table {
-      width: 45%;
-      float: right;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-    }
-    .totals-table td {
-      padding: 6px 8px;
-      font-size: 10px;
-      color: #2D2D2D;
-    }
-    .grand-total-row {
-      background-color: #1A1A1A; /* Dark grand total row */
-      color: #CCCCCC;            /* 20% Gray light text (NO pure #FFFFFF) */
-      font-weight: 700;
-    }
-    .grand-total-row td {
-      color: #CCCCCC !important;
-    }
-    .words-block {
-      width: 50%;
-      float: left;
-      margin-top: 5px;
-      color: #2D2D2D;
-    }
-    .clearfix { clear: both; }
-    
-    .footer-table {
-      width: 100%;
-      margin-top: 30px;
-    }
-    .bank-box {
-      font-size: 10px;
-      line-height: 1.5;
-      color: #2D2D2D;
-    }
-    .signature-box {
-      text-align: right;
-      font-size: 11px;
-      color: #1A1A1A;
-    }
-    .signature-line {
-      font-family: 'Lexend', sans-serif;
-      font-weight: 600;
-      font-size: 16px;
-      margin-top: 25px;
-      display: inline-block;
-      border-bottom: 1px solid #1A1A1A;
-      padding: 0 20px;
-      color: #1A1A1A;
-    }
-  </style>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --brand-green: #0F5132; /* Placeholder brand green */
+            --dark-text: #1A1A1A;
+            --light-text: #CCCCCC;
+            --white: #FFFFFF;
+            --border-color: #E0E0E0;
+        }
+
+        body {
+            font-family: 'Lexend', sans-serif;
+            color: var(--dark-text);
+            background-color: var(--white);
+            margin: 0;
+            padding: 30px 35px 25px 35px;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .company-name-box {
+            width: 60%;
+            text-align: left;
+        }
+
+        .company-name-box h1 {
+            color: var(--dark-text);
+            font-size: 17px;
+            margin: 0;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            width: 35%;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .logo-box img {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .header-bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .address-box {
+            text-align: left;
+            width: 60%;
+            font-size: 9px;
+            color: #555555;
+        }
+
+        .address-box p {
+            margin: 1.5px 0;
+            line-height: 1.4;
+        }
+
+        .statutory-box {
+            text-align: right;
+            width: 35%;
+            font-size: 9px;
+            color: #555555;
+        }
+
+        .statutory-box p {
+            margin: 1.5px 0;
+            line-height: 1.4;
+        }
+
+        .invoice-title {
+            text-align: center;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--brand-green);
+            margin: 14px 0;
+            border-bottom: 2px solid var(--brand-green);
+            padding-bottom: 4px;
+        }
+
+        .meta-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 4px;
+        }
+
+        .billed-to {
+            width: 50%;
+        }
+
+        .billed-to h3 {
+            margin: 0 0 10px 0;
+            font-size: 11px;
+            color: #555555;
+            text-transform: uppercase;
+        }
+        
+        .billed-to strong {
+            font-size: 12px;
+            color: var(--dark-text);
+        }
+
+        .billed-to p {
+            margin: 3px 0;
+            font-size: 10px;
+        }
+
+        .invoice-details {
+            width: 45%;
+        }
+
+        .invoice-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .invoice-details td {
+            padding: 3px 0;
+            font-size: 10px;
+        }
+
+        .invoice-details td:first-child {
+            font-weight: 600;
+            width: 40%;
+            color: #555555;
+        }
+        
+        .invoice-details td:last-child {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+
+        .items-table th, .items-table td {
+            border: 1px solid var(--border-color);
+            padding: 7px 9px;
+            text-align: left;
+        }
+
+        .items-table th {
+            background-color: var(--brand-green);
+            color: var(--white);
+            font-weight: 500;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .items-table td {
+            font-size: 9.5px;
+            vertical-align: top;
+        }
+        
+        .items-table th.right-align, 
+        .items-table td.right-align {
+            text-align: right;
+        }
+
+        .items-table th.center-align, 
+        .items-table td.center-align {
+            text-align: center;
+        }
+
+        /* Totals */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .totals-table {
+            width: 40%;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 5px 9px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 9.5px;
+        }
+
+        .totals-table td:first-child {
+            font-weight: 500;
+            color: #555555;
+        }
+
+        .totals-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .totals-table tr.grand-total td {
+            background-color: #F8F9FA;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--brand-green);
+            border-bottom: none;
+            border-top: 2px solid var(--brand-green);
+        }
+
+        .amount-words {
+            font-weight: 500;
+            margin-bottom: 14px;
+            font-size: 9.5px;
+            background-color: #F8F9FA;
+            padding: 8px 12px;
+            border-left: 3px solid var(--brand-green);
+        }
+
+        /* Footer / Bank / Sig */
+        .footer-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+        }
+
+        .bank-details {
+            width: 50%;
+        }
+
+        .bank-details h3 {
+            margin: 0 0 10px 0;
+            font-size: 11px;
+            color: var(--brand-green);
+            text-transform: uppercase;
+        }
+
+        .bank-details p {
+            margin: 3px 0;
+            font-size: 10px;
+        }
+        
+        .bank-details strong {
+            color: #333333;
+        }
+
+        .signature-block {
+            width: 40%;
+            text-align: right;
+        }
+        
+        .signature-block p.company-name {
+            font-weight: 600;
+            font-size: 10px;
+            margin: 0 0 10px 0;
+        }
+
+        .signature-block img {
+            max-width: 75px;
+            height: auto;
+            margin: 0;
+            display: block;
+            margin-left: auto;
+        }
+        
+        .signature-block p.auth-sign {
+            margin: 0;
+            font-size: 10px;
+            color: #555555;
+            display: inline-block;
+        }
+
+        /* Terms & Conditions */
+        .terms-section {
+            margin-top: 14px;
+            margin-bottom: 14px;
+            padding: 8px 12px;
+            background-color: #F8F9FA;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .terms-section h3 {
+            margin: 0 0 6px 0;
+            font-size: 10px;
+            color: var(--brand-green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .terms-section ol {
+            margin: 0;
+            padding-left: 15px;
+            color: #444444;
+            font-size: 8.5px;
+            line-height: 1.5;
+        }
+
+        .terms-section li {
+            margin-bottom: 2px;
+        }
+
+    </style>
 </head>
 <body>
 
-  <!-- Company Header & Logo -->
-  <table class="header-table">
-    <tr>
-      <td style="width: 70%; vertical-align: top;">
-        <div class="company-name"><?= d.company.name ?></div>
-        <div><?= d.company.address ?></div>
-        <div>HSN Code: <?= d.company.hsn ?></div>
-        <div>Phone no. : <?= d.company.phone ?></div>
-        <div>Email : <?= d.company.email ?></div>
-        <div>GSTIN : <?= d.company.gstin ?></div>
-        <div>State: <?= d.company.state ?></div>
-        <div>PAN: <?= d.company.pan ?></div>
-        <div>TAN: <?= d.company.tan ?></div>
-      </td>
-      <td style="width: 30%; text-align: right; vertical-align: top;">
-        <!-- Studio Tunnel Logo Header -->
-        <div style="background:#1A1A1A; color:#CCCCCC; display:inline-block; padding:10px 15px; font-weight:700; font-size:14px;">
-          STUDIO TUNNEL
+    <div class="header-top-row">
+        <div class="company-name-box">
+            <h1>CINELOOM POSTWORKS PRIVATE LIMITED</h1>
         </div>
-      </td>
-    </tr>
-  </table>
+        <div class="logo-box">
+            <? if (logoDataUri) { ?>
+                <img src="<?!= logoDataUri ?>" alt="Logo">
+            <? } else { ?>
+                <h2 style="margin:0;">STUDIO TUNNEL</h2>
+            <? } ?>
+        </div>
+    </div>
 
-  <div class="divider-bar"></div>
+    <div class="header-bottom-row">
+        <div class="address-box">
+            <p>311, Kamla Spaces, SV Road,</p>
+            <p>Santacruz (West), Mumbai - 400 054</p>
+            <p>Phone: +91 8928249081</p>
+            <p>Email: contact@studiotunnel.com</p>
+        </div>
+        <div class="statutory-box">
+            <p><strong>GSTIN:</strong> 27AAMCC8604R1ZV</p>
+            <p><strong>PAN:</strong> AAMCC8604R</p>
+            <p><strong>TAN:</strong> PNEC20959B</p>
+            <p><strong>State:</strong> 27-Maharashtra</p>
+        </div>
+    </div>
 
-  <!-- Document Title -->
-  <div class="title-text">Tax Invoice</div>
+    <div class="invoice-title">TAX INVOICE</div>
 
-  <!-- Client & Invoice Metadata -->
-  <table class="meta-table">
-    <tr>
-      <!-- Bill To Left -->
-      <td style="width: 60%;">
-        <div class="section-title">Bill To</div>
-        <div style="font-weight: 600; color: #1A1A1A;"><?= d.client.name ?></div>
-        <div><?= d.client.address ?></div>
-        <div>Contact No. : <?= d.client.contact ?></div>
-        <div>GSTIN : <?= d.client.gstin ?></div>
-        <div>State: <?= d.client.state ?></div>
-      </td>
-      <!-- Invoice Details Right -->
-      <td style="width: 40%; text-align: right;">
-        <div class="section-title">Invoice Details</div>
-        <div>Invoice No. : <strong><?= d.inv.no ?></strong></div>
-        <div>Date : <?= d.inv.date ?></div>
-        <div>Place of supply: <?= d.inv.placeOfSupply ?></div>
-        <div>PAN: <?= d.client.pan ?></div>
-      </td>
-    </tr>
-  </table>
+    <div class="meta-section">
+        <div class="billed-to">
+            <h3>Billed To:</h3>
+            <p><strong><?= data.client_name ?></strong></p>
+            <p><?!= data.billing_address.replace(/\n/g, '<br>') ?></p>
+            <? if (data.client_gstin) { ?><p><strong>GSTIN:</strong> <?= data.client_gstin ?></p><? } ?>
+            <? if (data.client_pan) { ?><p><strong>PAN:</strong> <?= data.client_pan ?></p><? } ?>
+        </div>
+        <div class="invoice-details">
+            <table>
+                <tr>
+                    <td>Invoice No:</td>
+                    <td><?= data.invoice_no ?></td>
+                </tr>
+                <tr>
+                    <td>Invoice Date:</td>
+                    <td><?= data.invoice_date ?></td>
+                </tr>
+                <tr>
+                    <td>PO No:</td>
+                    <td><?= data.po_no || 'N/A' ?></td>
+                </tr>
+                <tr>
+                    <td>Place of Supply:</td>
+                    <td><?= data.place_of_supply ?></td>
+                </tr>
+                <tr>
+                    <td>Payment Terms:</td>
+                    <td><?= data.payment_terms ?></td>
+                </tr>
+                <tr>
+                    <td>Due Date:</td>
+                    <td><?= data.due_date ?></td>
+                </tr>
+            </table>
+        </div>
+    </div>
 
-  <!-- Line Items Table -->
-  <table class="item-table">
-    <thead>
-      <tr>
-        <th style="width: 5%;">#</th>
-        <th style="width: 35%;">Item name</th>
-        <th style="width: 12%;">HSN/ SAC</th>
-        <th style="width: 8%;" class="text-center">Quantity</th>
-        <th style="width: 8%;" class="text-center">Unit</th>
-        <th style="width: 12%;" class="text-right">Price/ Unit</th>
-        <th style="width: 10%;" class="text-right">GST</th>
-        <th style="width: 10%;" class="text-right">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      <? for (var i = 0; i < d.items.length; i++) { var item = d.items[i]; ?>
-      <tr>
-        <td><?= item.srNo ?></td>
-        <td><strong><?= item.name ?></strong></td>
-        <td><?= item.hsn ?></td>
-        <td class="text-center"><?= item.qty ?></td>
-        <td class="text-center"><?= item.unit ?></td>
-        <td class="text-right">₹ <?= item.rate.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-        <td class="text-right">₹ <?= item.gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?><br><small style="color:#666666;">(<?= item.gstRate ?>%)</small></td>
-        <td class="text-right">₹ <?= item.amount.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-      </tr>
-      <? } ?>
-    </tbody>
-  </table>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="center-align" style="width: 5%">#</th>
+                <th style="width: 45%">Items</th>
+                <th class="center-align" style="width: 10%">HSN/SAC</th>
+                <th class="center-align" style="width: 10%">Qty (Hrs)</th>
+                <th class="right-align" style="width: 10%">Rate (₹)</th>
+                <th class="center-align" style="width: 8%">GST %</th>
+                <th class="right-align" style="width: 12%">Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <? for (var i = 0; i < data.line_items.length; i++) { ?>
+                <tr>
+                    <td class="center-align"><?= i + 1 ?></td>
+                    <td><?!= data.line_items[i].description.replace(/\n/g, '<br>') ?></td>
+                    <td class="center-align"><?= data.line_items[i].hsn_sac ?></td>
+                    <td class="center-align"><?= data.line_items[i].qty ?></td>
+                    <td class="right-align"><?= parseFloat(data.line_items[i].rate).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+                    <td class="center-align"><?= data.line_items[i].gst_percent ?>%</td>
+                    <td class="right-align"><?= parseFloat(data.line_items[i].amount).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+                </tr>
+            <? } ?>
+        </tbody>
+    </table>
 
-  <!-- Summary Section -->
-  <div class="words-block">
-    <div style="font-weight: 600; color: #1A1A1A;">Invoice Amount In Words</div>
-    <div style="margin-bottom: 15px; color: #2D2D2D;"><?= d.financials.words ?></div>
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td>Subtotal</td>
+                <td>₹ <?= parseFloat(data.subtotal).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+            </tr>
+            <? if (data.cgst > 0) { ?>
+            <tr>
+                <td>CGST (<?= data.cgst_percent ?>%)</td>
+                <td>₹ <?= parseFloat(data.cgst).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+            </tr>
+            <tr>
+                <td>SGST (<?= data.sgst_percent ?>%)</td>
+                <td>₹ <?= parseFloat(data.sgst).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+            </tr>
+            <? } else if (data.igst > 0) { ?>
+            <tr>
+                <td>IGST (<?= data.igst_percent ?>%)</td>
+                <td>₹ <?= parseFloat(data.igst).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+            </tr>
+            <? } ?>
+            <tr class="grand-total">
+                <td>Grand Total (Incl. GST)</td>
+                <td>₹ <?= parseFloat(data.grand_total).toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
+            </tr>
+        </table>
+    </div>
 
-    <div style="font-weight: 600; color: #1A1A1A;">Terms and Conditions</div>
-    <div style="color: #666666;">Thanks for doing business with us!</div>
-  </div>
+    <div class="amount-words">
+        Amount in Words: <?= data.amount_in_words ?>
+    </div>
 
-  <table class="totals-table">
-    <tr>
-      <td>Sub Total</td>
-      <td class="text-right">₹ <?= d.financials.subTotal.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <? if (d.financials.isIntraState) { ?>
-    <tr>
-      <td>SGST@9%</td>
-      <td class="text-right">₹ <?= d.financials.sgst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <tr>
-      <td>CGST@9%</td>
-      <td class="text-right">₹ <?= d.financials.cgst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <? } else { ?>
-    <tr>
-      <td>IGST@18%</td>
-      <td class="text-right">₹ <?= d.financials.igst.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <? } ?>
-    <tr class="grand-total-row">
-      <td>Total</td>
-      <td class="text-right">₹ <?= d.financials.grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <tr>
-      <td>Received</td>
-      <td class="text-right">₹ <?= d.financials.received.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></td>
-    </tr>
-    <tr>
-      <td><strong>Balance</strong></td>
-      <td class="text-right"><strong>₹ <?= d.financials.balance.toLocaleString('en-IN', {minimumFractionDigits: 2}) ?></strong></td>
-    </tr>
-  </table>
+    <div class="terms-section">
+        <h3>Terms & Conditions</h3>
+        <ol>
+            <li><strong>Payment Terms:</strong> Standard payment term is 30 days from the invoice issue date.</li>
+            <li><strong>Payment Reference & Confirmation:</strong> Please include the project name in the bank transfer description and email back the payment receipt once completed.</li>
+            <li><strong>Overdue Interest & GST Portal Reporting:</strong> If payment is made beyond the 30-day period, applicable interest/penalties charged by the GST department will be levied and reported on the GST portal.</li>
+        </ol>
+    </div>
 
-  <div class="clearfix"></div>
-
-  <!-- Footer Payment Details & Signatory -->
-  <table class="footer-table">
-    <tr>
-      <td style="width: 50%; vertical-align: bottom;" class="bank-box">
-        <div style="font-weight: 600; color: #1A1A1A;">Pay To:</div>
-        <div>Bank Name : <?= d.bank.name ?></div>
-        <div>Bank Account No. : <?= d.bank.accountNo ?></div>
-        <div>Bank IFSC code : <?= d.bank.ifsc ?></div>
-        <div>Account holder's name : <?= d.bank.holder ?></div>
-      </td>
-      <td style="width: 50%; text-align: right; vertical-align: bottom;" class="signature-box">
-        <div>For :<strong><?= d.company.name ?></strong></div>
-        <div class="signature-line">Samiran Sonowal</div><br>
-        <div style="margin-top: 5px; color: #666666;">Authorized Signatory</div>
-      </td>
-    </tr>
-  </table>
+    <div class="footer-section">
+        <div class="bank-details">
+            <h3>Bank Payment Details</h3>
+            <p><strong>Bank Name:</strong> HDFC Bank Ltd</p>
+            <p><strong>Account Holder:</strong> CINELOOM POSTWORKS PRIVATE LIMITED</p>
+            <p><strong>Account No:</strong> 50200012345678</p>
+            <p><strong>IFSC:</strong> HDFC0000123</p>
+            <p><strong>Branch:</strong> Santacruz West, Mumbai</p>
+        </div>
+        <div class="signature-block">
+            <p class="company-name">For CINELOOM POSTWORKS PRIVATE LIMITED</p>
+            <? if (signatureDataUri) { ?>
+                <img src="<?!= signatureDataUri ?>" alt="Signature">
+            <? } else { ?>
+                <br><br><br>
+            <? } ?>
+            <p class="auth-sign">Authorized Signatory</p>
+        </div>
+    </div>
 
 </body>
 </html>

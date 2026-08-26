@@ -2,7 +2,7 @@
 
 ## Overview
 
-The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**, and **Discord Webhooks**:
+The automation engine is built on **Google Apps Script (GAS)** and **Clasp CI/CD**:
 
 - **Source Code Directory:** `engine/google-apps-script/`
 - **GCP Project ID:** `st-in-gen` (Project Number: `972643538415`)
@@ -15,9 +15,9 @@ The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**,
 
 | Tier | Branch | Apps Script Title | BigQuery Dataset ID | Mode |
 |---|---|---|---|---|
-| **Dev** | `dev` | `ST-IN-gen-dev` | `st_fin_com_prog_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Test** | `test` | `ST-IN-gen-test` | `st_fin_com_prog_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
-| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
+| **Dev** | `dev` | `ST-IN-gen-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `ST-IN-gen-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
+| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails) |
 
 ---
 
@@ -41,8 +41,7 @@ The automation engine is built on **Google Apps Script (GAS)**, **Clasp CI/CD**,
 6. **`4_MenuUI.gs`**:
    - Adds custom `🚀 Studio Tunnel` top menu bar in Google Sheets with one-click PDF generation, internal review email dispatch, and cloud self-test suite.
 
-7. **`5_DiscordNotifier.gs`**:
-   - Posts rich embed notification cards to Discord channel `#invoices-log` in Studio Tunnel green.
+
 
 ---
 

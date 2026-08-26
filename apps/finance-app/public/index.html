@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Tunnel — Finance & Billing Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #0b0f17;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-bg-solid: #111827;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(16, 185, 129, 0.3);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --brand-green: #10b981;
+      --brand-green-glow: rgba(16, 185, 129, 0.15);
+      --brand-blue: #3b82f6;
+      --brand-amber: #f59e0b;
+      --brand-purple: #8b5cf6;
+      --brand-red: #ef4444;
+
+      --radius-lg: 12px;
+      --radius-md: 8px;
+      --shadow-glow: 0 0 25px rgba(16, 185, 129, 0.1);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 1.75rem 2rem;
+      line-height: 1.5;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 40%);
+    }
+
+    /* Top Navigation Bar */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title h1 {
+      font-family: 'Lexend', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      background: var(--brand-green-glow);
+      color: var(--brand-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-refresh {
+      background: var(--card-bg-solid);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .btn-refresh:hover {
+      color: var(--text-main);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* KPI Summary Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card:hover {
+      border-color: var(--card-border-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-accent, var(--brand-green));
+    }
+
+    .kpi-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-value {
+      font-family: 'Lexend', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-subtext {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 0.35rem;
+    }
+
+    /* Tab Controls */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 2px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--brand-green);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0; right: 0;
+      height: 3px;
+      background: var(--brand-green);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .tab-count {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px;
+    }
+
+    .tab-btn.active .tab-count {
+      background: var(--brand-green-glow);
+      color: var(--brand-green);
+    }
+
+    /* Search & Filter Bar */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--card-bg-solid);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 9px 14px 9px 36px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-green);
+      box-shadow: 0 0 0 2px var(--brand-green-glow);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .filter-select {
+      background: var(--card-bg-solid);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 9px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Glass Table Container */
+    .table-container {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .badge-hourly { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-fixed  { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .badge-unpaid  { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-partial { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-paid    { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .badge-invoiced { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-disputed { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    /* Action Buttons */
+    .btn-action {
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--brand-green);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #34d399;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: var(--card-bg-solid);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--brand-green);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 1.5rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card-bg-solid);
+      border: 1px solid var(--brand-green);
+      color: var(--text-main);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 2000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--text-dim);
+    }
+
+    .empty-state-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <div class="top-nav">
+    <div class="brand-title">
+      <h1>Studio Tunnel</h1>
+      <span class="brand-badge">Finance & Billing v1.0 (Firebase Hosted)</span>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-refresh" onclick="loadDashboardData()">
+        <span>↻</span> Refresh Data
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metric Cards Bar -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-accent: var(--brand-blue)">
+      <div class="kpi-title">Ready to Bill</div>
+      <div class="kpi-value" id="kpiReadyCount">0</div>
+      <div class="kpi-subtext" id="kpiReadySubtotal">Total Subtotal: ₹0</div>
+    </div>
+    
+    <div class="kpi-card" style="--kpi-accent: var(--brand-purple)">
+      <div class="kpi-title">Total Invoiced</div>
+      <div class="kpi-value" id="kpiInvoicedCount">0</div>
+      <div class="kpi-subtext" id="kpiInvoicedTotal">Billed: ₹0</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent: var(--brand-amber)">
+      <div class="kpi-title">Pending Receivables</div>
+      <div class="kpi-value" id="kpiPendingAmount">₹0</div>
+      <div class="kpi-subtext" id="kpiPendingCount">0 Open Invoices</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent: var(--brand-green)">
+      <div class="kpi-title">Total Collected</div>
+      <div class="kpi-value" id="kpiPaidTotal">₹0</div>
+      <div class="kpi-subtext" id="kpiPaidCount">0 Paid Invoices</div>
+    </div>
+  </div>
+
+  <!-- Tab Control Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabReadyBtn" onclick="switchTab('ready')">
+      Ready to Bill <span class="tab-count" id="tabReadyBadge">0</span>
+    </button>
+    <button class="tab-btn" id="tabLedgerBtn" onclick="switchTab('ledger')">
+      Accounts Receivable Ledger <span class="tab-count" id="tabLedgerBadge">0</span>
+    </button>
+  </div>
+
+  <!-- Search & Filter Header -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search by Project Code, Client, or Invoice No..." oninput="filterData()">
+    </div>
+    <select id="statusFilter" class="filter-select" onchange="filterData()">
+      <option value="ALL">All Statuses</option>
+      <option value="Hourly">Type: Hourly</option>
+      <option value="Fixed">Type: Fixed</option>
+      <option value="Unpaid">Status: Unpaid</option>
+      <option value="Paid">Status: Paid</option>
+    </select>
+  </div>
+
+  <!-- Table 1: Ready to Bill (Projects Completed) -->
+  <div id="readyView" class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Project Code</th>
+          <th>Client / Company</th>
+          <th>Type</th>
+          <th>Total Hrs</th>
+          <th>Subtotal (₹)</th>
+          <th>Grand Total (Incl. GST)</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="readyTableBody">
+        <tr><td colspan="7" class="empty-state">Loading invoice-ready projects from Ledger...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table 2: Invoiced & Receivables Ledger -->
+  <div id="ledgerView" class="table-container" style="display: none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice No</th>
+          <th>Project Code</th>
+          <th>Client Name</th>
+          <th>Invoice Date</th>
+          <th>Due Date</th>
+          <th>Total Billed</th>
+          <th>Amount Pending</th>
+          <th>Payment Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ledgerTableBody">
+        <tr><td colspan="9" class="empty-state">Loading Receivables Ledger...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal: Record Payment -->
+  <div id="paymentModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Payment & Reconciliation</h3>
+        <button class="btn-secondary" onclick="closeModal('paymentModal')" style="padding: 4px 8px;">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project Code</label>
+        <input type="text" id="modalPaymentProjectCode" class="form-input" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Status</label>
+        <select id="modalPaymentStatus" class="form-select">
+          <option value="Paid">Paid (Full Settlement)</option>
+          <option value="Partial">Partial Payment</option>
+          <option value="Unpaid">Unpaid</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount Pending (₹)</label>
+        <input type="number" id="modalAmountPending" class="form-input" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TDS Deducted (10% / ₹)</label>
+        <input type="number" id="modalTdsAmount" class="form-input" placeholder="0">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+        <button class="btn-primary" onclick="submitPaymentUpdate()">Save Payment Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Dispute Project -->
+  <div id="disputeModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Flag Project Dispute to Ops</h3>
+        <button class="btn-secondary" onclick="closeModal('disputeModal')" style="padding: 4px 8px;">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project Code</label>
+        <input type="text" id="modalDisputeProjectCode" class="form-input" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dispute Reason / Notes</label>
+        <input type="text" id="modalDisputeReason" class="form-input" placeholder="e.g. Hours mismatch with client PO">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('disputeModal')">Cancel</button>
+        <button class="btn-danger" onclick="submitDispute()">Flag as Disputed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Bar -->
+  <div id="toast" class="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastText">Action completed successfully</span>
+  </div>
+
+  <!-- Client-Side Dashboard Script -->
+  <script>
+    // Direct Google Sheets CSV URL for READ operations (bypasses Apps Script deployment caching)
+    const SHEET_ID = '1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uzkpg';
+    const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Project_Billing_Ledger`;
+    // Apps Script endpoint for WRITE operations only
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzSpNLrBMDq89tbfO-oWFjVKaPu5Q62fTpgY2aj8eCrh_Z0DF9So5RMgpyJ48VJ8h1ZrA/exec';
+
+    /** Parse CSV text handling quoted fields with commas */
+    function parseCSV(text) {
+      const rows = [];
+      let current = '';
+      let inQuotes = false;
+      let row = [];
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+          if (ch === '"' && text[i + 1] === '"') { current += '"'; i++; }
+          else if (ch === '"') { inQuotes = false; }
+          else { current += ch; }
+        } else {
+          if (ch === '"') { inQuotes = true; }
+          else if (ch === ',') { row.push(current); current = ''; }
+          else if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+            row.push(current); current = '';
+            if (row.length > 1 || row[0] !== '') rows.push(row);
+            row = [];
+            if (ch === '\r') i++;
+          } else { current += ch; }
+        }
+      }
+      if (current || row.length) { row.push(current); rows.push(row); }
+      return rows;
+    }
+
+    /** Fetch billing data directly from Google Sheets CSV export */
+    function fetchBillingDataFromSheets() {
+      return fetch(SHEET_CSV_URL)
+        .then(r => {
+          if (!r.ok) throw new Error('Sheets fetch failed: ' + r.status);
+          return r.text();
+        })
+        .then(csv => {
+          const rows = parseCSV(csv);
+          if (rows.length < 2) return { success: true, data: [] };
+          const projects = [];
+          for (let i = 1; i < rows.length; i++) {
+            const r = rows[i];
+            const pCode = (r[0] || '').trim();
+            if (!pCode || pCode === 'Project Code ID') continue;
+            projects.push({
+              projectCode: pCode,
+              invoiceNumber: r[1] || '',
+              invoiceDate: r[2] || '',
+              projectName: r[3] || pCode,
+              company: r[4] || 'General Client',
+              director: r[5] || '',
+              colorist: r[6] || '',
+              type: r[7] || 'Hourly',
+              bookingHrs: Number(r[8] || 0),
+              conformHrs: Number(r[9] || 0),
+              assistHrs: Number(r[10] || 0),
+              masteringHrs: Number(r[11] || 0),
+              otherHrs: Number(r[12] || 0),
+              totalHrs: Number(r[13] || 0),
+              rate: Number(r[14] || 5000),
+              discount: Number(r[15] || 0),
+              subtotalAmount: Number(r[16] || 0),
+              amount: Number(r[17] || 0),
+              pocName: r[18] || '',
+              clientEmail: r[19] || '',
+              phone: r[20] || '',
+              gstin: r[21] || '',
+              pan: r[22] || '',
+              billingAddress: r[23] || '',
+              notes: r[24] || '',
+              poNumber: r[25] || '',
+              status: r[26] || 'Active / In Progress',
+              paymentStatus: r[27] || 'Unpaid',
+              amountPending: Number(r[28] || 0),
+              dueDate: r[29] || '',
+              tdsAmount: Number(r[30] || 0),
+              lastActivity: r[31] || ''
+            });
+          }
+          return { success: true, data: projects };
+        });
+    }
+
+    /** Write operations still go through Apps Script */
+    function callBackend(action, data = {}) {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          if (action === 'getInvoiceReadyProjects') {
+            google.script.run.withSuccessHandler(res => resolve({ success: true, data: res })).withFailureHandler(reject).getInvoiceReadyProjects();
+          } else if (action === 'generateAndDispatchInvoice') {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).generateAndDispatchInvoice(data.projectCode, data.targetFolderId, data.overrideRecipients);
+          } else if (action === 'updatePaymentStatus') {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).updatePaymentStatus(data.projectCode, data.newPaymentStatus, data.amountPending, data.tdsAmount);
+          } else if (action === 'flagDisputedProject') {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).flagDisputedProject(data.projectCode, data.reason);
+          }
+        } else {
+          fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: action, data: data })
+          })
+          .then(r => r.json())
+          .then(res => resolve(res))
+          .catch(err => reject(err));
+        }
+      });
+    }
+
+    let rawProjectsData = [];
+    let currentTab = 'ready';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
+    });
+
+    function loadDashboardData() {
+      const readyTbody = document.getElementById('readyTableBody');
+      const ledgerTbody = document.getElementById('ledgerTableBody');
+      
+      readyTbody.innerHTML = '<tr><td colspan="7" class="empty-state">Fetching live billing ledger...</td></tr>';
+      ledgerTbody.innerHTML = '<tr><td colspan="9" class="empty-state">Fetching live billing ledger...</td></tr>';
+
+      // Use direct Google Sheets CSV fetch (guaranteed to work, no deployment cache issues)
+      fetchBillingDataFromSheets()
+        .then(res => {
+          if (res.success) onDataLoaded(res.data);
+          else showToast('Error: ' + res.message, 'danger');
+        })
+        .catch(err => {
+          showToast('Failed to load data: ' + (err.message || err), 'danger');
+        });
+    }
+
+    function onDataLoaded(data) {
+      rawProjectsData = data || [];
+      updateKPIs();
+      renderTables();
+    }
+
+    function updateKPIs() {
+      const readyProjects = rawProjectsData.filter(p => p.status !== 'Invoiced' && p.status !== 'Disputed');
+      const invoicedProjects = rawProjectsData.filter(p => p.status === 'Invoiced');
+      
+      // 1. Ready KPI
+      const readySubtotal = readyProjects.reduce((sum, p) => sum + (p.subtotalAmount || 0), 0);
+      document.getElementById('kpiReadyCount').innerText = readyProjects.length;
+      document.getElementById('kpiReadySubtotal').innerText = 'Subtotal: ₹' + readySubtotal.toLocaleString('en-IN');
+      document.getElementById('tabReadyBadge').innerText = readyProjects.length;
+
+      // 2. Invoiced KPI
+      const invoicedTotal = invoicedProjects.reduce((sum, p) => sum + (p.amount || 0), 0);
+      document.getElementById('kpiInvoicedCount').innerText = invoicedProjects.length;
+      document.getElementById('kpiInvoicedTotal').innerText = 'Billed: ₹' + invoicedTotal.toLocaleString('en-IN');
+      document.getElementById('tabLedgerBadge').innerText = invoicedProjects.length;
+
+      // 3. Pending Receivables KPI
+      const pendingProjects = invoicedProjects.filter(p => p.paymentStatus !== 'Paid');
+      const totalPending = pendingProjects.reduce((sum, p) => sum + (p.amountPending || p.amount || 0), 0);
+      document.getElementById('kpiPendingAmount').innerText = '₹' + totalPending.toLocaleString('en-IN');
+      document.getElementById('kpiPendingCount').innerText = pendingProjects.length + ' Open Receivables';
+
+      // 4. Paid KPI
+      const paidProjects = rawProjectsData.filter(p => p.paymentStatus === 'Paid');
+      const paidTotal = paidProjects.reduce((sum, p) => sum + (p.amount || 0), 0);
+      document.getElementById('kpiPaidTotal').innerText = '₹' + paidTotal.toLocaleString('en-IN');
+      document.getElementById('kpiPaidCount').innerText = paidProjects.length + ' Paid Invoices';
+    }
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.getElementById('tabReadyBtn').classList.toggle('active', tabName === 'ready');
+      document.getElementById('tabLedgerBtn').classList.toggle('active', tabName === 'ledger');
+      
+      document.getElementById('readyView').style.display = tabName === 'ready' ? 'block' : 'none';
+      document.getElementById('ledgerView').style.display = tabName === 'ledger' ? 'block' : 'none';
+      
+      filterData();
+    }
+
+    function filterData() {
+      renderTables();
+    }
+
+    function renderTables() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      const filtered = rawProjectsData.filter(p => {
+        const matchesSearch = 
+          (p.projectCode || '').toLowerCase().includes(searchTerm) ||
+          (p.company || '').toLowerCase().includes(searchTerm) ||
+          (p.projectName || '').toLowerCase().includes(searchTerm) ||
+          (p.invoiceNumber || '').toLowerCase().includes(searchTerm);
+
+        let matchesStatus = true;
+        if (statusFilter === 'Hourly') matchesStatus = (p.type || '').toLowerCase() === 'hourly';
+        if (statusFilter === 'Fixed') matchesStatus = (p.type || '').toLowerCase() === 'fixed';
+        if (statusFilter === 'Unpaid') matchesStatus = (p.paymentStatus || '').toLowerCase() !== 'paid';
+        if (statusFilter === 'Paid') matchesStatus = (p.paymentStatus || '').toLowerCase() === 'paid';
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (currentTab === 'ready') {
+        renderReadyTable(filtered.filter(p => p.status !== 'Invoiced'));
+      } else {
+        renderLedgerTable(filtered.filter(p => p.status === 'Invoiced'));
+      }
+    }
+
+    function renderReadyTable(items) {
+      const tbody = document.getElementById('readyTableBody');
+      tbody.innerHTML = '';
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">🎉</div>No pending projects ready to bill.</td></tr>';
+        return;
+      }
+
+      items.forEach(p => {
+        const tr = document.createElement('tr');
+        const badgeTypeClass = (p.type || '').toLowerCase() === 'hourly' ? 'badge-hourly' : 'badge-fixed';
+        const subtotal = p.subtotalAmount || (p.totalHrs * p.rate) - (p.discount || 0);
+        const grandTotal = p.amount || Math.round(subtotal * 1.18);
+
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(p.projectCode)}</strong></td>
+          <td>${escapeHtml(p.company)}<br><span style="font-size:0.75rem; color:var(--text-dim);">${escapeHtml(p.projectName)}</span></td>
+          <td><span class="badge ${badgeTypeClass}">${escapeHtml(p.type)}</span></td>
+          <td>${p.totalHrs || 0} hrs</td>
+          <td>₹${subtotal.toLocaleString('en-IN')}</td>
+          <td><strong style="color:var(--brand-green)">₹${grandTotal.toLocaleString('en-IN')}</strong></td>
+          <td style="text-align: right;">
+            <button class="btn-action btn-primary" onclick="generateInvoice('${p.projectCode}', this)">
+              Generate & Email Invoice
+            </button>
+            <button class="btn-action btn-danger" onclick="openDisputeModal('${p.projectCode}')" style="margin-left: 6px;">
+              Dispute
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderLedgerTable(items) {
+      const tbody = document.getElementById('ledgerTableBody');
+      tbody.innerHTML = '';
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><div class="empty-state-icon">📋</div>No active invoices in the ledger.</td></tr>';
+        return;
+      }
+
+      items.forEach(p => {
+        const tr = document.createElement('tr');
+        const payStatus = p.paymentStatus || 'Unpaid';
+        const payBadgeClass = payStatus.toLowerCase() === 'paid' ? 'badge-paid' : (payStatus.toLowerCase() === 'partial' ? 'badge-partial' : 'badge-unpaid');
+        const invNum = p.invoiceNumber || p.projectCode;
+        const pendingAmt = p.amountPending !== undefined && p.amountPending !== null ? p.amountPending : p.amount;
+
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(invNum)}</strong></td>
+          <td>${escapeHtml(p.projectCode)}</td>
+          <td>${escapeHtml(p.company)}</td>
+          <td>${formatDate(p.invoiceDate)}</td>
+          <td>${formatDate(p.dueDate)}</td>
+          <td>₹${(p.amount || 0).toLocaleString('en-IN')}</td>
+          <td><strong style="color:${pendingAmt > 0 ? 'var(--brand-amber)' : 'var(--brand-green)'}">₹${pendingAmt.toLocaleString('en-IN')}</strong></td>
+          <td><span class="badge ${payBadgeClass}">${escapeHtml(payStatus)}</span></td>
+          <td style="text-align: right;">
+            <button class="btn-action btn-secondary" onclick="openPaymentModal('${p.projectCode}', '${payStatus}', ${pendingAmt}, ${p.tdsAmount || 0})">
+              Record Payment
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function generateInvoice(projectCode, btn) {
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating PDF...';
+
+      callBackend('generateAndDispatchInvoice', { projectCode: projectCode })
+        .then(res => {
+          if (res.success) {
+            showToast(res.message, 'success');
+            loadDashboardData();
+          } else {
+            showToast('Error: ' + res.message, 'danger');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        })
+        .catch(err => {
+          showToast('Failed to generate invoice: ' + (err.message || err), 'danger');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        });
+    }
+
+    function openPaymentModal(projectCode, currentStatus, pendingAmount, tdsAmount) {
+      document.getElementById('modalPaymentProjectCode').value = projectCode;
+      document.getElementById('modalPaymentStatus').value = currentStatus;
+      document.getElementById('modalAmountPending').value = pendingAmount || 0;
+      document.getElementById('modalTdsAmount').value = tdsAmount || 0;
+      document.getElementById('paymentModal').style.display = 'flex';
+    }
+
+    function submitPaymentUpdate() {
+      const projectCode = document.getElementById('modalPaymentProjectCode').value;
+      const status = document.getElementById('modalPaymentStatus').value;
+      const amountPending = Number(document.getElementById('modalAmountPending').value);
+      const tds = Number(document.getElementById('modalTdsAmount').value);
+
+      closeModal('paymentModal');
+      showToast(`Saving payment record for ${projectCode}...`, 'info');
+
+      callBackend('updatePaymentStatus', { projectCode: projectCode, newPaymentStatus: status, amountPending: amountPending, tdsAmount: tds })
+        .then(res => {
+          if (res.success) {
+            showToast(res.message, 'success');
+            loadDashboardData();
+          } else {
+            showToast('Error: ' + res.message, 'danger');
+          }
+        })
+        .catch(err => {
+          showToast('Failed to update payment: ' + (err.message || err), 'danger');
+        });
+    }
+
+    function openDisputeModal(projectCode) {
+      document.getElementById('modalDisputeProjectCode').value = projectCode;
+      document.getElementById('modalDisputeReason').value = '';
+      document.getElementById('disputeModal').style.display = 'flex';
+    }
+
+    function submitDispute() {
+      const projectCode = document.getElementById('modalDisputeProjectCode').value;
+      const reason = document.getElementById('modalDisputeReason').value;
+
+      closeModal('disputeModal');
+      showToast(`Flagging ${projectCode} as disputed...`, 'info');
+
+      callBackend('flagDisputedProject', { projectCode: projectCode, reason: reason })
+        .then(res => {
+          if (res.success) {
+            showToast(res.message, 'success');
+            loadDashboardData();
+          } else {
+            showToast('Error: ' + res.message, 'danger');
+          }
+        })
+        .catch(err => {
+          showToast('Failed to flag dispute: ' + (err.message || err), 'danger');
+        });
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    function formatDate(dateVal) {
+      if (!dateVal) return '-';
+      try {
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return String(dateVal);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch(e) {
+        return String(dateVal);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastText');
+
+      icon.textContent = type === 'success' ? '✓' : (type === 'danger' ? '✕' : 'ℹ');
+      toast.style.borderColor = type === 'success' ? 'var(--brand-green)' : (type === 'danger' ? 'var(--brand-red)' : 'var(--brand-blue)');
+      text.textContent = msg;
+
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 4000);
+    }
+  </script>
+</body>
+</html>

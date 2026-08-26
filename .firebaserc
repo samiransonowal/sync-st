@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "sync-st"
+  },
+  "targets": {
+    "sync-st": {
+      "hosting": {
+        "ops-app": [
+          "sync-st"
+        ],
+        "finance-app": [
+          "cineloom-comptroller"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

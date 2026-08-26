@@ -1,6 +1,6 @@
-# ST-IN-gen CI/CD & Pipeline Setup Guide
+# ST-Comptroller CI/CD & Pipeline Setup Guide
 
-This guide documents the automated Google Apps Script CI/CD pipeline for **ST-IN-gen (Studio Tunnel Invoice Generator)**.
+This guide documents the automated Google Apps Script CI/CD pipeline for **ST-Comptroller (st-comptroller)**.
 
 ---
 
@@ -10,9 +10,9 @@ The deployment architecture uses three isolated Google Apps Script projects tied
 
 | Environment Tier | Git Branch | Apps Script Title | BigQuery Dataset ID | Mode / Permissions |
 |---|---|---|---|---|
-| **Dev** | `dev` | `ST-IN-gen-dev` | `st_fin_com_prog_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Test** | `test` | `ST-IN-gen-test` | `st_fin_com_prog_test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
-| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_fin_com_prog_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/Discord) |
+| **Dev** | `dev` | `ST-IN-gen-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `ST-IN-gen-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
+| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/alerts) |
 
 ---
 
@@ -30,8 +30,6 @@ The deployment architecture uses three isolated Google Apps Script projects tied
 Run the following commands using clasp:
 
 ```bash
-cd "d:/Studio Tunnel/INVOICE_APP"
-
 # Create DEV project
 clasp create --title "ST-IN-gen-dev" --type standalone --rootDir ./engine/google-apps-script
 # -> Output provides <DEV_SCRIPT_ID>
@@ -74,13 +72,10 @@ Navigate to **GitHub Repository → Settings → Secrets and variables → Actio
 # 1. Install Node dependencies
 npm ci
 
-# 2. Run system integrity & schema tests (Python)
+# 2. Run validations
 npm test
 
-# 3. Test environment config injection (dry-run mode switch and .clasp.json generation)
-npm run set-env
-
-# 4. Push to current linked script project (manual sanity check)
+# 3. Deploy to current linked script project
 npm run clasp-push
 ```
 
@@ -89,9 +84,8 @@ npm run clasp-push
 ## 6. Pipeline Workflow Summary
 
 1. Pushes to `dev`, `test`, or `pml` trigger `.github/workflows/gas-ci.yml`.
-2. Python validates schemas (`users.yaml`, `users.json`, GSTIN/PAN regex rules).
-3. `scripts/setEnv.js` detects the branch, writes `.clasp.json` with the corresponding `scriptId`, and toggles `DRY_RUN_MODE` in `0_Config.gs`.
-4. Clasp authenticates and deploys the code directly to Google Apps Script.
+2. Cloud deployment assets are validated.
+3. Clasp authenticates and deploys the code directly to Google Apps Script.
 
 ---
 
@@ -99,9 +93,8 @@ npm run clasp-push
 
 > [!CAUTION]
 > ### 🛑 BRANCH PROMOTION & GOVERNANCE MANDATE
-> - **`dev` Branch (Permanent Default)**: Primary branch for all development work. Direct commits and iterative feature branches must originate here.
-> - **`test` Branch (Restricted Sandbox)**: **HUMAN ESCALATION MANDATORY.** Attempting to work on or push to `test` is permitted only after explicit human testing verification and formal escalation.
+> - **`dev` Branch (Permanent Default)**: Primary branch for all development work. Direct commits and feature branches must originate here.
+> - **`test` Branch (Restricted Sandbox)**: **HUMAN ESCALATION MANDATORY.** Pushing to `test` is permitted only after explicit human testing verification and formal escalation.
 > - **`pml` Branch (Production Main Live)**: **2-PARTY CONFIRMATION REQUIRED.** Promoting or deploying to `pml` requires dual authorization:
 >   1. Lead Developer / Studio Owner (`jay@studiotunnel.com` / `samiran@studiotunnel.com`).
->   2. GCP Admin (`lab@studiotunnel.com`) via interactive push consent button inside the dispatched notification (`python scripts/request_push_consent.py`).
-
+>   2. GCP Admin (`lab@studiotunnel.com`) via cloud push consent workflow.
