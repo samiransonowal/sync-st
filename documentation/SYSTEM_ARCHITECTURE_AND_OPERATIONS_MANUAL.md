@@ -8,7 +8,7 @@
 > - **Studio Operations App** → [https://sync-st.web.app](https://sync-st.web.app)  
 > - **Finance & Billing App** → [https://cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)  
 > - **Master Database Sheet (`LOG BOOK_SYNC`)** → [Google Sheet](https://docs.google.com/spreadsheets/d/1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uzkpg/edit)  
-> - **Data Warehouse (BigQuery)** → GCP Project `st-in-gen`, Dataset `log_book_sync`, Region `asia-south1` (Mumbai)  
+> - **Data Warehouse (BigQuery)** → GCP Project `sync-st`, Dataset `log_book_sync`, Region `asia-south1` (Mumbai)  
 > - **Reporting** → Google Looker Studio (connected to BigQuery)
 
 ---

@@ -6,7 +6,7 @@
 **Lead Developer:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
 **Collaborator:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
 **GCP Administration Account:** `lab@studiotunnel.com`  
-**GCP Project ID:** `st-in-gen` (Project Number: `972643538415`)  
+**GCP Project ID:** `sync-st` (Project Number: `972643538415`)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/documentation/documentation_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/CHANGELOG.md)  
 **GitHub Repository:** [github.com/samiransonowal/st-comptroller](https://github.com/samiransonowal/st-comptroller)  
@@ -38,7 +38,7 @@
 ## 🏗 System Architecture & Technology Stack
 
 1. **Google Apps Script (JavaScript V8)**: Dynamic UI bindings, custom trigger hooks, and vector PDF rendering engine (`engine/google-apps-script`).
-2. **Google BigQuery (`st-in-gen.st_comptroller`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
+2. **Google BigQuery (`sync-st.st_comptroller`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
 3. **Google Looker Studio**: Executive financial reporting portal & real-time overdue chase list dashboards.
 4. **Google Apps Script Master Engine (`ST-IN-gen`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, and Gmail routing.
 5. **Automated 3-Silo CI/CD Pipeline**: Branch-mapped deployments (`dev`, `test`, `prod`) to isolated Google Apps Script cloud projects via GitHub Actions.

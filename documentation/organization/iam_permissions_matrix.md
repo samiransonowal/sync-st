@@ -2,7 +2,7 @@
 
 **Program:** Studio Tunnel Financial Comptroller Program  
 **Engine Shortcode:** `ST-IN-gen`  
-**GCP Project:** `st-in-gen` (`972643538415`)  
+**GCP Project:** `sync-st` (`972643538415`)  
 **Target Owner Identity:** Samiran Sonowal (`samiran@studiotunnel.com`)  
 **Infrastructure Admin Identity:** Tech Dev Lab (`lab@studiotunnel.com`)  
 **Document Status:** 📝 **OPEN FOR REVIEW & SIGN-OFF**  
@@ -20,7 +20,7 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 ## 2. Required Permission Matrix
 
-### A. ☁️ Google Cloud Platform (GCP Project: `st-in-gen` / `972643538415`)
+### A. ☁️ Google Cloud Platform (GCP Project: `sync-st` / `972643538415`)
 
 | GCP Service | Required IAM Role | Purpose / Scope | Granting Identity |
 | :--- | :--- | :--- | :--- |
@@ -92,7 +92,7 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 | # | Item | Status | Verified By | Date Verified | Notes / Review Comments |
 | :-: | :--- | :-: | :--- | :--- | :--- |
-| 1 | GCP Project Owner/Editor on `st-in-gen` | 🔲 PENDING | `lab@studiotunnel.com` | | Pending IAM invitation from `lab@` |
+| 1 | GCP Project Owner/Editor on `sync-st` | 🔲 PENDING | `lab@studiotunnel.com` | | Pending IAM invitation from `lab@` |
 | 2 | BigQuery Data Owner on `st_comptroller` | 🔲 PENDING | `lab@studiotunnel.com` | | Dataset created in `asia-south1` |
 | 3 | Editor access on Master Financial Sheet | ✅ VERIFIED | `samiran@studiotunnel.com` | 17 Aug 2026 | Active access confirmed (`1IXOY1dLuhSP4XPUpL1IHJ8nfY84Pv-08_7DaoHwbsuc`) |
 | 4 | Google Apps Script API enabled (ON) | ✅ VERIFIED | `samiran@studiotunnel.com` | 17 Aug 2026 | Local `clasp` v2.5.0 verified |

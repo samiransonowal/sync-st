@@ -26,7 +26,7 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 - **Dynamic Sheets UI ([`4_MenuUI.gs`](file:///d:/Studio%20Tunnel/INVOICE_APP/engine/google-apps-script/4_MenuUI.gs))**: Top menu bar dynamically displays active environment badge (`🚀 Studio Tunnel [DEV|TEST|PML]`) with interactive `🛡️ Environment & Governance Status` inspector dialog and interactive 2-Party confirmation prompt in PML.
 
 #### 🗄️ Google BigQuery 3-Tier Dataset Isolation
-- Established 3 isolated BigQuery datasets under single GCP Project `st-in-gen` in `asia-south1` (Mumbai): `st_fin_com_prog_dev`, `st_fin_com_prog_test`, `st_fin_com_prog_pml`.
+- Established 3 isolated BigQuery datasets under single GCP Project `sync-st` in `asia-south1` (Mumbai): `st_fin_com_prog_dev`, `st_fin_com_prog_test`, `st_fin_com_prog_pml`.
 - Upgraded DDL initializer ([`scripts/setup_bigquery_tables.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/scripts/setup_bigquery_tables.py)) and sync pipeline ([`scripts/bigquery_sync_pipeline.py`](file:///d:/Studio%20Tunnel/INVOICE_APP/scripts/bigquery_sync_pipeline.py)) with `--env dev|test|pml|all` CLI support and `--confirm-pml` execution guardrails.
 
 #### 🧪 System Verification & Architecture Specs
@@ -65,7 +65,7 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 #### 🔄 Data Flow
 - Configured automated GitHub Actions workflow (`.github/workflows/gas-ci.yml`) for linting, system integrity checks, environment resolution, and Clasp deployment.
-- Connected Apps Script project naming convention `ST-IN-gen` (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) under GCP Project `st-in-gen` (`972643538415`).
+- Connected Apps Script project naming convention `ST-IN-gen` (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) under GCP Project `sync-st` (`972643538415`).
 
 #### 🎨 UI / UX & Documentation
 - Authored comprehensive CI/CD deployment guide ([`documentation/ci_setup.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/ci_setup.md)).

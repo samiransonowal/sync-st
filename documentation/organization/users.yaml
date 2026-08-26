@@ -39,7 +39,7 @@ users:
     aliases:
       - "jay@studiotunnel.com"
     role: "Infrastructure & Service Admin Account"
-    system_privileges: "GCP Owner (st-in-gen), OAuth Client Owner, Delegated Admin"
+    system_privileges: "GCP Owner (sync-st), OAuth Client Owner, Delegated Admin"
     designation: "GCP Cloud Administrator & Technical Lead"
     department: "Engineering & Automation"
     phone: "+91 80809 11109"

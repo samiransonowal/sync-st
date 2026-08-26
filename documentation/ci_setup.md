@@ -18,7 +18,7 @@ The deployment architecture uses three isolated Google Apps Script projects tied
 
 ## 2. Google Cloud Platform Details
 
-- **GCP Project ID**: `st-in-gen`
+- **GCP Project ID**: `sync-st`
 - **GCP Project Number**: `972643538415`
 - **GCP Admin Account**: `lab@studiotunnel.com`
 - **OAuth Client**: `ST-IN-gen-v1` (`972643538415-iotqsas6uh5uanjjgdmal16phvfnsvup.apps.googleusercontent.com`)

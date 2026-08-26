@@ -6,7 +6,7 @@
 - **Firebase Firestore** serves as the **Operational Database (OLTP)** for real-time reads/writes, web portal interactions, and status triggers.
 - **Google BigQuery** serves as the **Analytical Data Warehouse (OLAP)** for tax compliance (GST/TDS), statutory auditing, and historical reporting.
 
-- **GCP Project:** `st-in-gen` (`972643538415`) — *Single GCP Project*
+- **GCP Project:** `sync-st` (`972643538415`) — *Single GCP Project*
 - **Location:** `asia-south1` (Mumbai, India)
 
 ---

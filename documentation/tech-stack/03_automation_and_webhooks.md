@@ -5,7 +5,7 @@
 The automation engine is built on **Google Apps Script (GAS)** and **Clasp CI/CD**:
 
 - **Source Code Directory:** `engine/google-apps-script/`
-- **GCP Project ID:** `st-in-gen` (Project Number: `972643538415`)
+- **GCP Project ID:** `sync-st` (Project Number: `972643538415`)
 - **Execution Account:** `lab@studiotunnel.com`
 - **CI/CD Pipeline:** Automated GitHub Actions (`.github/workflows/gas-ci.yml`)
 

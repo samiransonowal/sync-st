@@ -1,6 +1,6 @@
 # 08 — GCP Enabled APIs, Free-Tier Quotas & Zero-Cost Financial Ledger
 
-**Project Name:** `st-in-gen`  
+**Project Name:** `sync-st`  
 **GCP Project Number:** `972643538415`  
 **Region:** `asia-south1` (Mumbai, India)  
 **Target Monthly Cost:** **₹0.00 / month (100% Free Tier Guaranteed)**  
@@ -23,7 +23,7 @@ To ensure **Cineloom Postworks Pvt. Ltd. / Studio Tunnel** never incurs unexpect
 
 ## 2. Complete Inventory of Enabled GCP APIs & Quota Limits
 
-Below is the verified ledger of all APIs enabled for GCP project `st-in-gen` (`972643538415`):
+Below is the verified ledger of all APIs enabled for GCP project `sync-st` (`972643538415`):
 
 | # | Google API Name | API Identifier | Google Free-Tier Allowance | ST-IN-gen Estimated Monthly Usage | Cost Impact |
 |---|---|---|---|---|---|

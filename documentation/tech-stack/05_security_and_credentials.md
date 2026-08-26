@@ -16,7 +16,7 @@ Security architecture enforces strict separation of public repository specs from
 
 3. **GCP & OAuth 2.0 Credentials:**
    - GCP Admin Account: `lab@studiotunnel.com`
-   - OAuth 2.0 Client ID & Secret generated under GCP Project `st-in-gen` (`972643538415`).
+   - OAuth 2.0 Client ID & Secret generated under GCP Project `sync-st` (`972643538415`).
 
 4. **Organization Directory Matrix:**
    - Master Directory: `framework/documentation/users.yaml`

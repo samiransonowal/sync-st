@@ -24,7 +24,7 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 | **Google Apps Script** | `ST-IN-gen-dev` | `ST-IN-gen-test` | `ST-IN-gen-pml` |
 | **GAS UI Menu** | `🚀 Studio Tunnel [DEV]` | `🚀 Studio Tunnel [TEST]` | `🚀 Studio Tunnel [PML]` |
 | **Dry Run Safeguard** | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = false` |
-| **GCP Project** | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) | `st-in-gen` (`972643538415`) |
+| **GCP Project** | `sync-st` (`972643538415`) | `sync-st` (`972643538415`) | `sync-st` (`972643538415`) |
 | **BigQuery Dataset** | `st_comptroller_dev` | `st_comptroller_test` | `st_comptroller_pml` |
 | **Firebase Firestore** | `st_comptroller_dev` collection prefix | `st_comptroller_test` collection prefix | `st_comptroller_pml` collection prefix |
 | **GCP Region** | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) | `asia-south1` (Mumbai) |
@@ -82,12 +82,12 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 ---
 
 ### C. 🗄️ Google BigQuery Datasets
-1. **1 Single GCP Project (`st-in-gen`)**:
-   - All environments reside inside project `st-in-gen` in region `asia-south1` (Mumbai).
+1. **1 Single GCP Project (`sync-st`)**:
+   - All environments reside inside project `sync-st` in region `asia-south1` (Mumbai).
 2. **3 Isolated Datasets**:
-   - `st-in-gen.st_comptroller_dev`: For experimental schema adjustments and test data.
-   - `st-in-gen.st_comptroller_test`: For automated integration test suites.
-   - `st-in-gen.st_comptroller_pml`: For live operational tax invoices, bank reconciliation records, and financial statements.
+   - `sync-st.st_comptroller_dev`: For experimental schema adjustments and test data.
+   - `sync-st.st_comptroller_test`: For automated integration test suites.
+   - `sync-st.st_comptroller_pml`: For live operational tax invoices, bank reconciliation records, and financial statements.
 3. **DDL & Sync Enforcement**:
    - Schema updates and BigQuery sync are managed via Cloud Functions and Apps Script integrations.
    - Any pipeline run targeting `pml` requires dual authorization flags.
