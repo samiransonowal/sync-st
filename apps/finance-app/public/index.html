@@ -918,26 +918,17 @@
     let rawProjectsData = [];
     let currentTab = 'ready';
 
-    document.addEventListener('DOMContentLoaded', () => {
-      checkExistingAuthSession();
-    });
-
     function loadDashboardData() {
-      const activeUser = sessionStorage.getItem('st_comptroller_user');
-      if (!activeUser) {
+      const activeUser = auth.currentUser ? { email: auth.currentUser.email } : JSON.parse(sessionStorage.getItem('st_comptroller_user') || 'null');
+      if (!activeUser || !activeUser.email) {
         document.getElementById('authOverlay').style.display = 'flex';
         return;
       }
-      try {
-        const u = JSON.parse(activeUser);
-        if (!ALLOWED_EMAILS.includes(u.email.toLowerCase())) {
-          document.getElementById('authOverlay').style.display = 'flex';
-          return;
-        }
-      } catch(e) {
+      if (!ALLOWED_EMAILS.includes(activeUser.email.toLowerCase())) {
         document.getElementById('authOverlay').style.display = 'flex';
         return;
       }
+
 
       const readyTbody = document.getElementById('readyTableBody');
       const ledgerTbody = document.getElementById('ledgerTableBody');
@@ -1359,30 +1350,44 @@
         if (authMode === 'signup') {
           await auth.createUserWithEmailAndPassword(resolvedEmail, password);
         } else {
-          await auth.signInWithEmailAndPassword(resolvedEmail, password);
+          try {
+            await auth.signInWithEmailAndPassword(resolvedEmail, password);
+          } catch (loginErr) {
+            // Auto-try registration for first-time account setup
+            if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') {
+              try {
+                await auth.createUserWithEmailAndPassword(resolvedEmail, password);
+              } catch (signupErr) {
+                throw loginErr;
+              }
+            } else {
+              throw loginErr;
+            }
+          }
         }
         showToast('Authenticated successfully as ' + resolvedEmail, 'success');
       } catch (err) {
         console.error("Auth error:", err);
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           if (deniedReason) deniedReason.textContent = 'Invalid User ID/Email or password.';
         } else if (err.code === 'auth/email-already-in-use') {
-          if (deniedReason) deniedReason.textContent = 'Account already exists. Please sign in instead.';
-          toggleAuthMode();
+          if (deniedReason) deniedReason.textContent = 'Account already exists. Please sign in with your password.';
         } else {
           if (deniedReason) deniedReason.textContent = err.message || 'Authentication error.';
         }
         if (deniedMsg) deniedMsg.style.display = 'block';
-        showToast('Sign in failed.', 'danger');
+        showToast('Sign in failed: ' + (err.message || 'Check credentials'), 'danger');
       }
     }
 
     function unlockDashboard(userObj) {
+      sessionStorage.setItem('st_comptroller_user', JSON.stringify(userObj));
       document.getElementById('authOverlay').style.display = 'none';
       document.getElementById('userEmailSpan').textContent = userObj.email;
       document.getElementById('userBadge').style.display = 'flex';
       loadDashboardData();
     }
+
 
     async function handleSignOut() {
       try {
