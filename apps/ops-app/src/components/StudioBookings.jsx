@@ -199,6 +199,7 @@ const StudioBookings = ({
     const positioned = [];
     groups.forEach(group => {
       let columns = [];
+      const colMap = new Map();
       group.forEach(b => {
         const bStart = parseTime(b.startTime);
         let placed = false;
@@ -207,18 +208,21 @@ const StudioBookings = ({
           if (bStart >= parseTime(lastInCol.endTime)) {
             columns[i].push(b);
             placed = true;
-            b.colIndex = i;
+            colMap.set(b.id, i);
             break;
           }
         }
         if (!placed) {
-          b.colIndex = columns.length;
+          colMap.set(b.id, columns.length);
           columns.push([b]);
         }
       });
       group.forEach(b => {
-        b.totalCols = columns.length;
-        positioned.push(b);
+        positioned.push({
+          ...b,
+          colIndex: colMap.get(b.id) ?? 0,
+          totalCols: columns.length
+        });
       });
     });
     return positioned;
@@ -349,7 +353,16 @@ const StudioBookings = ({
       return;
     }
 
-    if (newStart >= newEnd) {
+    const toMinutes = (t) => {
+      if (!t) return 0;
+      const [h, m] = t.split(':').map(Number);
+      return (h < 6 ? h + 24 : h) * 60 + (m || 0);
+    };
+
+    const newStartMin = toMinutes(newStart);
+    const newEndMin = toMinutes(newEnd);
+
+    if (newStartMin >= newEndMin) {
       showToast('Invalid time range. Start time must be before end time.', 'error');
       return;
     }
@@ -357,7 +370,9 @@ const StudioBookings = ({
     const hasConflict = activeBookings.some(b => {
       if (isEdit && b.id === bookingId) return false;
       if (b.studio !== newStudio || b.date !== newDate) return false;
-      return (newStart < b.endTime) && (newEnd > b.startTime);
+      const bStartMin = toMinutes(b.startTime);
+      const bEndMin = toMinutes(b.endTime);
+      return (newStartMin < bEndMin) && (newEndMin > bStartMin);
     });
 
     const isIdentical = activeBookings.some(b => {
@@ -462,13 +477,13 @@ const StudioBookings = ({
       // Dispatch push notifications via ntfy.sh
       sendOpsAlert(
         `📅 Booking ${isEdit ? 'Updated' : 'Created'}: ${bookingData.project}`,
-        `${bookingData.project} on ${bookingData.date} (${bookingData.startTime}-${bookingData.endTime}) in ${bookingData.room || 'Studio'}. Colorist: ${bookingData.assignedArtist || 'TBD'}.`
+        `${bookingData.project} on ${bookingData.date} (${bookingData.startTime}-${bookingData.endTime}) in ${bookingData.studio || 'Studio'}. Colorist: ${getUserName(bookingData.coloristId) || 'TBD'}.`
       );
       if (bookingData.coloristId) {
         sendDirectUserAlert(
           bookingData.coloristId,
           `📅 Studio Session Scheduled`,
-          `${bookingData.project} on ${bookingData.date} (${bookingData.startTime}-${bookingData.endTime}) in ${bookingData.room || 'Studio'}.`
+          `${bookingData.project} on ${bookingData.date} (${bookingData.startTime}-${bookingData.endTime}) in ${bookingData.studio || 'Studio'}.`
         );
       }
 
@@ -568,7 +583,8 @@ const StudioBookings = ({
     const dayBookings = activeBookings.filter(b => b.date === dateStr).sort((a, b) => a.startTime.localeCompare(b.startTime));
     if (dayBookings.length === 0 && !showEmpty) return null;
     const isToday = dateStr === today;
-    const d = new Date(dateStr);
+    const [y, m, dayNum] = dateStr.split('-').map(Number);
+    const d = new Date(y, m - 1, dayNum);
     const isPast = dateStr < today;
     return (
       <div className={`rounded-2xl border-2 transition-all ${isSelected ? 'border-indigo-500/60 bg-indigo-500/5' : isToday ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-800 bg-slate-900/50'} ${isPast && !isSelected ? 'opacity-60 grayscale-[0.5]' : ''}`}>

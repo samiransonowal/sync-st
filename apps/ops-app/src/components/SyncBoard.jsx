@@ -94,6 +94,9 @@ export default function SyncBoard({
     const status = formData.get('status');
 
     try {
+      const targetProject = projects.find(p => p.id === projId);
+      const projectName = targetProject?.name || title || 'General Project';
+
       const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
       const docRef = await addDoc(tasksRef, {
         projectId: projId || null,
@@ -131,9 +134,11 @@ export default function SyncBoard({
         sendDiscordAlert(`🚨 ${userMention} **NEW TASK:** ${projectName}`);
       }
     } catch (error) {
+      console.error("Error creating task:", error);
       showToast('Failed to add task.', 'error');
     }
   };
+
 
   const handleEditTaskSubmit = async (e) => {
     e.preventDefault();

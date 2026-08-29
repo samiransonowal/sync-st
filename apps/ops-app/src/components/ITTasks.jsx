@@ -49,11 +49,13 @@ export default function ITTasks({ db, storage, appId, currentUserProfile, showTo
   };
 
   const calculateRemainingDays = (endDateStr) => {
+    if (!endDateStr) return 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const end = new Date(endDateStr);
+    const [y, m, d] = endDateStr.split('-').map(Number);
+    const end = new Date(y, m - 1, d, 0, 0, 0, 0);
     const diff = end - today;
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return Math.round(diff / (1000 * 60 * 60 * 24));
   };
 
   const startEditing = (task) => {
@@ -96,15 +98,11 @@ export default function ITTasks({ db, storage, appId, currentUserProfile, showTo
 
     try {
       if (selectedFile) {
-        // If editing and replacing file, delete old one first
-        if (editingTask?.attachment?.path) {
-          try { await deleteObject(ref(storage, editingTask.attachment.path)); } catch (e) { console.error("Old file deletion failed:", e); }
-        }
-
         setUploadProgress(1);
         const fileName = `${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
         const fileRef = ref(storage, `artifacts/${appId}/long_format_files/${fileName}`);
         const uploadTask = uploadBytesResumable(fileRef, selectedFile);
+        const oldPathToDelete = editingTask?.attachment?.path;
 
         await new Promise((resolve, reject) => {
           uploadTask.on('state_changed',
@@ -122,11 +120,16 @@ export default function ITTasks({ db, storage, appId, currentUserProfile, showTo
                 size: selectedFile.size,
                 path: fileRef.fullPath
               };
+              // Only delete old file after new upload is fully verified and completed
+              if (oldPathToDelete) {
+                try { await deleteObject(ref(storage, oldPathToDelete)); } catch (e) { console.error("Old file deletion failed:", e); }
+              }
               resolve();
             }
           );
         });
       }
+
 
       const payload = {
         title,

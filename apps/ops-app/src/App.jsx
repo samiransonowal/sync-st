@@ -389,9 +389,6 @@ export default function App() {
     if (!currentUserProfile || (dailyBrief && !forceRegenerate)) return;
     setIsBriefLoading(true);
 
-    const apiKey = "";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
     const todaysBookings = bookings.filter(b => b.date === formatLocalDate(new Date()) && !b.isDeleted && !b.isVaulted)
       .map(b => `${b.project} in ${b.studio} (${b.startTime}-${b.endTime})`);
     const myUserIds = getSelfAndPredecessorIds(currentUserProfile);
@@ -399,6 +396,29 @@ export default function App() {
       .map(t => `[Phase: ${t.status}] ${t.title}`);
     const totalPending = tasks.filter(t => t.status !== 'Delivered' && !t.isDeleted).length;
 
+    const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || "";
+    if (!apiKey) {
+      // Instant, dynamic local briefing generator when external AI API key is not supplied
+      const pendingCount = myActiveTasks.length;
+      const studioBookingsCount = todaysBookings.length;
+      let localBrief = `Good day, ${currentUserProfile.name}! `;
+      if (pendingCount > 0) {
+        localBrief += `You have ${pendingCount} active task${pendingCount > 1 ? 's' : ''} in your queue today (${myActiveTasks.slice(0, 2).join(', ')}). `;
+      } else {
+        localBrief += `Your active task queue is clear right now. `;
+      }
+      if (studioBookingsCount > 0) {
+        localBrief += `There ${studioBookingsCount > 1 ? 'are' : 'is'} ${studioBookingsCount} studio session${studioBookingsCount > 1 ? 's' : ''} scheduled across the suites today. `;
+      } else {
+        localBrief += `No studio sessions scheduled today. `;
+      }
+      localBrief += `Let's keep the pipeline moving smoothly and deliver excellence!`;
+      setDailyBrief(localBrief);
+      setIsBriefLoading(false);
+      return;
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const prompt = `You are the AI Studio Manager for Tunnel Postworks. Write a fast, highly energetic 2-3 sentence morning briefing for ${currentUserProfile.name} (Role: ${currentUserProfile.role}). 
     Today's Bookings: ${todaysBookings.length > 0 ? todaysBookings.join(', ') : 'None'}.
     Their active tasks: ${myActiveTasks.length > 0 ? myActiveTasks.join(', ') : 'None'}.
@@ -410,7 +430,7 @@ export default function App() {
       systemInstruction: { parts: [{ text: "You are an integrated AI studio assistant inside the Studio Tunnel app." }] }
     };
 
-    const retries = [1000, 2000, 4000, 8000, 16000];
+    const retries = [1000, 2000, 4000];
     for (let i = 0; i < retries.length; i++) {
       try {
         const res = await fetch(url, {
@@ -427,7 +447,7 @@ export default function App() {
         }
       } catch (err) {
         if (i === retries.length - 1) {
-          setDailyBrief("Unable to reach the AI core right now. Focus on the Sync board, let's crush today's deliverables!");
+          setDailyBrief(`Good day, ${currentUserProfile.name}! Pipeline is active with ${totalPending} pending tasks. Let's focus on today's deliveries!`);
         } else {
           await new Promise(r => setTimeout(r, retries[i]));
         }
@@ -435,6 +455,7 @@ export default function App() {
     }
     setIsBriefLoading(false);
   }, [currentUserProfile, dailyBrief, bookings, tasks]);
+
 
   useEffect(() => {
     if (activeTab === 'my_tasks' && !dailyBrief && !isBriefLoading && (tasks.length > 0 || bookings.length > 0)) {
@@ -2517,10 +2538,13 @@ export default function App() {
                                 <CheckCircle2 size={16} /> Complete Phase
                               </button>
                             )}
-                            {/* SECONDARY: Delegate */}
-                            <button onClick={() => setShowAssignModal(task)} className="btn btn-secondary btn-sm">Delegate</button>
                             {/* TERTIARY: Force Finish */}
-                            <button onClick={() => requestStageAdvance({ ...task, _forceFinish: true })} className="btn btn-secondary btn-sm">Force Finish</button>
+                            {currentUserProfile?.isAdmin && (
+                              <button onClick={() => handleForceFinishTask(task.id)} className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)' }}>
+                                Force Finish
+                              </button>
+                            )}
+
                             {/* DANGER level 3: arm then confirm delete */}
                             {(() => {
                               const armKey = `del_${task.id}`;

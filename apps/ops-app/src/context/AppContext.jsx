@@ -68,16 +68,19 @@ export function AppContextProvider({ children }) {
           
           setMessages(prev => {
             const prevIds = new Set(prev.map(m => m.id));
-            sorted.forEach(msg => {
-              // Toast only for new personal mentions from others
-              if (!prevIds.has(msg.id) && msg.senderId !== currentUserProfile?.id && msg.mentions?.includes(currentUserProfile?.id)) {
-                setToast({ message: `@You were mentioned by ${msg.senderName}`, type: 'mention' });
-                setTimeout(() => setToast(null), 5000);
-              }
-            });
+            // Only trigger toast for live incoming messages, preventing mention toast storm on initial login
+            if (prev.length > 0) {
+              sorted.forEach(msg => {
+                if (!prevIds.has(msg.id) && msg.senderId !== currentUserProfile?.id && msg.mentions?.includes(currentUserProfile?.id)) {
+                  setToast({ message: `@You were mentioned by ${msg.senderName}`, type: 'mention' });
+                  setTimeout(() => setToast(null), 5000);
+                }
+              });
+            }
             return sorted;
           });
         }
+
         if (collName === 'user_profiles') {
           const profilesMap = {};
           data.forEach(p => profilesMap[p.id] = p);
