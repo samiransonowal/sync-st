@@ -1,7 +1,6 @@
 # ============================================================================
 # STUDIO TUNNEL / CINELOOM POSTWORKS PVT. LTD.
 # OFFICIAL GOOGLE WORKSPACE ORGANIZATION USER DIRECTORY
-# Source: Live Google Workspace Admin API Export (7 Aug 2026)
 # Master Location: documentation/organization/users.yaml
 # Synced Target: credentials/public/users.json
 # ============================================================================
@@ -21,143 +20,111 @@ organization:
 
 users:
   - id: 1
-    primary_email: "samiran@studiotunnel.com"
-    full_name: "Samiran Sonowal"
-    username: "samiransonowal"
-    role: "Studio Owner & Managing Director"
-    system_privileges: "Super Admin, Data Owner, Escalation Target, Project Tracker Master"
-    designation: "Owner / Managing Director"
-    department: "Executive Management"
-    phone: "7030168963"
-    personal_email: "samiran26sonowal@gmail.com"
+    primary_email: "yash@studiotunnel.com"
+    full_name: "Yash Soni"
+    username: "yash-st"
+    role: "Sr. Colorist / CEO"
+    designation: "Chief Executive Officer & Senior Colorist"
+    department: "Executive Management & Post-Production"
     is_active: true
 
   - id: 2
-    primary_email: "lab@studiotunnel.com"
-    full_name: "Tech Dev (Studio Tunnel Lab)"
-    username: "st-lab"
-    aliases:
-      - "jay@studiotunnel.com"
-    role: "Infrastructure & Service Admin Account"
-    system_privileges: "GCP Owner (sync-st), OAuth Client Owner, Delegated Admin"
-    designation: "GCP Cloud Administrator & Technical Lead"
-    department: "Engineering & Automation"
-    phone: "+91 80809 11109"
-    personal_email: "postman@jaydantara.com"
-    is_active: true
-
-  - id: 3
-    primary_email: "accounts@studiotunnel.com"
-    full_name: "Accounts Cineloom Postworks"
-    username: "accounts-st"
-    role: "Accounts & Financial Administration"
-    system_privileges: "ACCOUNTS Sheet Operator, Billing Inbox"
-    designation: "Accounts Officer"
-    department: "Finance & Accounts"
+    primary_email: "samiran@studiotunnel.com"
+    full_name: "Samiran Sonowal"
+    username: "samiransonowal"
+    role: "Colorist / COO"
+    designation: "Chief Operating Officer & Colorist"
+    department: "Executive Management & Operations"
     phone: "7030168963"
     personal_email: "samiran26sonowal@gmail.com"
     is_active: true
 
-  - id: 4
-    primary_email: "art@studiotunnel.com"
-    full_name: "Artists @ Studio Tunnel"
-    username: "art-st"
-    aliases:
-      - "manoj@studiotunnel.com"
-      - "sujith@studiotunnel.com"
-    role: "Post-Production Artists & Colorists Group"
-    system_privileges: "Project Execution, Color Grading & Mastering"
-    designation: "Senior Colorists & Post Artists"
+  - id: 3
+    primary_email: "sujith@studiotunnel.com"
+    full_name: "Sujith Vijayan"
+    username: "sujith-st"
+    role: "Sr. Colorist"
+    designation: "Senior Colorist"
     department: "Post-Production Operations"
-    phones:
-      - "+91 84549 81924"
-      - "+91 83189 84245"
+    phone: "+91 83189 84245"
+    is_active: true
+
+  - id: 4
+    primary_email: "manoj@studiotunnel.com"
+    full_name: "Manoj Sahu"
+    username: "manoj-st"
+    role: "Colorist"
+    designation: "Colorist"
+    department: "Post-Production Operations"
+    phone: "+91 84549 81924"
     personal_email: "contactmanojsahu@gmail.com"
     is_active: true
 
   - id: 5
-    primary_email: "contact@studiotunnel.com"
-    full_name: "Studio Tunnel Contact"
-    username: "st-contact"
-    aliases:
-      - "tamash@studiotunnel.com"
-      - "prakash@studiotunnel.com"
-    role: "Public Business Contact & Client Operations"
-    system_privileges: "Public Inbound Communications, Client Relations"
-    designation: "Public Relations & Inbound Billing Portal"
-    department: "Client Services"
-    phones:
-      - "9372586002"
-      - "8910460532"
-    personal_emails:
-      - "tamashansari4@gmail.com"
-      - "prakashjai.tunnel@gmail.com"
+    primary_email: "tamash@studiotunnel.com"
+    full_name: "Altamash Ansari"
+    username: "altamash-st"
+    role: "Line Producer"
+    designation: "Line Producer"
+    department: "Production Operations"
+    phone: "9372586002"
+    personal_email: "tamashansari4@gmail.com"
     is_active: true
 
   - id: 6
-    primary_email: "ops@studiotunnel.com"
-    full_name: "Operations & Line Producers Group"
-    username: "ops-st"
-    aliases:
-      - "ayush@studiotunnel.com"
-      - "vijay@studiotunnel.com"
-      - "arjun@studiotunnel.com"
-      - "golu@studiotunnel.com"
-      - "aaditya@studiotunnel.com"
-    role: "Studio Operations & Line Production Team"
-    system_privileges: "Project Tracker Entry & Production Logistics"
-    designation: "Line Producers & Operations Team"
+    primary_email: "prakash@studiotunnel.com"
+    full_name: "Prakash Jaiswal"
+    username: "prakash-st"
+    role: "Line Producer"
+    designation: "Line Producer"
     department: "Production Operations"
+    phone: "8910460532"
+    personal_email: "prakashjai.tunnel@gmail.com"
     is_active: true
 
   - id: 7
-    primary_email: "yash@studiotunnel.com"
-    full_name: "Yash"
-    username: "yash-st"
-    role: "Senior Colorist & Weekly Comptroller"
-    system_privileges: "Weekly Financial Accounts Report Recipient"
-    designation: "Senior Colorist"
+    primary_email: "arjun@studiotunnel.com"
+    full_name: "Arjun Kohli"
+    username: "arjun-st"
+    role: "Assistant Colorist"
+    designation: "Assistant Colorist"
     department: "Post-Production Operations"
     is_active: true
 
   - id: 8
-    primary_email: "aaditya@studiotunnel.com"
-    full_name: "Aaditya Kamble"
-    username: "aaditya-st"
-    role: "Conformist"
-    system_privileges: "Conform & Online Editing Execution"
-    designation: "Conformist"
-    department: "Post-Production Operations"
-    is_active: true
-
-  - id: 9
     primary_email: "ayush@studiotunnel.com"
     full_name: "Ayush Dalvi"
     username: "ayush-st"
     role: "Assistant Colorist"
-    system_privileges: "Color Assist & Project Preparation"
+    designation: "Assistant Colorist"
+    department: "Post-Production Operations"
+    is_active: true
+
+  - id: 9
+    primary_email: "vijay@studiotunnel.com"
+    full_name: "Vijay Nool"
+    username: "vijay-st"
+    role: "Assistant Colorist"
     designation: "Assistant Colorist"
     department: "Post-Production Operations"
     is_active: true
 
   - id: 10
-    primary_email: "vijay@studiotunnel.com"
-    full_name: "Vijay Nool"
-    username: "vijay-st"
-    role: "Assistant Colorist"
-    system_privileges: "Color Assist & Project Preparation"
-    designation: "Assistant Colorist"
-    department: "Post-Production Operations"
+    primary_email: "golu@studiotunnel.com"
+    full_name: "Golu Saha"
+    username: "golu-st"
+    role: "Conformist / Floor Manager"
+    designation: "Conformist & Floor Manager"
+    department: "Data & Post Operations"
     is_active: true
 
   - id: 11
-    primary_email: "arjun@studiotunnel.com"
-    full_name: "Arjun Kohli"
-    username: "arjun-st"
-    role: "Assistant Colorist"
-    system_privileges: "Color Assist & Project Preparation"
-    designation: "Assistant Colorist"
-    department: "Post-Production Operations"
+    primary_email: "aaditya@studiotunnel.com"
+    full_name: "Aaditya Kamble"
+    username: "aaditya-st"
+    role: "Conformist"
+    designation: "Conformist"
+    department: "Data & Post Operations"
     is_active: true
 
 aliases:
@@ -165,15 +132,12 @@ aliases:
     alias_email: "samiran.sonowal@studiotunnel.com"
     purpose: "Direct Business & Owner Communication"
 
-  - primary_email: "lab@studiotunnel.com"
-    alias_email: "jay@studiotunnel.com"
-    purpose: "Developer Alias & Technical Lead (Jay)"
-
   - primary_email: "art@studiotunnel.com"
     alias_emails:
       - "manoj@studiotunnel.com"
       - "sujith@studiotunnel.com"
-    purpose: "Direct Inbox for Colorists Manoj & Sujith"
+      - "yash@studiotunnel.com"
+    purpose: "Direct Inbox for Colorists"
 
   - primary_email: "contact@studiotunnel.com"
     alias_emails:

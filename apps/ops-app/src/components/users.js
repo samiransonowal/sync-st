@@ -1,13 +1,22 @@
 import { doc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
 
 export const ROLES = {
-  IT_ADMIN: 'IT Admin',
-  PRODUCTION_DEPT: 'Production Department',
-  COLORIST_MGMT: 'Colorist/Mgmt',
-  LEAD_COLORIST: 'Lead Colorist',
-  COLORIST_ASSIST_HOD: 'Colorist/Assist HOD',
+  SR_COLORIST_CEO: 'Sr. Colorist / CEO',
+  COLORIST_COO: 'Colorist / COO',
+  SR_COLORIST: 'Sr. Colorist',
+  COLORIST: 'Colorist',
+  LINE_PRODUCER: 'Line Producer',
+  ASSISTANT_COLORIST: 'Assistant Colorist',
+  CONFORMIST_FLOOR_MGR: 'Conformist / Floor Manager',
   CONFORMIST: 'Conformist',
-  ASSIST: 'Assist'
+
+  // Aliases for backwards compatibility
+  LEAD_COLORIST: 'Sr. Colorist',
+  COLORIST_MGMT: 'Colorist / COO',
+  COLORIST_ASSIST_HOD: 'Colorist',
+  PRODUCTION_DEPT: 'Line Producer',
+  ASSIST: 'Assistant Colorist',
+  IT_ADMIN: 'IT Admin'
 };
 
 export const PERMISSIONS = {
@@ -24,19 +33,7 @@ export const PERMISSIONS = {
 };
 
 export const ROLE_PERMISSIONS = {
-  [ROLES.IT_ADMIN]: {
-    [PERMISSIONS.VIEW_DASHBOARD]: true,
-    [PERMISSIONS.VIEW_TRACKER]: true,
-    [PERMISSIONS.VIEW_PROJECTS]: true,
-    [PERMISSIONS.VIEW_ATTENDANCE]: true,
-    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
-    [PERMISSIONS.APPROVE_LEAVES]: true,
-    [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
-    [PERMISSIONS.EDIT_BOOKINGS]: true,
-    [PERMISSIONS.MANAGE_IT]: true,
-    [PERMISSIONS.VIEW_RECYCLE_BIN]: true
-  },
-  [ROLES.PRODUCTION_DEPT]: {
+  [ROLES.SR_COLORIST_CEO]: {
     [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
@@ -47,7 +44,7 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: true
   },
-  [ROLES.COLORIST_MGMT]: {
+  [ROLES.COLORIST_COO]: {
     [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
@@ -58,7 +55,18 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: true
   },
-  [ROLES.LEAD_COLORIST]: {
+  [ROLES.LINE_PRODUCER]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: true,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
+    [PERMISSIONS.EDIT_BOOKINGS]: true,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: true
+  },
+  [ROLES.SR_COLORIST]: {
     [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
@@ -69,7 +77,7 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   },
-  [ROLES.COLORIST_ASSIST_HOD]: {
+  [ROLES.COLORIST]: {
     [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
@@ -77,6 +85,17 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.VIEW_LONG_FORMAT]: true,
     [PERMISSIONS.APPROVE_LEAVES]: false,
     [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
+    [PERMISSIONS.EDIT_BOOKINGS]: true,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: false
+  },
+  [ROLES.CONFORMIST_FLOOR_MGR]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: false,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: false,
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   },
@@ -91,7 +110,7 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.EDIT_BOOKINGS]: false,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   },
-  [ROLES.ASSIST]: {
+  [ROLES.ASSISTANT_COLORIST]: {
     [PERMISSIONS.VIEW_DASHBOARD]: false,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
@@ -105,22 +124,23 @@ export const ROLE_PERMISSIONS = {
 };
 
 export const USERS = [
-  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true, isArchived: true },
-  { id: 'u0_b', name: 'Prakash Jai', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true },
-  { id: 'u0_c', name: 'Jay Dantara', role: ROLES.IT_ADMIN, studio: 'Office', isAdmin: true, isArchived: true },
-  { id: 'u1', name: 'Yash Soni', role: ROLES.LEAD_COLORIST, studio: 'Studio 01', isAdmin: true },
-  { id: 'u2', name: 'Sujith Vijayan', role: ROLES.LEAD_COLORIST, studio: 'Studio 02', isAdmin: false },
-  { id: 'u3', name: 'Samiran Sonowal', role: ROLES.COLORIST_MGMT, studio: 'Studio 03', isAdmin: true },
-  { id: 'u4', name: 'Manoj Sahu', role: ROLES.COLORIST_ASSIST_HOD, studio: 'Studio 03', isAdmin: false },
-  { id: 'u5', name: 'Golu Saha', role: ROLES.CONFORMIST, studio: 'Data & Conform', isAdmin: false },
-  { id: 'u6', name: 'Ayush Dalvi', role: ROLES.CONFORMIST, studio: 'Data & Conform', isAdmin: false },
-  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSIST, studio: 'Assist Studio', isAdmin: false, isArchived: true },
-  { id: 'u8', name: 'Akilan', role: ROLES.ASSIST, studio: 'Assist Studio', isAdmin: false, isArchived: true },
-  { id: 'u9', name: 'Vijay Nool', role: ROLES.ASSIST, studio: 'Assist Studio', isAdmin: false },
-  { id: 'u10', name: 'Arjun Kohli', role: ROLES.ASSIST, studio: 'Assist Studio', isAdmin: false },
-  { id: 'u11', name: 'Tamash Ansari', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true, replacesUserId: 'u0_a' }
-];
+  { id: 'u1', name: 'Yash Soni', role: ROLES.SR_COLORIST_CEO, studio: 'Studio 01', isAdmin: true },
+  { id: 'u3', name: 'Samiran Sonowal', role: ROLES.COLORIST_COO, studio: 'Studio 03', isAdmin: true },
+  { id: 'u2', name: 'Sujith Vijayan', role: ROLES.SR_COLORIST, studio: 'Studio 02', isAdmin: false },
+  { id: 'u4', name: 'Manoj Sahu', role: ROLES.COLORIST, studio: 'Studio 03', isAdmin: false },
+  { id: 'u11', name: 'Altamash Ansari', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, replacesUserId: 'u0_a' },
+  { id: 'u0_b', name: 'Prakash Jaiswal', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true },
+  { id: 'u10', name: 'Arjun Kohli', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
+  { id: 'u6', name: 'Ayush Dalvi', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
+  { id: 'u9', name: 'Vijay Nool', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
+  { id: 'u5', name: 'Golu Saha', role: ROLES.CONFORMIST_FLOOR_MGR, studio: 'Data & Conform', isAdmin: false },
+  { id: 'u12', name: 'Aaditya Kamble', role: ROLES.CONFORMIST, studio: 'Data & Conform', isAdmin: false },
 
+  // Archived predecessors for legacy data & log continuity
+  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true },
+  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true },
+  { id: 'u8', name: 'Akilan', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true }
+];
 
 /**
  * Returns an array containing the user's own ID and any predecessor ID they replaced
@@ -143,13 +163,14 @@ export const getSelfAndPredecessorIds = (user) => {
  */
 export const hasPermission = (user, permission) => {
   if (!user) return false;
-  // IT tasks are strictly restricted to the IT Admin role
+  // IT tasks are strictly reserved for admins / future IT Admin role
   if (permission === PERMISSIONS.MANAGE_IT) {
-    return user.role === ROLES.IT_ADMIN;
+    return user.role === ROLES.IT_ADMIN || user.isAdmin === true;
   }
   if (user.isAdmin === true) return true;
   return ROLE_PERMISSIONS[user.role]?.[permission] === true;
 };
+
 
 /**
  * Maps a Sidebar / activeTab ID to a specific permission check.
