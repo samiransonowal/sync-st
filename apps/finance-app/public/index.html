@@ -13,6 +13,11 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
+  <!-- SheetJS (Excel .xlsx / .xls / .csv) & PDF Parser SDKs for Bank Statements -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+
   <style>
     :root {
       --bg-dark: #07090e;
@@ -874,9 +879,10 @@
     <div class="recon-toolbar">
       <div class="recon-toolbar-left">
         <label class="btn-recon-action btn-recon-primary" style="cursor: pointer;">
-          <span>📂 Upload Statement (CSV / XLS)</span>
-          <input type="file" id="statementFileInput" accept=".csv, .txt, .tsv" style="display: none;" onchange="handleStatementFileUpload(event)">
+          <span>📂 Upload Statement (Excel / CSV / PDF)</span>
+          <input type="file" id="statementFileInput" accept=".xlsx, .xls, .csv, .pdf, .txt, .tsv" style="display: none;" onchange="handleStatementFileUpload(event)">
         </label>
+
         <button class="btn-recon-action btn-recon-secondary" onclick="openPasteStatementModal()">
           <span>📋 Paste Netbanking Credits</span>
         </button>
@@ -1622,21 +1628,171 @@
     }
 
     /* ========================================================= */
-    /* BANK STATEMENT INGESTION HANDLERS                         */
+    /* UNIVERSAL MULTI-FORMAT BANK STATEMENT INGESTION & AI ENGINE */
     /* ========================================================= */
 
-    function handleStatementFileUpload(event) {
+    async function handleStatementFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
-        parseStatementText(text);
-        showToast(`Loaded ${bankStatementTransactions.length} credits from ${file.name}`, 'success');
-      };
-      reader.readAsText(file);
-      event.target.value = '';
+      const fileName = file.name.toLowerCase();
+      showToast(`Analyzing ${file.name} with Statement Recon Engine...`, 'info');
+
+      try {
+        let parsedCredits = [];
+
+        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv') || fileName.endsWith('.tsv')) {
+          parsedCredits = await parseSpreadsheetFile(file);
+        } else if (fileName.endsWith('.pdf')) {
+          parsedCredits = await parsePdfFile(file);
+        } else {
+          // Plain text / unformatted text file
+          const text = await readFileAsText(file);
+          parsedCredits = parseStatementLines(text);
+        }
+
+        if (parsedCredits.length > 0) {
+          bankStatementTransactions = parsedCredits;
+          runBankReconciliationEngine();
+          updateKPIs();
+          renderTables();
+          const matched = bankStatementTransactions.filter(t => t.matchConfidence === 'HIGH').length;
+          const totalCreditsSum = parsedCredits.reduce((s, c) => s + (c.amount || 0), 0);
+          showToast(`✓ Analyzed ${parsedCredits.length} credits (₹${totalCreditsSum.toLocaleString('en-IN')}) from ${file.name} [${matched} Auto-Matched]!`, 'success');
+        } else {
+          showToast(`No credit / deposit transactions found in ${file.name}. Please check the file or use 'Paste Netbanking Credits'.`, 'danger');
+        }
+      } catch (err) {
+        console.error('File parsing error:', err);
+        showToast(`Error analyzing statement: ${err.message}`, 'danger');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result || '');
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+      });
+    }
+
+    /**
+     * Parses Excel (.xlsx, .xls) and CSV/TSV spreadsheets via SheetJS
+     */
+    function parseSpreadsheetFile(file) {
+      return new Promise((resolve, reject) => {
+        if (typeof XLSX === 'undefined') {
+          reject(new Error('SheetJS library is loading, please try again.'));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            
+            let allTransactions = [];
+
+            workbook.SheetNames.forEach(sheetName => {
+              const worksheet = workbook.Sheets[sheetName];
+              const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+              if (!rows || rows.length < 2) return;
+
+              // Find header row index
+              let headerIdx = -1;
+              let dateCol = -1, narrCol = -1, creditCol = -1, debitCol = -1, refCol = -1, typeCol = -1;
+
+              for (let r = 0; r < Math.min(rows.length, 30); r++) {
+                const row = rows[r].map(c => String(c).toLowerCase().trim());
+                for (let c = 0; c < row.length; c++) {
+                  const cell = row[c];
+                  if (dateCol === -1 && (cell.includes('date') || cell.includes('value dt') || cell.includes('txn dt') || cell.includes('posting'))) dateCol = c;
+                  if (narrCol === -1 && (cell.includes('narration') || cell.includes('particular') || cell.includes('description') || cell.includes('remarks') || cell.includes('details') || cell.includes('transaction'))) narrCol = c;
+                  if (creditCol === -1 && (cell.includes('credit') || cell.includes('deposit') || cell.includes('cr amt') || cell === 'cr' || cell.includes('deposit amt') || cell.includes('credit (inr)'))) creditCol = c;
+                  if (debitCol === -1 && (cell.includes('debit') || cell.includes('withdrawal') || cell.includes('dr amt') || cell === 'dr' || cell.includes('withdrawal amt') || cell.includes('debit (inr)'))) debitCol = c;
+                  if (refCol === -1 && (cell.includes('chq') || cell.includes('ref') || cell.includes('utr') || cell.includes('trans id') || cell.includes('cheque') || cell.includes('reference'))) refCol = c;
+                  if (typeCol === -1 && (cell.includes('type') || cell.includes('cr/dr') || cell.includes('dr/cr'))) typeCol = c;
+                }
+                if (dateCol !== -1 && (narrCol !== -1 || creditCol !== -1)) {
+                  headerIdx = r;
+                  break;
+                }
+              }
+
+              if (headerIdx === -1) {
+                headerIdx = 0;
+                if (dateCol === -1) dateCol = 0;
+                if (narrCol === -1) narrCol = 1;
+                if (creditCol === -1) creditCol = 2;
+              }
+
+              for (let r = headerIdx + 1; r < rows.length; r++) {
+                const row = rows[r];
+                if (!row || row.length === 0) continue;
+
+                const dateVal = dateCol !== -1 ? String(row[dateCol] || '').trim() : '';
+                const narrVal = narrCol !== -1 ? String(row[narrCol] || '').trim() : (row.join(' ').trim());
+                let creditVal = creditCol !== -1 ? cleanAmountValue(row[creditCol]) : 0;
+                const debitVal = debitCol !== -1 ? cleanAmountValue(row[debitCol]) : 0;
+                const refVal = refCol !== -1 ? String(row[refCol] || '').trim() : '';
+                const typeVal = typeCol !== -1 ? String(row[typeCol] || '').toUpperCase().trim() : '';
+
+                // If credit is 0, check if type says CR or narration says CR
+                if (creditVal === 0 && (typeVal === 'CR' || typeVal.includes('CREDIT') || narrVal.toUpperCase().includes(' CR '))) {
+                  creditVal = cleanAmountValue(row[debitCol]) || cleanAmountValue(row[creditCol]);
+                }
+
+                // If debit is recorded and no credit, skip debit
+                if (debitVal > 0 && creditVal === 0) continue;
+
+                if (creditVal > 0 && (dateVal || narrVal)) {
+                  const utr = refVal || extractUtrFromText(narrVal);
+                  allTransactions.push({
+                    date: standardizeDateString(dateVal),
+                    narration: narrVal || 'Bank Credit Deposit',
+                    refNo: utr,
+                    amount: creditVal,
+                    isSettled: false
+                  });
+                }
+              }
+            });
+
+            resolve(allTransactions);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    /**
+     * Parses PDF Bank Statements via PDF.js
+     */
+    async function parsePdfFile(file) {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF parsing library is loading. Please try again or upload CSV/Excel.');
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+
+      return parseStatementLines(fullText);
     }
 
     function openPasteStatementModal() {
@@ -1651,38 +1807,63 @@
         return;
       }
       closeModal('pasteStatementModal');
-      parseStatementText(text);
-      showToast(`Parsed ${bankStatementTransactions.length} bank statement credits.`, 'success');
+      const parsed = parseStatementLines(text);
+      if (parsed.length > 0) {
+        bankStatementTransactions = parsed;
+        runBankReconciliationEngine();
+        updateKPIs();
+        renderTables();
+        const matched = bankStatementTransactions.filter(t => t.matchConfidence === 'HIGH').length;
+        showToast(`✓ Analyzed ${parsed.length} credit transactions [${matched} Auto-Matched]!`, 'success');
+      } else {
+        showToast('No valid deposit/credit lines found in pasted text.', 'danger');
+      }
     }
 
-    function parseStatementText(rawText) {
+    /**
+     * Deep Pattern & Heuristic Line Extractor for raw statement text
+     */
+    function parseStatementLines(rawText) {
       const lines = rawText.split(/\r?\n/);
       const parsed = [];
 
       lines.forEach(line => {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.toLowerCase().includes('balance') || trimmed.toLowerCase().includes('opening')) return;
+        if (!trimmed || trimmed.length < 5) return;
+        const lower = trimmed.toLowerCase();
+
+        // Skip non-transactional headers & summaries
+        if (lower.includes('opening balance') || lower.includes('closing balance') || lower.includes('statement of account') || lower.includes('page ') || lower.includes('total:')) return;
+
+        // Skip obvious debit lines unless they contain credit indicator
+        if ((lower.includes('debit') || lower.includes('withdrawal') || lower.includes('dr.')) && !lower.includes('cr') && !lower.includes('credit')) {
+          // If strictly marked Dr with no Cr, skip
+          if (lower.includes(' dr ') || lower.endsWith('dr') || lower.includes('/dr/')) return;
+        }
 
         // Extract amount (supports Indian comma notation e.g. 1,18,000.00 or 59000)
         const amountMatches = trimmed.match(/(?:Rs\.?|INR|\b)(\d{1,3}(?:,\d{2,3})*(?:\.\d{2})?)\b/g);
         let creditAmount = 0;
         if (amountMatches) {
-          const numbers = amountMatches.map(m => Number(m.replace(/[^0-9.]/g, ''))).filter(n => n > 100);
-          if (numbers.length > 0) creditAmount = numbers[numbers.length - 1];
+          const numbers = amountMatches.map(m => Number(m.replace(/[^0-9.]/g, ''))).filter(n => n >= 100);
+          if (numbers.length > 0) {
+            // In standard Indian statements, credit amount is often the deposit or the amount before running balance
+            creditAmount = numbers[numbers.length > 1 ? numbers.length - 2 : 0] || numbers[0];
+            if (numbers.length === 1) creditAmount = numbers[0];
+          }
         }
 
-        // Extract Date (DD/MM/YYYY or YYYY-MM-DD)
-        const dateMatch = trimmed.match(/(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4}|\d{4}[\/\-\.]\d{2}[\/\-\.]\d{2})/);
-        const dateStr = dateMatch ? dateMatch[0] : new Date().toLocaleDateString('en-IN');
+        // Extract Date (DD/MM/YYYY, DD-MMM-YYYY, YYYY-MM-DD, etc.)
+        const dateMatch = trimmed.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}[\/\-\.][A-Za-z]{3}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/);
+        const dateStr = dateMatch ? standardizeDateString(dateMatch[0]) : new Date().toLocaleDateString('en-IN');
 
         // Extract UTR / Reference
-        const utrMatch = trimmed.match(/(?:UPI|NEFT|RTGS|IMPS|REF|TXN)[\/\-_]([A-Za-z0-9]+)/i) || trimmed.match(/\b([A-Z0-9]{12,22})\b/);
-        const refNo = utrMatch ? utrMatch[0] : `UTR-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+        const refNo = extractUtrFromText(trimmed);
 
         if (creditAmount > 0) {
           parsed.push({
             date: dateStr,
-            narration: trimmed.substring(0, 90),
+            narration: trimmed.substring(0, 95),
             refNo: refNo,
             amount: creditAmount,
             isSettled: false
@@ -1690,14 +1871,35 @@
         }
       });
 
-      if (parsed.length > 0) {
-        bankStatementTransactions = parsed;
-        runBankReconciliationEngine();
-        updateKPIs();
-        renderTables();
-      } else {
-        showToast('No valid credit transactions detected in text.', 'danger');
-      }
+      return parsed;
+    }
+
+    function cleanAmountValue(val) {
+      if (val === null || val === undefined || val === '') return 0;
+      if (typeof val === 'number') return Math.abs(val);
+      const str = String(val).replace(/[^0-9.-]/g, '');
+      const num = parseFloat(str);
+      return isNaN(num) ? 0 : Math.abs(num);
+    }
+
+    function standardizeDateString(dateVal) {
+      if (!dateVal) return new Date().toLocaleDateString('en-IN');
+      try {
+        if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+          return dateVal.toLocaleDateString('en-IN');
+        }
+        const d = new Date(dateVal);
+        if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN');
+      } catch (e) {}
+      return String(dateVal);
+    }
+
+    function extractUtrFromText(text) {
+      if (!text) return `UTR-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+      const utrMatch = text.match(/(?:UPI|NEFT|RTGS|IMPS|REF|TXN)[\/\-_:]([A-Za-z0-9]+)/i) || 
+                       text.match(/\b([A-Z0-9]{12,22})\b/) ||
+                       text.match(/(?:HDFC|ICIC|KOTAK|AXIS|SBIN|CITI)[A-Za-z0-9]+/i);
+      return utrMatch ? utrMatch[0] : `UTR-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
     }
 
     function loadSampleBankStatement() {
@@ -1756,6 +1958,7 @@
       renderTables();
       showToast('Bank statement queue cleared.', 'info');
     }
+
 
     /* ========================================================= */
     /* SETTLEMENT & RECONCILIATION ACTIONS                       */
