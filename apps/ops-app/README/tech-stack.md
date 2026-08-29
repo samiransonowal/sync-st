@@ -44,8 +44,13 @@ This is a modern library of icons (the little pictures like the Dashboard icon, 
 
 Git is our version control system. It records every change made to the application, allowing us to maintain a transparent, audit-ready history of all feature updates and technical improvements.
 
-### 10. Identity Hub (Base64 Image Sync)
+### 11. Google BigQuery Data Warehouse (The "Analyst")
 
-We use a unique Base64-to-Firestore synchronization method for Display Pictures.
+The analytical data warehouse runs on **Google BigQuery** under GCP Project `sync-st` (Mumbai region `asia-south1`).
+- **How it works**: Reads live data from Google Sheets (`LOG BOOK_SYNC`) and Firestore through external tables and scheduled queries.
+- **Datasets**:
+  - `st_comptroller_pml` (Production master warehouse)
+  - `st_comptroller_test` (Testing & staging dataset)
+  - `st_comptroller_dev` (Development dataset)
+- **Reporting**: Directly powers real-time executive reports and payment aging dashboards in **Google Looker Studio**.
 
-- **How it works**: When you upload a photo, the app converts it into a high-quality data string (Base64) and saves it directly to your profile. This allows instant visual identification across all team-facing modules without relying on slow external storage buckets.

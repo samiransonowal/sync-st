@@ -1,22 +1,25 @@
 # Project Credentials & Ownership
 
-## Studio Tunnel Pipeline
+## Studio Tunnel Platform
 
-**Project ID**: studio-tunnel
-**Environment**: Development / Production
+- **GCP / Firebase Project ID**: `sync-st`
+- **GCP Project Number**: `972643538415`
+- **BigQuery Project & Region**: `sync-st` (`asia-south1` Mumbai)
+- **BigQuery Datasets**: `st_comptroller_pml` (Prod), `st_comptroller_test` (Staging), `st_comptroller_dev` (Dev)
 
 ---
 
-### 🔑 Authentication Mapping
+### 🔑 Ownership & Administration
 
 | Role | Email Identity | Responsibility |
 | :--- | :--- | :--- |
-| **Owner / Master Admin** | `samiran@studiotunnel.com` | Primary Firebase billing and project ownership. |
-| **Project Editor / Dev** | `jay@studiotunnel.com` | Lead development, infrastructure management, and deployment. |
+| **Studio Owner & Lead** | `samiran@studiotunnel.com` | Primary ownership, deployment, and operational authorization. |
+| **GCP Admin Account** | `lab@studiotunnel.com` | Cloud administration, IAM roles, and GCP project management. |
 
 ---
 
-### 🚀 Deployment Permissions
+### 🚀 Deployment & Cloud Services
 
-- Both accounts have administrative access to the `studio-tunnel` Firebase environment.
-- Any major architectural changes must be coordinated between these two identities.
+- **Firebase Hosting**: `sync-st.web.app` (Ops App) & `cineloom-comptroller.web.app` (Finance App)
+- **BigQuery Analytical Warehouse**: Connected to Google Sheets (`LOG BOOK_SYNC`) and Looker Studio dashboards.
+
