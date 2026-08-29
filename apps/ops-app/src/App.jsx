@@ -10,9 +10,10 @@ import {
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc, query } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { googleProvider } from './services/firebase';
 
 // --- COMPONENTS ---
 import TeamChat from './components/TeamChat';
@@ -27,7 +28,8 @@ import { NtfyModal } from './components/NtfyModal';
 import { sendNtfyNotification, sendDirectUserAlert, sendQcAlert, sendOpsAlert, getUserNtfyTopic, NTFY_TOPICS } from './services/ntfy';
 
 // --- CONFIGURATION & CONSTANTS ---
-import { USERS, getUserName as getUserNameImported, isUserClockedIn as isUserClockedInImported, handleLoginSubmitHelper, toggleClockInHelper, hasPermission, getTabPermission, ROLES, PERMISSIONS, getSelfAndPredecessorIds } from './components/users';
+import { USERS, findUserByEmail, getUserName as getUserNameImported, isUserClockedIn as isUserClockedInImported, toggleClockInHelper, hasPermission, getTabPermission, ROLES, PERMISSIONS, getSelfAndPredecessorIds } from './components/users';
+
 
 const WORKFLOW_STAGES = ['Conform', 'Assist', 'Grade', 'Delivery Sync'];
 const STUDIO_ROOMS = ['Studio 01', 'Studio 02', 'Studio 03'];
@@ -197,12 +199,12 @@ export default function App() {
   // Modal Data States
   const [sopBreakdown, setSopBreakdown] = useState('');
 
-  // Login Logic State
-  const [loginStep, setLoginStep] = useState('select_user');
-  const [pendingUser, setPendingUser] = useState(null);
-  const [pinInput, setPinInput] = useState('');
-  const [showLoginPin, setShowLoginPin] = useState(false);
-  const [showSettingsPin, setShowSettingsPin] = useState(false);
+  // Login & Authentication States
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Clock & Greeting State
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -214,21 +216,24 @@ export default function App() {
 
   // --- 1. AUTHENTICATION & INITIALIZATION ---
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      setUser(authUser);
+      if (authUser && authUser.email) {
+        const profile = findUserByEmail(authUser.email);
+        if (profile) {
+          setCurrentUserProfile(profile);
+          const hasAdmin = hasPermission(profile, PERMISSIONS.VIEW_DASHBOARD);
+          setActiveTab(prev => (!prev || prev === 'dashboard' || prev === 'my_tasks' ? (hasAdmin ? 'dashboard' : 'my_tasks') : prev));
         } else {
-          await signInAnonymously(auth);
+          setCurrentUserProfile(null);
         }
-      } catch (err) {
-        console.error("Auth failed:", err);
+      } else {
+        setCurrentUserProfile(null);
       }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    });
     return () => unsubscribe();
   }, []);
+
 
   // --- 2. DATA SYNC ---
   useEffect(() => {
@@ -473,19 +478,72 @@ export default function App() {
     return 'Good Evening';
   };
 
-  const handleLoginSubmit = (e) => {
-    handleLoginSubmitHelper({
-      e,
-      userProfiles,
-      pendingUser,
-      pinInput,
-      setCurrentUserProfile,
-      setActiveTab,
-      setLoginStep,
-      setPinInput,
-      showToast
-    });
+  const handleGoogleLogin = async () => {
+    try {
+      setIsAuthLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const email = result.user?.email;
+      const profile = findUserByEmail(email);
+      if (!profile) {
+        showToast(`Access Denied: ${email} is not in the approved studio roster.`, 'error');
+      } else {
+        showToast(`Welcome back, ${profile.name}!`, 'success');
+      }
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      showToast(err.message || 'Google sign-in failed', 'error');
+    } finally {
+      setIsAuthLoading(false);
+    }
   };
+
+  const handleEmailPasswordLogin = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !passwordInput) {
+      showToast('Please enter both email and password', 'error');
+      return;
+    }
+    try {
+      setIsAuthLoading(true);
+      let result;
+      if (authMode === 'signup') {
+        result = await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+      } else {
+        result = await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+      }
+      const email = result.user?.email;
+      const profile = findUserByEmail(email);
+      if (!profile) {
+        showToast(`Access Denied: ${email} is not in the approved studio roster.`, 'error');
+      } else {
+        showToast(`Welcome back, ${profile.name}!`, 'success');
+      }
+    } catch (err) {
+      console.error("Email login error:", err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        showToast('Invalid email or password', 'error');
+      } else if (err.code === 'auth/email-already-in-use') {
+        showToast('Account already exists. Please sign in instead.', 'error');
+        setAuthMode('login');
+      } else {
+        showToast(err.message || 'Authentication failed', 'error');
+      }
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setCurrentUserProfile(null);
+      showToast('Logged out securely', 'success');
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+  };
+
 
 
 
@@ -1205,6 +1263,8 @@ export default function App() {
 
   // Login Screen
   if (!currentUserProfile) {
+    const isUnauthorizedEmail = user && user.email && !findUserByEmail(user.email);
+
     return (
       <div style={{
         minHeight: '100dvh',
@@ -1216,121 +1276,192 @@ export default function App() {
         padding: '1.5rem',
         fontFamily: 'var(--font-sans)',
       }}>
-        <div style={{ marginBottom: '2.5rem', textAlign: 'center', animation: 'fade-in-up 0.4s ease both' }}>
+        <div style={{ marginBottom: '2rem', textAlign: 'center', animation: 'fade-in-up 0.4s ease both' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <div style={{
-              width: '40px', height: '40px', borderRadius: '12px',
+              width: '44px', height: '44px', borderRadius: '12px',
               background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: 'var(--shadow-accent)',
             }}>
-              <HardDrive size={22} color="#fff" />
+              <HardDrive size={24} color="#fff" />
             </div>
           </div>
           <h1 style={{ fontSize: 'clamp(1.75rem,6vw,2.75rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1, margin: '0 0 0.5rem' }}>STUDIO TUNNEL</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Pipeline & Task Management</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Ops & Financial Pipeline Management</p>
         </div>
 
-        {loginStep === 'select_user' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem', width: '100%', maxWidth: '860px' }}>
-            {USERS.filter(user => !user.isArchived).map(user => (
-              <button
-                key={user.id}
-                onClick={() => { setPendingUser(user); setLoginStep('enter_pin'); }}
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--r-xl)',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  textAlign: 'left',
-                  fontFamily: 'var(--font-sans)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--bg-surface)'; }}
-              >
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                  background: user.isAdmin ? 'var(--accent-dim)' : 'var(--bg-elevated)',
-                  color: user.isAdmin ? 'var(--text-accent)' : 'var(--text-muted)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {user.isAdmin ? <ShieldAlert size={22} /> : <UserCircle size={22} />}
-                </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <p style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--text-primary)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</p>
-                  <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{user.role}</p>
-                </div>
-                {isUserClockedIn(user.id) && <div className="online-dot" />}
-              </button>
-            ))}
+        {isUnauthorizedEmail ? (
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--danger-border)',
+            borderRadius: 'var(--r-2xl)',
+            padding: '2.5rem 2rem',
+            width: '100%',
+            maxWidth: '440px',
+            textAlign: 'center',
+            animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
+          }}>
+            <div style={{
+              width: '60px', height: '60px', borderRadius: '18px',
+              background: 'var(--danger-dim)', color: 'var(--danger)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1rem',
+            }}>
+              <ShieldAlert size={28} />
+            </div>
+            <h2 style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Access Restricted</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Signed in as <strong style={{ color: 'var(--text-primary)' }}>{user.email}</strong>, which is not registered in the active studio team roster.
+            </p>
+            <button
+              onClick={handleSignOut}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.875rem', fontSize: '0.8125rem' }}
+            >
+              Sign In with Approved Account
+            </button>
           </div>
-        )}
-
-        {loginStep === 'enter_pin' && (
+        ) : (
           <div style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--r-2xl)',
             padding: '2.5rem 2rem',
             width: '100%',
-            maxWidth: '360px',
+            maxWidth: '420px',
             animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
+            boxShadow: 'var(--shadow-xl)'
           }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
               <div style={{
-                width: '60px', height: '60px', borderRadius: '18px',
+                width: '54px', height: '54px', borderRadius: '16px',
                 background: 'var(--accent-dim)', color: 'var(--accent)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 1rem',
               }}>
-                <Lock size={28} />
+                <Lock size={26} />
               </div>
-              <h2 style={{ fontWeight: 900, fontSize: '1.375rem', color: 'var(--text-primary)', marginBottom: '0.375rem' }}>Verify Identity</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Unlocking profile for <strong style={{ color: 'var(--text-secondary)' }}>{pendingUser?.name}</strong></p>
+              <h2 style={{ fontWeight: 900, fontSize: '1.375rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Team Authentication</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Sign in with your approved Google or personal account</p>
             </div>
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ position: 'relative' }}>
+
+            {/* Google 1-Click Sign-In */}
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isAuthLoading}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                padding: '0.875rem 1rem',
+                borderRadius: 'var(--r-lg)',
+                background: '#ffffff',
+                color: '#1f2937',
+                border: '1px solid #e5e7eb',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: isAuthLoading ? 'wait' : 'pointer',
+                transition: 'all 0.15s',
+                fontFamily: 'var(--font-sans)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f9fafb'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              {isAuthLoading ? 'Authenticating...' : 'Sign In with Google'}
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '0.75rem' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or sign in with email</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            </div>
+
+            {/* Email & Password Form */}
+            <form onSubmit={handleEmailPasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
                 <input
-                  type={showLoginPin ? 'text' : 'password'}
-                  autoFocus
-                  maxLength={4}
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
+                  type="email"
+                  required
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  placeholder="e.g. samiran26sonowal@gmail.com"
                   style={{
-                    width: '100%', background: 'var(--bg-elevated)',
-                    border: '2px solid var(--border-strong)', borderRadius: 'var(--r-lg)',
-                    padding: '1rem 3rem 1rem 1rem', fontSize: '2rem', fontWeight: 900,
-                    color: 'var(--text-primary)', outline: 'none', textAlign: 'center',
-                    letterSpacing: '0.5em', fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+                    width: '100%',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--r-md)',
+                    padding: '0.75rem 1rem',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.875rem',
+                    fontFamily: 'var(--font-sans)',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-dim)'; }}
-                  onBlur={e => { e.target.style.borderColor = 'var(--border-strong)'; e.target.style.boxShadow = 'none'; }}
-                  placeholder="••••"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPin(!showLoginPin)}
-                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
-                >
-                  {showLoginPin ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', borderRadius: 'var(--r-lg)', fontSize: '0.8125rem', padding: '0.875rem', letterSpacing: '0.1em' }}>
-                Access Pipeline
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    required
+                    value={passwordInput}
+                    onChange={e => setPasswordInput(e.target.value)}
+                    placeholder="Enter password"
+                    style={{
+                      width: '100%',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 'var(--r-md)',
+                      padding: '0.75rem 2.5rem 0.75rem 1rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.875rem',
+                      fontFamily: 'var(--font-sans)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAuthLoading}
+                className="btn btn-primary"
+                style={{ width: '100%', borderRadius: 'var(--r-md)', fontSize: '0.8125rem', padding: '0.75rem', marginTop: '0.5rem', letterSpacing: '0.05em' }}
+              >
+                {isAuthLoading ? 'Verifying...' : authMode === 'signup' ? 'Register Account' : 'Sign In to Workspace'}
               </button>
             </form>
-            <button onClick={() => setLoginStep('select_user')} style={{ width: '100%', marginTop: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8125rem', fontFamily: 'var(--font-sans)', transition: 'color 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-            >
-              ← Back to Staff Selection
-            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-sans)' }}
+              >
+                {authMode === 'login' ? 'First time? Click here to set up password' : 'Already registered? Sign In'}
+              </button>
+            </div>
           </div>
         )}
+
         <Toast />
       </div>
     );
@@ -1536,13 +1667,14 @@ export default function App() {
             </button>
           </div>
           <button
-            onClick={() => setCurrentUserProfile(null)}
+            onClick={handleSignOut}
             style={{ width: '100%', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.625rem', borderRadius: 'var(--r-md)', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.12s', fontFamily: 'var(--font-sans)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-dim)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--danger-border)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
           >
             <LogOut size={14} /> Secure Logout
           </button>
+
         </div>
       </div>
 

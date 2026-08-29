@@ -2,30 +2,133 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // --- Helper Functions ---
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isAllowedCollection(col) {
-      return col in [
-        'projects',
-        'tasks',
-        'leaves',
-        'bookings',
-        'user_profiles',
-        'messages',
-        'notepads',
-        'shift_logs',
-        'submissions',
-        'long_format_logs',
-        'wa_templates'
-      ];
+    function getUserEmail() {
+      return request.auth.token.email != null ? request.auth.token.email.lower() : '';
     }
 
-    // Match all application data scoped to artifacts hierarchy
-    match /artifacts/{appId}/public/data/{col}/{docId} {
-      allow read, write: if isAuthenticated() && isAllowedCollection(col);
+    // Approved team emails: @studiotunnel.com domain + approved personal email whitelist
+    function isApprovedUser() {
+      return isAuthenticated() && (
+        getUserEmail().matches('.*@studiotunnel[.]com$') ||
+        getUserEmail() in [
+          'samiran26sonowal@gmail.com',
+          'samiran@studiotunnel.com',
+          'yash@studiotunnel.com',
+          'sujith@studiotunnel.com',
+          'contactmanojsahu@gmail.com',
+          'manoj@studiotunnel.com',
+          'tamashansari4@gmail.com',
+          'tamash@studiotunnel.com',
+          'prakashjai.tunnel@gmail.com',
+          'prakash@studiotunnel.com',
+          'arjunkohli@gmail.com',
+          'arjun@studiotunnel.com',
+          'ayushdalvi@gmail.com',
+          'ayush@studiotunnel.com',
+          'vijaynool@gmail.com',
+          'vijay@studiotunnel.com',
+          'golu@studiotunnel.com',
+          'golu.tunnel@gmail.com',
+          'aaditya@studiotunnel.com',
+          'aaditya.tunnel@gmail.com',
+          'lab@studiotunnel.com'
+        ]
+      );
+    }
+
+    // Executive & Line Production leadership roles
+    function isManagementOrProducer() {
+      return isAuthenticated() && (
+        getUserEmail() in [
+          'samiran@studiotunnel.com',
+          'samiran26sonowal@gmail.com',
+          'yash@studiotunnel.com',
+          'tamash@studiotunnel.com',
+          'tamashansari4@gmail.com',
+          'prakash@studiotunnel.com',
+          'prakashjai.tunnel@gmail.com',
+          'lab@studiotunnel.com'
+        ]
+      );
+    }
+
+    // --- Data Collections (Scoped to artifacts hierarchy) ---
+    match /artifacts/{appId}/public/data {
+      
+      // User Profiles (Read allowed for team, write strictly to owner/management)
+      match /user_profiles/{docId} {
+        allow read: if isApprovedUser();
+        allow write: if isApprovedUser() && (isManagementOrProducer() || request.resource.data.email.lower() == getUserEmail());
+      }
+
+      // Live Presence status & Clock-in
+      match /presence/{docId} {
+        allow read, write: if isApprovedUser();
+      }
+
+      // Projects & Bookings (Accessible only by approved team members)
+      match /projects/{docId} {
+        allow read: if isApprovedUser();
+        allow create, update: if isApprovedUser();
+        allow delete: if isManagementOrProducer();
+      }
+
+      match /bookings/{docId} {
+        allow read: if isApprovedUser();
+        allow create, update: if isApprovedUser();
+        allow delete: if isManagementOrProducer();
+      }
+
+      // Tasks
+      match /tasks/{docId} {
+        allow read, write: if isApprovedUser();
+      }
+
+      // Attendance & Leaves (Only Management/Producers can approve/reject leaves)
+      match /leaves/{docId} {
+        allow read: if isApprovedUser();
+        allow create: if isApprovedUser();
+        allow update: if isApprovedUser() && (isManagementOrProducer() || resource.data.userId == request.auth.uid);
+        allow delete: if isManagementOrProducer();
+      }
+
+      // Shift logs
+      match /shift_logs/{docId} {
+        allow read, create, update: if isApprovedUser();
+        allow delete: if isManagementOrProducer();
+      }
+
+      // Submissions (QC & Approval restricted to management/leads)
+      match /submissions/{docId} {
+        allow read, create: if isApprovedUser();
+        allow update: if isApprovedUser();
+        allow delete: if isManagementOrProducer();
+      }
+
+      // Team Chat Messages
+      match /messages/{docId} {
+        allow read, create: if isApprovedUser();
+        allow update, delete: if isManagementOrProducer() || (isApprovedUser() && resource.data.senderId == request.auth.uid);
+      }
+
+      // Notepads, Long Format Logs & WA Templates
+      match /notepads/{docId} {
+        allow read, write: if isApprovedUser();
+      }
+
+      match /long_format_logs/{docId} {
+        allow read, write: if isApprovedUser();
+      }
+
+      match /wa_templates/{docId} {
+        allow read: if isApprovedUser();
+        allow write: if isManagementOrProducer();
+      }
     }
 
     // Default deny all other paths

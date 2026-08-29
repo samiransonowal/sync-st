@@ -124,23 +124,111 @@ export const ROLE_PERMISSIONS = {
 };
 
 export const USERS = [
-  { id: 'u1', name: 'Yash Soni', role: ROLES.SR_COLORIST_CEO, studio: 'Studio 01', isAdmin: true },
-  { id: 'u3', name: 'Samiran Sonowal', role: ROLES.COLORIST_COO, studio: 'Studio 03', isAdmin: true },
-  { id: 'u2', name: 'Sujith Vijayan', role: ROLES.SR_COLORIST, studio: 'Studio 02', isAdmin: false },
-  { id: 'u4', name: 'Manoj Sahu', role: ROLES.COLORIST, studio: 'Studio 03', isAdmin: false },
-  { id: 'u11', name: 'Altamash Ansari', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, replacesUserId: 'u0_a' },
-  { id: 'u0_b', name: 'Prakash Jaiswal', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true },
-  { id: 'u10', name: 'Arjun Kohli', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
-  { id: 'u6', name: 'Ayush Dalvi', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
-  { id: 'u9', name: 'Vijay Nool', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false },
-  { id: 'u5', name: 'Golu Saha', role: ROLES.CONFORMIST_FLOOR_MGR, studio: 'Data & Conform', isAdmin: false },
-  { id: 'u12', name: 'Aaditya Kamble', role: ROLES.CONFORMIST, studio: 'Data & Conform', isAdmin: false },
+  { 
+    id: 'u1', 
+    name: 'Yash Soni', 
+    role: ROLES.SR_COLORIST_CEO, 
+    studio: 'Studio 01', 
+    isAdmin: true,
+    emails: ['yash@studiotunnel.com', 'yashsoni@gmail.com']
+  },
+  { 
+    id: 'u3', 
+    name: 'Samiran Sonowal', 
+    role: ROLES.COLORIST_COO, 
+    studio: 'Studio 03', 
+    isAdmin: true,
+    emails: ['samiran@studiotunnel.com', 'samiran26sonowal@gmail.com']
+  },
+  { 
+    id: 'u2', 
+    name: 'Sujith Vijayan', 
+    role: ROLES.SR_COLORIST, 
+    studio: 'Studio 02', 
+    isAdmin: false,
+    emails: ['sujith@studiotunnel.com']
+  },
+  { 
+    id: 'u4', 
+    name: 'Manoj Sahu', 
+    role: ROLES.COLORIST, 
+    studio: 'Studio 03', 
+    isAdmin: false,
+    emails: ['manoj@studiotunnel.com', 'contactmanojsahu@gmail.com']
+  },
+  { 
+    id: 'u11', 
+    name: 'Altamash Ansari', 
+    role: ROLES.LINE_PRODUCER, 
+    studio: 'Office', 
+    isAdmin: true, 
+    replacesUserId: 'u0_a',
+    emails: ['tamash@studiotunnel.com', 'tamashansari4@gmail.com']
+  },
+  { 
+    id: 'u0_b', 
+    name: 'Prakash Jaiswal', 
+    role: ROLES.LINE_PRODUCER, 
+    studio: 'Office', 
+    isAdmin: true,
+    emails: ['prakash@studiotunnel.com', 'prakashjai.tunnel@gmail.com']
+  },
+  { 
+    id: 'u10', 
+    name: 'Arjun Kohli', 
+    role: ROLES.ASSISTANT_COLORIST, 
+    studio: 'Assist Studio', 
+    isAdmin: false,
+    emails: ['arjun@studiotunnel.com', 'arjunkohli@gmail.com']
+  },
+  { 
+    id: 'u6', 
+    name: 'Ayush Dalvi', 
+    role: ROLES.ASSISTANT_COLORIST, 
+    studio: 'Assist Studio', 
+    isAdmin: false,
+    emails: ['ayush@studiotunnel.com', 'ayushdalvi@gmail.com']
+  },
+  { 
+    id: 'u9', 
+    name: 'Vijay Nool', 
+    role: ROLES.ASSISTANT_COLORIST, 
+    studio: 'Assist Studio', 
+    isAdmin: false,
+    emails: ['vijay@studiotunnel.com', 'vijaynool@gmail.com']
+  },
+  { 
+    id: 'u5', 
+    name: 'Golu Saha', 
+    role: ROLES.CONFORMIST_FLOOR_MGR, 
+    studio: 'Data & Conform', 
+    isAdmin: false,
+    emails: ['golu@studiotunnel.com', 'golu.tunnel@gmail.com']
+  },
+  { 
+    id: 'u12', 
+    name: 'Aaditya Kamble', 
+    role: ROLES.CONFORMIST, 
+    studio: 'Data & Conform', 
+    isAdmin: false,
+    emails: ['aaditya@studiotunnel.com', 'aaditya.tunnel@gmail.com']
+  },
 
   // Archived predecessors for legacy data & log continuity
-  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true },
-  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true },
-  { id: 'u8', name: 'Akilan', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true }
+  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true, emails: [] },
+  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [] },
+  { id: 'u8', name: 'Akilan', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [] }
 ];
+
+/**
+ * Finds a roster employee by their authenticated Google / personal email address.
+ */
+export const findUserByEmail = (email) => {
+  if (!email) return null;
+  const normalized = email.trim().toLowerCase();
+  return USERS.find(u => !u.isArchived && u.emails?.some(e => e.toLowerCase() === normalized)) || null;
+};
+
 
 /**
  * Returns an array containing the user's own ID and any predecessor ID they replaced

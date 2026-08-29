@@ -6,19 +6,50 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Team Chat Attachments (max 50MB)
-    match /artifacts/{appId}/public/chat/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() 
-                   && request.resource.size < 50 * 1024 * 1024;
+    function getUserEmail() {
+      return request.auth.token.email != null ? request.auth.token.email.lower() : '';
     }
 
-    // Long Format / IT Task Attachments (max 100MB)
+    function isApprovedUser() {
+      return isAuthenticated() && (
+        getUserEmail().matches('.*@studiotunnel[.]com$') ||
+        getUserEmail() in [
+          'samiran26sonowal@gmail.com',
+          'samiran@studiotunnel.com',
+          'yash@studiotunnel.com',
+          'sujith@studiotunnel.com',
+          'contactmanojsahu@gmail.com',
+          'manoj@studiotunnel.com',
+          'tamashansari4@gmail.com',
+          'tamash@studiotunnel.com',
+          'prakashjai.tunnel@gmail.com',
+          'prakash@studiotunnel.com',
+          'arjunkohli@gmail.com',
+          'arjun@studiotunnel.com',
+          'ayushdalvi@gmail.com',
+          'ayush@studiotunnel.com',
+          'vijaynool@gmail.com',
+          'vijay@studiotunnel.com',
+          'golu@studiotunnel.com',
+          'golu.tunnel@gmail.com',
+          'aaditya@studiotunnel.com',
+          'aaditya.tunnel@gmail.com',
+          'lab@studiotunnel.com'
+        ]
+      );
+    }
+
+    // Team Chat Attachments (max 50MB)
+    match /artifacts/{appId}/public/chat/{fileName} {
+      allow read: if isApprovedUser();
+      allow write: if isApprovedUser() && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    // Long Format / Project Attachments (max 100MB)
     match /artifacts/{appId}/long_format_files/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() 
-                   && request.resource.size < 100 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if isApprovedUser();
+      allow write: if isApprovedUser() && request.resource.size < 100 * 1024 * 1024;
+      allow delete: if isApprovedUser();
     }
 
     // Default deny

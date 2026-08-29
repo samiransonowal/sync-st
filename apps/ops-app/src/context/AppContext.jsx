@@ -32,17 +32,18 @@ export function AppContextProvider({ children }) {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
         }
       } catch (err) {
-        console.error("Auth failed:", err);
+        console.error("Auth initialization failed:", err);
       }
     };
     initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
     return () => unsubscribe();
   }, []);
+
 
   // --- DATA SYNC ---
   useEffect(() => {
