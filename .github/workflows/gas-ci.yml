@@ -1,13 +1,14 @@
-name: ST-IN-gen CI/CD
+name: sync-st CI/CD
 
 on:
   push:
-    branches: [dev, test, pml]
+    branches: [dev, test, pml, main]
 
 jobs:
   deploy:
-    name: Validate & Deploy (ST-IN-gen)
+    name: Validate & Deploy (sync-st)
     runs-on: ubuntu-latest
+
     env:
       SCRIPT_IDS_JSON: ${{ secrets.SCRIPT_IDS_JSON }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
