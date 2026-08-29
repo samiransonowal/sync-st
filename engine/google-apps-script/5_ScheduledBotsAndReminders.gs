@@ -150,8 +150,10 @@ function sendMondayMorningReconciliationAndOverdueReport() {
   for (let i = 1; i < ledgerData.length; i++) {
     const row = ledgerData[i];
     const projectCode = String(row[0] || '').trim();
-    const billStatus = String(row[26] || '').trim(); // Col AA [BIL-27]
-    const paymentStatus = String(row[27] || '').trim(); // Col AB [BIL-28]
+    const projectName = String(row[3] || projectCode); // Col D [BIL-04] Project Name
+    const clientName = String(row[4] || 'Client');    // Col E [BIL-05] Company / Client
+    const billStatus = String(row[26] || '').trim();  // Col AA [BIL-27]
+    const paymentStatus = String(row[27] || '').trim();// Col AB [BIL-28]
     const netTotal = parseFloat(row[17]) || parseFloat(row[16]) || 0; // Col R [BIL-18] GST Amount / Col Q [BIL-17]
     const invoiceDate = row[2] ? new Date(row[2]) : (row[29] ? new Date(row[29]) : null); // Col C [BIL-03] Invoice Date
     
@@ -163,6 +165,7 @@ function sendMondayMorningReconciliationAndOverdueReport() {
       }
     }
   }
+
   
   let overdueTableRows = '';
   overdueItems.sort((a, b) => b.daysElapsed - a.daysElapsed);

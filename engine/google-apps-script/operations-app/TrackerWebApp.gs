@@ -748,11 +748,12 @@ function processTaskEntry(data) {
     ledgerSheet.getRange(ledgerRowIndex, 14).setValue(totalHrs);     // Col N: Total Hrs [BIL-14]
     ledgerSheet.getRange(ledgerRowIndex, 17).setValue(totalAmount);  // Col Q: Total Amount [BIL-17]
     ledgerSheet.getRange(ledgerRowIndex, 18).setValue(gstAmount);    // Col R: GST Amount [BIL-18]
-    ledgerSheet.getRange(ledgerRowIndex, 31).setValue(now);          // Col AE: Last Activity [BIL-31]
+    ledgerSheet.getRange(ledgerRowIndex, 32).setValue(now);          // Col AF: Last Activity [BIL-32] (Col 31/AE is reserved for TDS Deducted)
 
     if (data.isClosed) {
       ledgerSheet.getRange(ledgerRowIndex, 27).setValue('Ready for Invoice'); // Col AA: Bill Status [BIL-27]
     }
+
 
     SpreadsheetApp.flush(); // Force immediate persistence
 

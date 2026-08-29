@@ -140,14 +140,75 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
     const invNum = project.invoiceNumber || project.projectCode;
     const formattedInvNo = invNum.toString().includes('ST/') ? invNum : `ST/2026-27/${invNum.toString().padStart(3, '0')}`;
 
-    const subtotal = project.subtotalAmount || (project.totalHrs * project.rate) - project.discount;
-    const gstTotal = project.amount || Math.round(subtotal * 1.18);
-    const cgst = Math.round(subtotal * 0.09);
-    const sgst = Math.round(subtotal * 0.09);
+    // GST State Code Directory
+    const GST_STATE_CODES = {
+      '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
+      '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+      '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur',
+      '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
+      '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+      '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka',
+      '30': 'Goa', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '36': 'Telangana', '37': 'Andhra Pradesh'
+    };
+
+    // Determine State & Inter vs Intra-state
+    const gstin = (project.gstin || '').toString().trim().toUpperCase();
+    let clientStateCode = '27';
+    let clientStateName = 'Maharashtra';
+
+    if (gstin && gstin.length >= 2) {
+      const code = gstin.substring(0, 2);
+      if (GST_STATE_CODES[code]) {
+        clientStateCode = code;
+        clientStateName = GST_STATE_CODES[code];
+      }
+    } else if (project.billingAddress) {
+      const addrLower = project.billingAddress.toLowerCase();
+      for (const code in GST_STATE_CODES) {
+        if (code !== '27' && addrLower.includes(GST_STATE_CODES[code].toLowerCase())) {
+          clientStateCode = code;
+          clientStateName = GST_STATE_CODES[code];
+          break;
+        }
+      }
+    }
+
+    const isIntraState = (clientStateCode === '27');
+    const placeOfSupply = `${clientStateCode}-${clientStateName}`;
+
+    // Subtotal and Reconciled Tax Calculations
+    const subtotal = Math.round(Number(project.subtotalAmount || (project.totalHrs * project.rate) - (project.discount || 0)));
+    let cgst = 0;
+    let sgst = 0;
+    let igst = 0;
+    let cgstPercent = 0;
+    let sgstPercent = 0;
+    let igstPercent = 0;
+    let gstTotal = 0;
+
+    if (isIntraState) {
+      // Intra-state (Maharashtra -> Maharashtra): 9% CGST + 9% SGST
+      cgstPercent = 9;
+      sgstPercent = 9;
+      cgst = Math.round(subtotal * 0.09);
+      sgst = cgst; // Ensure exact equality between CGST and SGST
+      igst = 0;
+      igstPercent = 0;
+      gstTotal = subtotal + cgst + sgst; // Reconciled exact sum
+    } else {
+      // Inter-state (Maharashtra -> Other State): 18% IGST
+      cgst = 0;
+      sgst = 0;
+      cgstPercent = 0;
+      sgstPercent = 0;
+      igstPercent = 18;
+      igst = Math.round(subtotal * 0.18);
+      gstTotal = subtotal + igst; // Reconciled exact sum
+    }
 
     const lineItems = [
       {
-        description: `Color Grading & Post Production Services — Project: "${project.projectName}"\nColorist: ${project.colorist || 'Studio Staff'} | Booking: ${project.totalHrs || 1} Hrs @ ₹${project.rate.toLocaleString('en-IN')}/hr`,
+        description: `Color Grading & Post Production Services — Project: "${project.projectName}"\nColorist: ${project.colorist || 'Studio Staff'} | Booking: ${project.totalHrs || 1} Hrs @ ₹${(project.rate || subtotal).toLocaleString('en-IN')}/hr`,
         hsn_sac: "999612",
         qty: project.totalHrs || 1,
         rate: project.rate || subtotal,
@@ -164,17 +225,17 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
       invoice_no: formattedInvNo,
       invoice_date: invoiceDateStr,
       po_no: project.poNumber || "N/A",
-      place_of_supply: "27-Maharashtra",
+      place_of_supply: placeOfSupply,
       payment_terms: "30 Days (Due " + dueDateStr + ")",
       due_date: dueDateStr,
       line_items: lineItems,
       subtotal: subtotal,
       cgst: cgst,
-      cgst_percent: 9,
+      cgst_percent: cgstPercent,
       sgst: sgst,
-      sgst_percent: 9,
-      igst: 0,
-      igst_percent: 0,
+      sgst_percent: sgstPercent,
+      igst: igst,
+      igst_percent: igstPercent,
       grand_total: gstTotal,
       amount_in_words: numberToWordsINR(gstTotal)
     };
@@ -190,7 +251,9 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
       const data = ledgerSheet.getDataRange().getValues();
       for (let i = 1; i < data.length; i++) {
         if (data[i][0] && data[i][0].toString().trim() === projectCode.toString().trim()) {
+          ledgerSheet.getRange(i + 1, 18).setValue(gstTotal);            // Col R: GST Amount [BIL-18]
           ledgerSheet.getRange(i + 1, 27).setValue('Invoiced');          // Col AA: Bill Status [BIL-27]
+          ledgerSheet.getRange(i + 1, 29).setValue(gstTotal);            // Col AC: Amount Pending [BIL-29]
           ledgerSheet.getRange(i + 1, 30).setValue(dueDateStr);          // Col AD: Due Date [BIL-30]
           ledgerSheet.getRange(i + 1, 32).setValue(new Date());          // Col AF: Last Activity [BIL-32]
           break;
@@ -198,32 +261,40 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
       }
     }
 
-    // 3. SAFE EMAIL DISPATCH WITH ATTACHMENT
-    const targetEmail = overrideRecipients || project.clientEmail;
-    if (targetEmail) {
-      try {
-        const subject = `Tax Invoice ${formattedInvNo} — Studio Tunnel (${project.projectName})`;
-        const emailBody = `Dear ${project.pocName || project.company},\n\n` +
-          `Please find attached the official Tax Invoice PDF ${formattedInvNo} for project "${project.projectName}".\n\n` +
-          `Invoice Summary:\n` +
-          `• Invoice No: ${formattedInvNo}\n` +
-          `• Total Amount: ₹${gstTotal.toLocaleString('en-IN')}\n` +
-          `• Due Date: ${dueDateStr}\n\n` +
-          `📄 Direct Google Drive Link:\n${pdfResult.url}\n\n` +
-          `Thank you for working with Studio Tunnel!\n` +
-          `Finance & Accounts Team`;
+    // 3. STRICT INTERNAL-ONLY EMAIL DISPATCH
+    // MANDATORY SAFETY RULE: NEVER send emails directly to external clients under any circumstances.
+    const SAFE_INTERNAL_RECIPIENTS = 'finance@studiotunnel.com, samiran@studiotunnel.com, contact@studiotunnel.com, tamash@studiotunnel.com';
+    let targetEmail = SAFE_INTERNAL_RECIPIENTS;
+    if (overrideRecipients && typeof overrideRecipients === 'string' && overrideRecipients.includes('@studiotunnel.com')) {
+      targetEmail = overrideRecipients;
+    }
 
-        MailApp.sendEmail({
-          to: targetEmail,
-          subject: subject,
-          body: emailBody,
-          attachments: [pdfResult.blob]
-        });
+    try {
+      const subject = `[INTERNAL INVOICE DRAFT] Tax Invoice ${formattedInvNo} — Studio Tunnel (${project.projectName})`;
+      const emailBody = `[INTERNAL BILLING DISPATCH — NEVER SENT TO CLIENT DIRECTLY]\n` +
+        `Client / Production: ${project.company} (${project.pocName || 'No POC'})\n` +
+        `Client Contact Email: ${project.clientEmail || 'N/A'}\n\n` +
+        `Official Tax Invoice PDF ${formattedInvNo} has been generated for project "${project.projectName}".\n\n` +
+        `Invoice Breakdown:\n` +
+        `• Invoice No: ${formattedInvNo}\n` +
+        `• Place of Supply: ${placeOfSupply}\n` +
+        `• Subtotal: ₹${subtotal.toLocaleString('en-IN')}\n` +
+        (isIntraState ? `• CGST (9%): ₹${cgst.toLocaleString('en-IN')}\n• SGST (9%): ₹${sgst.toLocaleString('en-IN')}\n` : `• IGST (18%): ₹${igst.toLocaleString('en-IN')}\n`) +
+        `• Reconciled Grand Total: ₹${gstTotal.toLocaleString('en-IN')}\n` +
+        `• Due Date: ${dueDateStr}\n\n` +
+        `📄 Google Drive PDF Link:\n${pdfResult.url}\n\n` +
+        `Studio Tunnel Billing & Accounting System`;
 
-        Logger.log(`Invoice email with PDF attachment sent to ${targetEmail}`);
-      } catch(emailErr) {
-        Logger.log(`Email error: ${emailErr.message}`);
-      }
+      MailApp.sendEmail({
+        to: targetEmail,
+        subject: subject,
+        body: emailBody,
+        attachments: [pdfResult.blob]
+      });
+
+      Logger.log(`Invoice email with PDF attachment dispatched internally to ${targetEmail}`);
+    } catch(emailErr) {
+      Logger.log(`Email error: ${emailErr.message}`);
     }
 
     return {
@@ -232,8 +303,9 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
       invoiceNumber: formattedInvNo,
       pdfUrl: pdfResult.url,
       grandTotal: gstTotal,
-      message: `Invoice ${formattedInvNo} generated, saved to Drive, and emailed with PDF attachment!`
+      message: `Invoice ${formattedInvNo} generated, saved to Drive, and dispatched to internal billing team!`
     };
+
 
   } catch(err) {
     Logger.log('Invoice generation error: ' + err.toString());
