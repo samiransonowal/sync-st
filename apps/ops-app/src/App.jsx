@@ -1394,7 +1394,7 @@ export default function App() {
                   required
                   value={emailInput}
                   onChange={e => setEmailInput(e.target.value)}
-                  placeholder="e.g. samiran26sonowal@gmail.com"
+                  placeholder="e.g. samiran@studiotunnel.com"
                   style={{
                     width: '100%',
                     background: 'var(--bg-elevated)',

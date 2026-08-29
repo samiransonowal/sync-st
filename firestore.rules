@@ -16,7 +16,6 @@ service cloud.firestore {
       return isAuthenticated() && (
         getUserEmail().matches('.*@studiotunnel[.]com$') ||
         getUserEmail() in [
-          'samiran26sonowal@gmail.com',
           'samiran@studiotunnel.com',
           'yash@studiotunnel.com',
           'sujith@studiotunnel.com',
@@ -46,13 +45,12 @@ service cloud.firestore {
       return isAuthenticated() && (
         getUserEmail() in [
           'samiran@studiotunnel.com',
-          'samiran26sonowal@gmail.com',
           'yash@studiotunnel.com',
-          'yashsoni@gmail.com',
           'lab@studiotunnel.com'
         ]
       );
     }
+
 
     // Executive & Line Production leadership roles
     function isManagementOrProducer() {

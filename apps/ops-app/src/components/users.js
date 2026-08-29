@@ -130,7 +130,7 @@ export const USERS = [
     role: ROLES.SR_COLORIST_CEO, 
     studio: 'Studio 01', 
     isAdmin: true,
-    emails: ['yash@studiotunnel.com', 'yashsoni@gmail.com']
+    emails: ['yash@studiotunnel.com']
   },
   { 
     id: 'u3', 
@@ -138,7 +138,7 @@ export const USERS = [
     role: ROLES.COLORIST_COO, 
     studio: 'Studio 03', 
     isAdmin: true,
-    emails: ['samiran@studiotunnel.com', 'samiran26sonowal@gmail.com']
+    emails: ['samiran@studiotunnel.com']
   },
   { 
     id: 'u2', 
