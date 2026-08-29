@@ -130,7 +130,8 @@ export const USERS = [
     role: ROLES.SR_COLORIST_CEO, 
     studio: 'Studio 01', 
     isAdmin: true,
-    emails: ['yash@studiotunnel.com']
+    emails: ['yash@studiotunnel.com'],
+    usernames: ['yash', 'yashsoni', 'u1']
   },
   { 
     id: 'u3', 
@@ -138,7 +139,8 @@ export const USERS = [
     role: ROLES.COLORIST_COO, 
     studio: 'Studio 03', 
     isAdmin: true,
-    emails: ['samiran@studiotunnel.com']
+    emails: ['samiran@studiotunnel.com'],
+    usernames: ['samiran', 'samiransonowal', 'u3']
   },
   { 
     id: 'u2', 
@@ -146,7 +148,8 @@ export const USERS = [
     role: ROLES.SR_COLORIST, 
     studio: 'Studio 02', 
     isAdmin: false,
-    emails: ['sujith@studiotunnel.com', 'sujithnair991@gmail.com']
+    emails: ['sujithnair991@gmail.com', 'sujith@studiotunnel.com'],
+    usernames: ['sujith', 'sujithnair', 'u2']
   },
   { 
     id: 'u4', 
@@ -154,7 +157,8 @@ export const USERS = [
     role: ROLES.COLORIST, 
     studio: 'Studio 03', 
     isAdmin: false,
-    emails: ['contactmanojsahu@gmail.com']
+    emails: ['contactmanojsahu@gmail.com'],
+    usernames: ['manoj', 'manojsahu', 'u4']
   },
   { 
     id: 'u11', 
@@ -163,7 +167,8 @@ export const USERS = [
     studio: 'Office', 
     isAdmin: true, 
     replacesUserId: 'u0_a',
-    emails: ['tamash@studiotunnel.com', 'ansarialtamash04@gmail.com', 'tamashansari4@gmail.com']
+    emails: ['ansarialtamash04@gmail.com', 'tamash@studiotunnel.com', 'tamashansari4@gmail.com'],
+    usernames: ['tamash', 'altamash', 'ansarialtamash', 'u11']
   },
   { 
     id: 'u0_b', 
@@ -171,7 +176,8 @@ export const USERS = [
     role: ROLES.LINE_PRODUCER, 
     studio: 'Office', 
     isAdmin: true,
-    emails: ['prakash@studiotunnel.com', 'prakashjai.tunnel@gmail.com']
+    emails: ['prakashjai.tunnel@gmail.com', 'prakash@studiotunnel.com'],
+    usernames: ['prakash', 'prakashjaiswal', 'u0_b']
   },
   { 
     id: 'u10', 
@@ -179,7 +185,8 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['arjun@studiotunnel.com', 'arjuns825@gmail.com', 'arjunkohli@gmail.com']
+    emails: ['arjuns825@gmail.com', 'arjun@studiotunnel.com', 'arjunkohli@gmail.com'],
+    usernames: ['arjun', 'arjunkohli', 'u10']
   },
   { 
     id: 'u6', 
@@ -187,7 +194,8 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['ayush@studiotunnel.com', 'dalviayush10@gmail.com', 'ayushdalvi@gmail.com']
+    emails: ['dalviayush10@gmail.com', 'ayush@studiotunnel.com', 'ayushdalvi@gmail.com'],
+    usernames: ['ayush', 'ayushdalvi', 'u6']
   },
   { 
     id: 'u9', 
@@ -195,7 +203,8 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['vijay@studiotunnel.com', 'vijaynool17@gmail.com', 'vijaynool@gmail.com']
+    emails: ['vijaynool17@gmail.com', 'vijay@studiotunnel.com', 'vijaynool@gmail.com'],
+    usernames: ['vijay', 'vijaynool', 'u9']
   },
   { 
     id: 'u5', 
@@ -203,7 +212,8 @@ export const USERS = [
     role: ROLES.CONFORMIST_FLOOR_MGR, 
     studio: 'Data & Conform', 
     isAdmin: false,
-    emails: ['golu@studiotunnel.com', 'golu.tunnel@gmail.com']
+    emails: ['golu.tunnel@gmail.com', 'golu@studiotunnel.com'],
+    usernames: ['golu', 'golu.saha', 'u5']
   },
   { 
     id: 'u12', 
@@ -211,24 +221,68 @@ export const USERS = [
     role: ROLES.CONFORMIST, 
     studio: 'Data & Conform', 
     isAdmin: false,
-    emails: ['aaditya@studiotunnel.com', 'aadikamble11@gmail.com', 'aaditya.tunnel@gmail.com']
+    emails: ['aadikamble11@gmail.com', 'aaditya@studiotunnel.com', 'aaditya.tunnel@gmail.com'],
+    usernames: ['aaditya', 'aadi', 'aadikamble', 'u12']
   },
 
-
   // Archived predecessors for legacy data & log continuity
-  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true, emails: [] },
-  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [] },
-  { id: 'u8', name: 'Akilan', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [] }
+  { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true, emails: [], usernames: ['vaibhav'] },
+  { id: 'u7', name: 'Atharva Patil', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [], usernames: ['atharva'] },
+  { id: 'u8', name: 'Akilan', role: ROLES.ASSISTANT_COLORIST, studio: 'Assist Studio', isAdmin: false, isArchived: true, emails: [], usernames: ['akilan'] }
 ];
+
+/**
+ * Finds a roster employee by email, built-in username/ID, or custom profile username.
+ */
+export const findUserByIdentifier = (identifier, userProfiles = {}) => {
+  if (!identifier) return null;
+  const normalized = identifier.trim().toLowerCase();
+
+  return USERS.find(u => {
+    if (u.isArchived) return false;
+
+    // Check direct ID
+    if (u.id.toLowerCase() === normalized) return true;
+
+    // Check emails
+    if (u.emails?.some(e => e.toLowerCase() === normalized)) return true;
+
+    // Check built-in usernames
+    if (u.usernames?.some(un => un.toLowerCase() === normalized)) return true;
+
+    // Check custom username saved in user_profiles
+    const profile = userProfiles[u.id];
+    if (profile?.customUsername && profile.customUsername.trim().toLowerCase() === normalized) {
+      return true;
+    }
+
+    return false;
+  }) || null;
+};
+
+/**
+ * Resolves an email or User ID input to a valid email address for Firebase Auth.
+ */
+export const resolveEmailForAuth = (identifier, userProfiles = {}) => {
+  if (!identifier) return '';
+  const trimmed = identifier.trim();
+  if (trimmed.includes('@')) return trimmed; // Already an email
+
+  const matchedUser = findUserByIdentifier(trimmed, userProfiles);
+  if (matchedUser && matchedUser.emails && matchedUser.emails.length > 0) {
+    return matchedUser.emails[0];
+  }
+  return trimmed;
+};
 
 /**
  * Finds a roster employee by their authenticated Google / personal email address.
  */
 export const findUserByEmail = (email) => {
   if (!email) return null;
-  const normalized = email.trim().toLowerCase();
-  return USERS.find(u => !u.isArchived && u.emails?.some(e => e.toLowerCase() === normalized)) || null;
+  return findUserByIdentifier(email);
 };
+
 
 
 /**

@@ -28,7 +28,8 @@ import { NtfyModal } from './components/NtfyModal';
 import { sendNtfyNotification, sendDirectUserAlert, sendQcAlert, sendOpsAlert, getUserNtfyTopic, NTFY_TOPICS } from './services/ntfy';
 
 // --- CONFIGURATION & CONSTANTS ---
-import { USERS, findUserByEmail, getUserName as getUserNameImported, isUserClockedIn as isUserClockedInImported, toggleClockInHelper, hasPermission, getTabPermission, ROLES, PERMISSIONS, getSelfAndPredecessorIds } from './components/users';
+import { USERS, findUserByEmail, findUserByIdentifier, resolveEmailForAuth, getUserName as getUserNameImported, isUserClockedIn as isUserClockedInImported, toggleClockInHelper, hasPermission, getTabPermission, ROLES, PERMISSIONS, getSelfAndPredecessorIds } from './components/users';
+
 
 
 const WORKFLOW_STAGES = ['Conform', 'Assist', 'Grade', 'Delivery Sync'];
@@ -500,16 +501,21 @@ export default function App() {
   const handleEmailPasswordLogin = async (e) => {
     e.preventDefault();
     if (!emailInput.trim() || !passwordInput) {
-      showToast('Please enter both email and password', 'error');
+      showToast('Please enter both User ID/Email and password', 'error');
+      return;
+    }
+    const resolvedEmail = resolveEmailForAuth(emailInput, userProfiles);
+    if (!resolvedEmail) {
+      showToast('Unrecognized User ID or Email. Please check with your administrator.', 'error');
       return;
     }
     try {
       setIsAuthLoading(true);
       let result;
       if (authMode === 'signup') {
-        result = await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+        result = await createUserWithEmailAndPassword(auth, resolvedEmail, passwordInput);
       } else {
-        result = await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+        result = await signInWithEmailAndPassword(auth, resolvedEmail, passwordInput);
       }
       const email = result.user?.email;
       const profile = findUserByEmail(email);
@@ -521,7 +527,7 @@ export default function App() {
     } catch (err) {
       console.error("Email login error:", err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        showToast('Invalid email or password', 'error');
+        showToast('Invalid User ID/Email or password', 'error');
       } else if (err.code === 'auth/email-already-in-use') {
         showToast('Account already exists. Please sign in instead.', 'error');
         setAuthMode('login');
@@ -532,6 +538,7 @@ export default function App() {
       setIsAuthLoading(false);
     }
   };
+
 
   const handleSignOut = async () => {
     try {
@@ -1381,20 +1388,20 @@ export default function App() {
 
             <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '0.75rem' }}>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or sign in with email</span>
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or sign in with User ID / Email</span>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
             </div>
 
             {/* Email & Password Form */}
             <form onSubmit={handleEmailPasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User ID or Email</label>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={emailInput}
                   onChange={e => setEmailInput(e.target.value)}
-                  placeholder="e.g. samiran@studiotunnel.com"
+                  placeholder="e.g. samiran, yash, or email"
                   style={{
                     width: '100%',
                     background: 'var(--bg-elevated)',
@@ -1408,6 +1415,7 @@ export default function App() {
                   }}
                 />
               </div>
+
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
@@ -2791,17 +2799,21 @@ export default function App() {
               e.preventDefault();
               if (!db) return;
               const formData = new FormData(e.target);
-              const newPin = formData.get('pin');
-              if (newPin.length !== 4) return showToast('PIN must be exactly 4 digits.', 'error');
+              const customUsername = formData.get('customUsername')?.toString().trim().toLowerCase() || '';
               try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', currentUserProfile.id), {
-                  pin: newPin, email: formData.get('email'), phone: formData.get('phone'), emergency: formData.get('emergency'), lastUpdated: new Date().toISOString()
+                  customUsername: customUsername,
+                  email: formData.get('email') || '',
+                  phone: formData.get('phone') || '',
+                  emergency: formData.get('emergency') || '',
+                  lastUpdated: new Date().toISOString()
                 }, { merge: true });
-                showToast('Settings successfully updated.', 'success');
+                showToast('Settings & User ID successfully updated.', 'success');
               } catch (err) {
                 showToast('Failed to update settings.', 'error');
               }
             }} className="space-y-6">
+
 
               {/* SECTION: EMPLOYMENT & HR (TOP) */}
               <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700 overflow-hidden relative">
@@ -2913,12 +2925,16 @@ export default function App() {
                   <div className="flex-1 space-y-6">
                     <div>
                       <h3 className="text-sm font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <UserCircle size={16} /> Profile
+                        <UserCircle size={16} /> Profile & Sign-In Identity
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Sign-In User ID (Alias)</label>
+                          <input name="customUsername" type="text" defaultValue={userProfiles[currentUserProfile.id]?.customUsername || currentUserProfile.usernames?.[0] || currentUserProfile.id} placeholder="e.g. samiran" className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-indigo-300 font-bold outline-none focus:border-indigo-500 transition-all" />
+                        </div>
                         <div>
                           <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Employee Email</label>
-                          <input required name="email" type="email" defaultValue={userProfiles[currentUserProfile.id]?.email || ''} placeholder="you@studio.com" className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-medium transition-all" />
+                          <input required name="email" type="email" defaultValue={userProfiles[currentUserProfile.id]?.email || currentUserProfile.emails?.[0] || ''} placeholder="you@studio.com" className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-medium transition-all" />
                         </div>
                         <div>
                           <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Phone Number</label>
@@ -2927,6 +2943,7 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
 
