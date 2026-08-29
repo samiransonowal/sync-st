@@ -1,5 +1,6 @@
 # sync-st — Studio Operations & Financial Comptroller Platform
 
+**Release Version:** `v1.0`  
 **Platform:** `sync-st` | `cineloom-comptroller`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead / Studio Owner:** Samiran Sonowal ([samiran@studiotunnel.com](mailto:samiran@studiotunnel.com) / GitHub: [@samiransonowal](https://github.com/samiransonowal))  
@@ -9,6 +10,7 @@
 **Live Web Applications:**
 - 🏢 **Operations App (SyncBoard):** [https://sync.studiotunnel.com](https://sync.studiotunnel.com) *(Fallback: [sync-st.web.app](https://sync-st.web.app))*
 - 💰 **Finance App (Cineloom Comptroller):** [https://cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com) *(Fallback: [cineloom-comptroller.web.app](https://cineloom-comptroller.web.app))*
+
 
 
 ---
