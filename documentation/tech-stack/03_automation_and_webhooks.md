@@ -15,9 +15,9 @@ The automation engine is built on **Google Apps Script (GAS)** and **Clasp CI/CD
 
 | Tier | Branch | Apps Script Title | BigQuery Dataset ID | Mode |
 |---|---|---|---|---|
-| **Dev** | `dev` | `ST-IN-gen-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Test** | `test` | `ST-IN-gen-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
-| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails) |
+| **Dev** | `dev` | `sync-st-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `sync-st-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full sandbox integration) |
+| **PML** *(Production Main Live)* | `pml` | `sync-st-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails) |
 
 ---
 
@@ -41,7 +41,13 @@ The automation engine is built on **Google Apps Script (GAS)** and **Clasp CI/CD
 6. **`4_MenuUI.gs`**:
    - Adds custom `🚀 Studio Tunnel` top menu bar in Google Sheets with one-click PDF generation, internal review email dispatch, and cloud self-test suite.
 
+7. **`5_ScheduledBotsAndReminders.gs`**:
+   - **Saturday 10:00 PM IST Cron**: Dispatches weekly executive sales, per-colorist booking breakdown, and operational concern digest to `samiran@studiotunnel.com` and `yash@studiotunnel.com`.
+   - **Monday 9:00 AM IST Cron**: Sends bank statement reconciliation prompts, overdue invoice lists (>30 days), and owner personal follow-up targets to `samiran@studiotunnel.com`.
+   - **Staggered Payment Reminder Engine**: Evaluates active invoices daily and triggers staged payment reminders on Days **21**, **23**, **25**, **28**, and **30**.
 
+8. **`6_SelfTest.gs`**:
+   - Automated 7-point in-script diagnostic suite validating DRY_RUN guard, company regex, sheet tabs, Drive folder reachability, and STEM user registry access.
 
 ---
 
@@ -55,7 +61,3 @@ The automation engine is built on **Google Apps Script (GAS)** and **Clasp CI/CD
 > - `samiran@studiotunnel.com`
 > - `contact@studiotunnel.com`
 > - `tamash@studiotunnel.com`
-
-
-8. **`6_SelfTest.gs`**:
-   - Automated 7-point in-script diagnostic suite validating DRY_RUN guard, company regex, sheet tabs, Drive folder reachability, and STEM user registry access.

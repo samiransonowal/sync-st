@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAllowedCollection(col) {
+      return col in [
+        'projects',
+        'tasks',
+        'leaves',
+        'bookings',
+        'user_profiles',
+        'messages',
+        'notepads',
+        'shift_logs',
+        'submissions',
+        'long_format_logs',
+        'wa_templates'
+      ];
+    }
+
+    // Match all application data scoped to artifacts hierarchy
+    match /artifacts/{appId}/public/data/{col}/{docId} {
+      allow read, write: if isAuthenticated() && isAllowedCollection(col);
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

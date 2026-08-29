@@ -2,7 +2,7 @@
 
 ## Overview
 
-`st-comptroller` operates on a **100% Google Cloud Native & Serverless Hybrid OLTP/OLAP Architecture**. It combines Google Workspace frontends, Firebase real-time operational databases, interactive web dashboards, and Google Cloud enterprise data warehousing:
+`sync-st` operates on a **100% Google Cloud Native & Serverless Hybrid OLTP/OLAP Architecture**. It combines Google Workspace frontends, Firebase real-time operational databases, interactive web dashboards, and Google Cloud enterprise data warehousing:
 
 ```text
  ┌──────────────────────────────────────────────────────────────────┐

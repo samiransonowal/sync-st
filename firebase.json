@@ -1,8 +1,14 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": [
     {
       "target": "ops-app",
-      "public": "apps/ops-app/public",
+      "public": "apps/ops-app/dist",
       "ignore": [
         "firebase.json",
         "**/.*",

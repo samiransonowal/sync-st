@@ -2,7 +2,7 @@
 
 ## Overview
 
-`st-comptroller` uses a **Hybrid OLTP/OLAP Data Architecture**:
+`sync-st` uses a **Hybrid OLTP/OLAP Data Architecture**:
 - **Firebase Firestore** serves as the **Operational Database (OLTP)** for real-time reads/writes, web portal interactions, and status triggers.
 - **Google BigQuery** serves as the **Analytical Data Warehouse (OLAP)** for tax compliance (GST/TDS), statutory auditing, and historical reporting.
 

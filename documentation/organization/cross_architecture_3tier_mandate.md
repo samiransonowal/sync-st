@@ -21,7 +21,7 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 | :--- | :--- | :--- | :--- |
 | **Git & GitHub** | `dev` *(Default branch on GitHub & Local)* | `test` *(Protected testing branch)* | `pml` *(Production Main Live branch)* |
 | **Access Policy** | Unrestricted development | Restricted; Human escalation required | Restricted; 2-Party confirmation required |
-| **Google Apps Script** | `ST-IN-gen-dev` | `ST-IN-gen-test` | `ST-IN-gen-pml` |
+| **Google Apps Script** | `sync-st-dev` | `sync-st-test` | `sync-st-pml` |
 | **GAS UI Menu** | `🚀 Studio Tunnel [DEV]` | `🚀 Studio Tunnel [TEST]` | `🚀 Studio Tunnel [PML]` |
 | **Dry Run Safeguard** | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = true` | `DRY_RUN_MODE = false` |
 | **GCP Project** | `sync-st` (`972643538415`) | `sync-st` (`972643538415`) | `sync-st` (`972643538415`) |
@@ -35,7 +35,7 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
 
 ## 3. Governance Rules by Component
 
-### A. 🐙 Git & GitHub Repository (`IN-gen`)
+### A. 🐙 Git & GitHub Repository (`sync-st`)
 1. **Permanent Default Branch (`dev`)**:
    - Every workstation clone, new feature branch, and pull request targets `dev` by default.
    - Developers work freely on `dev` without blocking permissions.
@@ -56,17 +56,17 @@ This policy applies universally across **Git/GitHub**, **Google Sheets**, **Goog
      - `DEV_ACCOUNTS_SPREADSHEET_ID`: Development copy / sandbox ledger.
      - `DEV_PROJECT_TRACKER_SPREADSHEET_ID`: Dev daily bookings log.
      - `DEV_STEM_USER_REGISTRY_ID`: Dev user permissions registry.
-     - Bound GAS project: `ST-IN-gen-dev`.
+     - Bound GAS project: `sync-st-dev`.
    - **TEST Set (Branch: `test`)**:
      - `TEST_ACCOUNTS_SPREADSHEET_ID`: Isolated automated CI & staging ledger.
      - `TEST_PROJECT_TRACKER_SPREADSHEET_ID`: Staging daily bookings log.
      - `TEST_STEM_USER_REGISTRY_ID`: Staging user permissions registry.
-     - Bound GAS project: `ST-IN-gen-test`.
+     - Bound GAS project: `sync-st-test`.
    - **PML Set (Branch: `pml`)**:
      - : Official financial ledger and live invoice repository.
      - : Live operations tracker.
      - `PML_STEM_USER_REGISTRY_ID` (`1xVpbcCqfEG9S1A8wmL_J_LurltL41I9Lgyj78LB1PAA`): Master user registry.
-     - Bound GAS project: `ST-IN-gen-pml`.
+     - Bound GAS project: `sync-st-pml`.
 2. **Dynamic Environment Banner**:
    - When any Google Spreadsheet is opened, the custom menu dynamically reflects the active tier:
      - `🚀 Studio Tunnel [DEV]`

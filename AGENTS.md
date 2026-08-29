@@ -1,4 +1,4 @@
-# st-comptroller — Core Architecture & Coding Rules
+# sync-st — Core Architecture & Coding Rules
 
 ## 🛡️ MANDATORY CODING & EXECUTION RULES
 

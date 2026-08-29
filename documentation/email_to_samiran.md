@@ -2,14 +2,14 @@
 
 **To:** Samiran Sonowal (`samiran@studiotunnel.com`)  
 **From:** Jay (`jay@studiotunnel.com`)  
-**Subject:** Welcome to ST-IN-gen (v0.7) — Invoice Comptroller, CI/CD Pipeline & Workstation Setup  
+**Subject:** Welcome to sync-st (v0.7) — Invoice Comptroller, CI/CD Pipeline & Workstation Setup  
 **Date:** 17 August 2026  
 
 ---
 
 Hi Samiran,
 
-We’ve reached a major milestone for **`ST-IN-gen`** (*Studio Tunnel Financial Comptroller & Vector Invoice Engine*), now released at **`v0.7`** with full CI/CD automation and multi-OS developer support.
+We’ve reached a major milestone for **`sync-st`** (*Studio Tunnel Financial Comptroller & Vector Invoice Engine*), now released at **`v0.7`** with full CI/CD automation and multi-OS developer support.
 
 Here is everything you need to get your laptop configured and start collaborating using **Antigravity IDE** or **VS Code**.
 
@@ -21,8 +21,8 @@ Before writing code or running scripts, we’ve built an automated diagnostic to
 
 ```bash
 # Clone the repository:
-git clone https://github.com/jd-tunnel/IN-gen.git
-cd IN-gen
+git clone https://github.com/samiransonowal/sync-st.git
+cd sync-st
 
 # Run the workstation diagnostic:
 python scripts/check_dev_environment.py
@@ -47,9 +47,9 @@ The project now maintains 3 isolated cloud environments mapped to Git branches:
 
 | Environment | Branch | Apps Script Target | Mode & Permissions |
 |---|---|---|---|
-| **Development** | `dev` | `ST-IN-gen-dev` | `DRY_RUN_MODE = true` (Iterative coding & isolated sandbox writes) |
-| **Staging / Testing** | `test` | `ST-IN-gen-test` | `DRY_RUN_MODE = true` (Pre-production dry-run verification) |
-| **Production** | `prod` / `main` | `ST-IN-gen-prod` | `DRY_RUN_MODE = false` (Live vector PDFs, Gmail alerts) |
+| **Development** | `dev` | `sync-st-dev` | `DRY_RUN_MODE = true` (Iterative coding & isolated sandbox writes) |
+| **Staging / Testing** | `test` | `sync-st-test` | `DRY_RUN_MODE = true` (Pre-production dry-run verification) |
+| **Production** | `prod` / `main` | `sync-st-pml` | `DRY_RUN_MODE = false` (Live vector PDFs, Gmail alerts) |
 
 ---
 

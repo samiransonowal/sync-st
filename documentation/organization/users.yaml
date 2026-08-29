@@ -120,6 +120,46 @@ users:
     department: "Post-Production Operations"
     is_active: true
 
+  - id: 8
+    primary_email: "aaditya@studiotunnel.com"
+    full_name: "Aaditya Kamble"
+    username: "aaditya-st"
+    role: "Conformist"
+    system_privileges: "Conform & Online Editing Execution"
+    designation: "Conformist"
+    department: "Post-Production Operations"
+    is_active: true
+
+  - id: 9
+    primary_email: "ayush@studiotunnel.com"
+    full_name: "Ayush Dalvi"
+    username: "ayush-st"
+    role: "Assistant Colorist"
+    system_privileges: "Color Assist & Project Preparation"
+    designation: "Assistant Colorist"
+    department: "Post-Production Operations"
+    is_active: true
+
+  - id: 10
+    primary_email: "vijay@studiotunnel.com"
+    full_name: "Vijay Nool"
+    username: "vijay-st"
+    role: "Assistant Colorist"
+    system_privileges: "Color Assist & Project Preparation"
+    designation: "Assistant Colorist"
+    department: "Post-Production Operations"
+    is_active: true
+
+  - id: 11
+    primary_email: "arjun@studiotunnel.com"
+    full_name: "Arjun Kohli"
+    username: "arjun-st"
+    role: "Assistant Colorist"
+    system_privileges: "Color Assist & Project Preparation"
+    designation: "Assistant Colorist"
+    department: "Post-Production Operations"
+    is_active: true
+
 aliases:
   - primary_email: "samiran@studiotunnel.com"
     alias_email: "samiran.sonowal@studiotunnel.com"

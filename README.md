@@ -1,7 +1,7 @@
-# st-comptroller — Financial Comptroller Program
+# sync-st — Financial Comptroller & Operations Platform
 
 **Release Version:** `v0.9` (*3tier-governance-dedicated-sheets*)  
-**Shortcode:** `st-comptroller`  
+**Shortcode:** `sync-st`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
 **Lead Developer:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
 **Collaborator:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
@@ -9,7 +9,7 @@
 **GCP Project ID:** `sync-st` (Project Number: `972643538415`)  
 **Documentation Index:** [`documentation/documentation_index.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/documentation/documentation_index.md)  
 **Changelog & Version History:** [`CHANGELOG.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/CHANGELOG.md)  
-**GitHub Repository:** [github.com/samiransonowal/st-comptroller](https://github.com/samiransonowal/st-comptroller)  
+**GitHub Repository:** [github.com/samiransonowal/sync-st](https://github.com/samiransonowal/sync-st)  
 
 > [!CAUTION]
 > ### 🛑 MANDATORY OUTBOUND EMAIL SAFETY RULE
@@ -31,7 +31,7 @@
 
 ## 🚀 Overview
 
-`st-comptroller` is the automated financial comptroller, vector PDF invoice generation system, and CI/CD deployment engine for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
+`sync-st` is the automated financial comptroller, vector PDF invoice generation system, and CI/CD deployment engine for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
 
 ---
 
@@ -40,7 +40,7 @@
 1. **Google Apps Script (JavaScript V8)**: Dynamic UI bindings, custom trigger hooks, and vector PDF rendering engine (`engine/google-apps-script`).
 2. **Google BigQuery (`sync-st.st_comptroller`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
 3. **Google Looker Studio**: Executive financial reporting portal & real-time overdue chase list dashboards.
-4. **Google Apps Script Master Engine (`ST-IN-gen`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, and Gmail routing.
+4. **Google Apps Script Master Engine (`sync-st`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, and Gmail routing.
 5. **Automated 3-Silo CI/CD Pipeline**: Branch-mapped deployments (`dev`, `test`, `prod`) to isolated Google Apps Script cloud projects via GitHub Actions.
 
 ---
@@ -67,7 +67,7 @@ INVOICE_APP/
 │       └── users.json                   <-- Synced public JSON user matrix
 │
 ├── ⚙️ engine/                          <-- Automation Scripts & Processing Engine
-│   ├── google-apps-script/             <-- Google Apps Script Master Engine (ST-IN-gen)
+│   ├── google-apps-script/             <-- Google Apps Script Master Engine (sync-st)
 │   │   ├── 0_Config.gs                 <-- Core cell maps, constants, DRY_RUN_MODE & timezone
 │   │   ├── constants.gs                <-- External master spreadsheets (STEM Registry, Accounts)
 │   │   ├── 1_Utils.gs                  <-- Date formatters, currency converter & validators
@@ -139,7 +139,7 @@ python engine/python-scripts/sync_users.py
 ## 🏷️ Release History Summary
 
 - **v0.8 (`services_apis_enabled`)**: GCP Enabled APIs & Zero-Cost Financial Ledger (`08_gcp_apis_and_free_tier_limits.md`), legacy Firebase web app ingestion specification (`firebase_ingestion_specification.md`), and raw staging schema for Firestore collections.
-- **v0.7 (`gas-cicd-pipeline`)**: Automated Google Apps Script CI/CD deployment (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) with branch-to-project mapping, cross-platform workstation diagnostic suite (`scripts/check_dev_environment.py`), STEM User Registry integration (`constants.gs`), and full OS support documentation.
+- **v0.7 (`gas-cicd-pipeline`)**: Automated Google Apps Script CI/CD deployment (`sync-st-dev`, `sync-st-test`, `sync-st-pml`) with branch-to-project mapping, cross-platform workstation diagnostic suite (`scripts/check_dev_environment.py`), STEM User Registry integration (`constants.gs`), and full OS support documentation.
 - **v0.6 (`verification`)**: Created System Integrity & Validation Suite (`test_system_integrity.py` - 100% pass), BigQuery data flow dry runs, and tech stack verification module (`06_verification_and_dry_runs.md`).
 - **v0.5 (`user-details`)**: Provisioned exact verified Google Workspace Admin Directory data (`customer_id: C00yqau03`), created formatted `user_log.json`, and integrated account aliases/phones into `users.yaml` & `sync_users.py`.
 - **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names.

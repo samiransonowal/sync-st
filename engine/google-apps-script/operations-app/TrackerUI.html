@@ -138,16 +138,92 @@
     </div>
     
     <h2>Log / Close Studio Task</h2>
+    
+    <!-- MODE TOGGLE BUTTONS -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+      <button type="button" id="modeExistingBtn" class="preset-btn" style="background:var(--primary); color:#000;" onclick="switchBookingMode('EXISTING')">📁 Existing Project</button>
+      <button type="button" id="modeNewBtn" class="preset-btn" onclick="switchBookingMode('NEW')">✨ + Create New Project</button>
+    </div>
+
     <form id="trackerForm" onsubmit="submitForm(event)">
-      <div class="form-group">
-        <label for="projectCode">Project / Booking (Studio Bookings)</label>
-        <select id="projectCode" required></select>
+      
+      <!-- EXISTING PROJECT SELECTOR -->
+      <div id="existingProjectGroup" class="form-group">
+        <label for="projectCode">Select Studio Booking / Project</label>
+        <select id="projectCode"></select>
+      </div>
+
+      <!-- NEW PROJECT CREATION FIELDS -->
+      <div id="newProjectGroup" class="hidden">
+        
+        <!-- AUTOMATED ALLOCATION NOTICE BANNER -->
+        <div style="background: rgba(0, 229, 255, 0.08); border: 1px solid var(--primary); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+          <span style="font-size: 1.3rem; line-height: 1;">⚡</span>
+          <div style="font-size: 0.825rem; color: #E0E0E0; line-height: 1.4;">
+            <strong style="color: var(--primary);">Automated Project Code Allocation:</strong> You do not need to manually enter or calculate any project code. Simply write your <strong>Project Name</strong> below, and your official sequential Project Code ID will be automatically allotted and displayed in real-time.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newProjectName">Project Name *</label>
+          <input type="text" id="newProjectName" placeholder="e.g. Stir Fry Commercial" oninput="fetchNextProjectCode()">
+        </div>
+
+        <div class="form-group">
+          <label style="color: var(--primary); font-weight: 700; font-size: 0.85rem;">✓ Project Code Allotted (Automated)</label>
+          <div style="display: flex; align-items: center; gap: 0.75rem; background: #121212; border: 1.5px solid var(--primary); border-radius: 8px; padding: 0.65rem 1rem; margin-top: 0.25rem;">
+            <span style="font-family: monospace; font-size: 1.15rem; font-weight: 800; color: #00FFCC; letter-spacing: 0.05em;" id="autoProjectCodeDisplay">Fetching code...</span>
+            <span style="margin-left: auto; font-size: 0.7rem; background: rgba(0, 255, 204, 0.15); color: #00FFCC; border: 1px solid rgba(0, 255, 204, 0.4); padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Auto-Allocated</span>
+          </div>
+          <input type="hidden" id="autoProjectCode" name="autoProjectCode">
+          <small style="color: #888; font-size: 0.75rem; display: block; margin-top: 0.35rem;">
+            Auto-assigned sequential studio ID. No manual action required.
+          </small>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 0.75rem;">
+          <div style="flex:1">
+            <label for="newCategory">Category</label>
+            <select id="newCategory" onchange="fetchNextProjectCode()">
+              <option value="MIS">MIS — Misc.</option>
+              <option value="AD">AD — Advertisement</option>
+              <option value="FF">FF — Feature Film</option>
+              <option value="SF">SF — Short Film</option>
+              <option value="EP">EP — Episodic Series</option>
+              <option value="DC">DC — Documentary</option>
+              <option value="MV">MV — Music Video</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label for="newArtist">Lead Artist</label>
+            <select id="newArtist" onchange="fetchNextProjectCode()">
+              <option value="SS">SS — Samiran Sonowal</option>
+              <option value="YS">YS — Yash Soni</option>
+              <option value="SV">SV — Sujith Vijayan</option>
+              <option value="MS">MS — Manoj Sahu</option>
+              <option value="OT" selected>OT — General / Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 0.75rem;">
+          <div style="flex:2">
+            <label for="newClientName">Client / Company Name (Client_CRM Sync)</label>
+            <input type="text" id="newClientName" list="clientCrmList" placeholder="e.g. Type to search CRM or add new..." autocomplete="off">
+            <datalist id="clientCrmList"></datalist>
+            <small style="color:#888; font-size:0.75rem;">Selected from Client_CRM dropdown, or type new client to auto-register.</small>
+          </div>
+          <div style="flex:1">
+            <label for="newHourlyRate">Rate (INR/hr)</label>
+            <input type="number" id="newHourlyRate" value="5000">
+          </div>
+        </div>
       </div>
 
       <div class="form-group">
         <label for="taskType">Task Type</label>
         <select id="taskType" required>
-          <option value="Booking">Booking (Colorist)</option>
+          <option value="Booking" selected>Booking (Colorist)</option>
           <option value="Conform">Conform</option>
           <option value="Assist">Assist (Pre/Post)</option>
           <option value="Mastering">Mastering (Long Format)</option>
@@ -196,12 +272,78 @@
   <script>
     let selectedUser = null;
     let enteredPin = "";
+    let currentBookingMode = 'EXISTING';
 
     document.getElementById('date').valueAsDate = new Date();
 
-    // Fetch User Registry & Active Projects
+    // Fetch User Registry, Active Projects & Client_CRM
     google.script.run.withSuccessHandler(populateUsers).getStaffRegistry();
     google.script.run.withSuccessHandler(populateProjects).getActiveProjects();
+    google.script.run.withSuccessHandler(populateClientCrmList).handleGetClients();
+
+    function populateClientCrmList(res) {
+      const dataList = document.getElementById('clientCrmList');
+      if (!dataList) return;
+      dataList.innerHTML = '';
+      const clients = (res && res.clients) ? res.clients : (Array.isArray(res) ? res : []);
+      clients.forEach(c => {
+        const name = typeof c === 'string' ? c : (c.name || '');
+        if (name) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          dataList.appendChild(opt);
+        }
+      });
+    }
+
+    function switchBookingMode(mode) {
+      currentBookingMode = mode;
+      const existingGroup = document.getElementById('existingProjectGroup');
+      const newGroup = document.getElementById('newProjectGroup');
+      const modeExistingBtn = document.getElementById('modeExistingBtn');
+      const modeNewBtn = document.getElementById('modeNewBtn');
+
+      if (mode === 'NEW') {
+        existingGroup.classList.add('hidden');
+        newGroup.classList.remove('hidden');
+        modeExistingBtn.style.background = 'transparent';
+        modeExistingBtn.style.color = 'var(--text-muted)';
+        modeNewBtn.style.background = 'var(--primary)';
+        modeNewBtn.style.color = '#000';
+        fetchNextProjectCode();
+      } else {
+        existingGroup.classList.remove('hidden');
+        newGroup.classList.add('hidden');
+        modeExistingBtn.style.background = 'var(--primary)';
+        modeExistingBtn.style.color = '#000';
+        modeNewBtn.style.background = 'transparent';
+        modeNewBtn.style.color = 'var(--text-muted)';
+      }
+    }
+
+    function fetchNextProjectCode() {
+      const cat = document.getElementById('newCategory').value;
+      const art = document.getElementById('newArtist').value;
+      const codeInput = document.getElementById('autoProjectCode');
+      const codeDisplay = document.getElementById('autoProjectCodeDisplay');
+
+      if (codeDisplay && (!codeInput.value || codeInput.value === "Fetching...")) {
+        codeDisplay.textContent = "Fetching code...";
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          let allocatedCode = "";
+          if (res && res.projectCode) {
+            allocatedCode = res.projectCode;
+          } else {
+            allocatedCode = `1001_${cat}_${art}`;
+          }
+          if (codeInput) codeInput.value = allocatedCode;
+          if (codeDisplay) codeDisplay.textContent = allocatedCode;
+        })
+        .generateNextProjectCode(cat, art);
+    }
 
     function populateUsers(users) {
       const list = document.getElementById('userList');
@@ -292,8 +434,41 @@
         return;
       }
 
+      let pCode = "";
+      let isNew = false;
+      let pName = "";
+      let clientName = "";
+      let rateVal = 5000;
+
+      if (currentBookingMode === 'NEW') {
+        pCode = document.getElementById('autoProjectCode').value.trim();
+        pName = document.getElementById('newProjectName').value.trim();
+        clientName = document.getElementById('newClientName').value.trim() || "General Client";
+        rateVal = parseFloat(document.getElementById('newHourlyRate').value) || 5000;
+        isNew = true;
+
+        if (!pCode) {
+          alert("Please refresh auto-generated project code.");
+          return;
+        }
+        if (!pName) {
+          alert("Please enter the Project Name for the new project booking.");
+          return;
+        }
+      } else {
+        pCode = document.getElementById('projectCode').value;
+        if (!pCode) {
+          alert("Please select an existing Studio Booking / Project from the list.");
+          return;
+        }
+      }
+
       const data = {
-        projectCode: document.getElementById('projectCode').value,
+        isNewProject: isNew,
+        projectCode: pCode,
+        projectName: pName,
+        client: clientName,
+        hourlyRate: rateVal,
         taskType: document.getElementById('taskType').value,
         date: document.getElementById('date').value,
         assignedArtist: selectedUser.name,
@@ -302,13 +477,29 @@
         notes: document.getElementById('notes').value
       };
 
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting session to LOG BOOK_SYNC...';
+
       google.script.run
         .withSuccessHandler(res => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Log & Close Task';
+
           const toast = document.getElementById('toastMsg');
           toast.textContent = res.message;
           toast.className = 'toast ' + (res.success ? 'success' : 'error');
           toast.style.display = 'block';
-          if(res.success) document.getElementById('trackerForm').reset();
+
+          if (res.success) {
+            document.getElementById('trackerForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            // Refresh projects list if a new project was created
+            if (isNew) {
+              google.script.run.withSuccessHandler(populateProjects).getActiveProjects();
+              switchBookingMode('EXISTING');
+            }
+          }
           setTimeout(() => { toast.style.display = 'none'; }, 5000);
         })
         .processTaskEntry(data);

@@ -20,8 +20,12 @@ node_modules/
 .clasp.json
 .clasprc.json
 
+# Firebase cache & build outputs
+.firebase/
+dist/
+**/dist/
+
 # Local Generated Artifacts & Mock Invoices
 output/
-
-
 sample-documents/
+

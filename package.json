@@ -1,7 +1,7 @@
 {
-  "name": "st-comptroller",
+  "name": "sync-st",
   "version": "1.0.0",
-  "description": "st-comptroller Cloud-Native Platform",
+  "description": "sync-st Cloud-Native Platform",
   "private": true,
   "scripts": {
     "lint": "echo \"[PASS] Linting check passed.\"",
@@ -13,6 +13,10 @@
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2",
-    "firebase-tools": "^15.8.0"
+    "firebase-tools": "^15.8.0",
+    "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "firebase": "^12.18.0"
   }
 }

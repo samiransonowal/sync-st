@@ -1,6 +1,6 @@
 # ST-fin-com-prog — Version History & Changelog
 # Program: Studio Tunnel Financial Comptroller Program
-# Repository: jd-tunnel/IN-gen
+# Repository: samiransonowal/sync-st
 
 This document tracks all release versions of **`ST-fin-com-prog`**, categorized by **Data Logic**, **Data Flow**, and **UI / UX**.
 
@@ -15,7 +15,7 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 #### 🛡️ 3-Tier Architecture & Governance Mandate
 - **Permanent Default Branch (`dev`)**: Configured `dev` as the official default branch on GitHub and local development workstations. All feature branches, experiments, and daily development start on `dev`.
 - **Restricted Testing Sandbox (`test`)**: Mandated that work or promotion to `test` is permitted only after local test validation and explicit human escalation.
-- **Production Main Live (`pml`)**: Standardized nomenclature from `main` to `pml` (`ST-IN-gen-pml`, dataset `st_fin_com_prog_pml`). Mandated 2-party confirmation (Author + GCP Admin `lab@studiotunnel.com`) before any production push or live dispatch.
+- **Production Main Live (`pml`)**: Standardized nomenclature from `main` to `pml` (`sync-st-pml`, dataset `st_fin_com_prog_pml`). Mandated 2-party confirmation (Author + GCP Admin `lab@studiotunnel.com`) before any production push or live dispatch.
 
 #### 📊 3 Dedicated Sets of Google Sheets Suites
 - **Isolated Spreadsheet Suites per Tier**:
@@ -65,7 +65,7 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 #### 🔄 Data Flow
 - Configured automated GitHub Actions workflow (`.github/workflows/gas-ci.yml`) for linting, system integrity checks, environment resolution, and Clasp deployment.
-- Connected Apps Script project naming convention `ST-IN-gen` (`ST-IN-gen-dev`, `ST-IN-gen-test`, `ST-IN-gen-prod`) under GCP Project `sync-st` (`972643538415`).
+- Connected Apps Script project naming convention `sync-st` (`sync-st-dev`, `sync-st-test`, `sync-st-pml`) under GCP Project `sync-st` (`972643538415`).
 
 #### 🎨 UI / UX & Documentation
 - Authored comprehensive CI/CD deployment guide ([`documentation/ci_setup.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/documentation/ci_setup.md)).

@@ -80,13 +80,91 @@ def extract_pan(gstin):
         return ""
     return str(gstin).strip()[2:12]
 
+def clean_item_name(name):
+    if not name or pd.isna(name) or str(name).lower() == 'nan':
+        return ""
+    
+    s = str(name).strip()
+    # Strip leading prefix if any
+    s = re.sub(r'(?i)^Grade\s+fees-Tunnel\s+Studio\s+for\s+', '', s)
+    
+    # Strip known fee/scope/phase/format/deliverable suffixes (case-insensitive)
+    patterns = [
+        # Multi-word scope/fee phrases
+        r'\s*-\s*DI\s*Fee\s*-\s*Package',
+        r'\s*-\s*DI\s*FEE\s*\(PACKAGE\)',
+        r'\s*-\s*DI\s*FEE\s*-\s*(FIRST|SECOND|3RD|4TH)\s*TRANCHE',
+        r'\s*-\s*FIRST\s*TRANCHE',
+        r'\s*-\s*SECOND\s*TRANCHE',
+        r'\s*-\s*3rd\s*Tranche',
+        r'\s*-\s*4th\s*Tranche',
+        r'\s*-\s*Signing\s*Fee',
+        r'\s*-\s*Commence\s*of\s*Services',
+        r'\s*-\s*20%\s*Commencement.*',
+        r'\s*-\s*20%\s*Completion.*',
+        r'\s*-\s*EDIT\s*\+\s*GRADE\s*FEE.*',
+        r'\s*-\s*EDIT\s*\+\s*GRADE.*',
+        r'\s*-\s*EDIT\s*FEE.*',
+        r'\s*-\s*EDIT\s*FEES.*',
+        r'\s*-\s*Edit\s*Fee.*',
+        r'\s*-\s*Grade\s*Fee.*',
+        r'\s*-\s*GRADE\s*FEE.*',
+        r'\s*-\s*DI\s*FEE.*',
+        r'\s*-\s*DI\s*Fee.*',
+        r'\s*-\s*ON-SET\s*EDITOR.*',
+        r'\s*-\s*Digital\s*Intermediate.*',
+        r'\s*-\s*DIGITAL\s*INTERMEDIATE.*',
+        r'\s*-\s*DCP',
+        r'\s*-\s*Advance',
+        r'\s*\(Package\)',
+        r'\s*-\s*Package',
+
+        # Deliverable formats & tags requested by user
+        r'\s*-?\s*MUSIC\s*VIDEO',
+        r'\s*-?\s*\bMV\b',
+        r'\s*-?\s*\bDCUT\b',
+        r'\s*-?\s*MASTER\s*FILM',
+        r'\s*-\s*MASTER',
+        r'\s*-\s*CUT\s*DOWN',
+        r'\s*-\s*SHORTIES',
+        r'\s*-?\s*PROMO',
+        r'\s*-\s*DVC',
+        r'\s*-\s*Reels?',
+        r'\s*-\s*Film\s*\d+',
+        r'\s*-\s*\d+\s*Films?',
+    ]
+    
+    for pat in patterns:
+        s = re.sub(pat, '', s, flags=re.IGNORECASE)
+        
+    s = re.sub(r'[\s\-]+$', '', s).strip()
+    return s
+
 def parse_sales_report(file_path, fy_offset=0):
     print(f"📄 Processing ledger file (offset={fy_offset}): {file_path}")
     migrated_rows = []
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
+    # Extract Item Details mapping (Invoice No. -> Cleaned Project Name list)
+    item_map = {}
     try:
-        df = pd.read_excel(file_path, skiprows=3)
+        df_items = pd.read_excel(file_path, sheet_name='Item Details', skiprows=2)
+        if 'Invoice No./Txn No.' in df_items.columns:
+            df_items = df_items.dropna(subset=['Invoice No./Txn No.'])
+            for _, irow in df_items.iterrows():
+                inv_id = str(irow['Invoice No./Txn No.']).replace(".0", "").strip()
+                raw_item_name = str(irow.get('Item Name', '')).strip()
+                cleaned_name = clean_item_name(raw_item_name)
+                if inv_id and cleaned_name:
+                    if inv_id not in item_map:
+                        item_map[inv_id] = []
+                    if cleaned_name not in item_map[inv_id]:
+                        item_map[inv_id].append(cleaned_name)
+    except Exception as ie:
+        print(f"⚠️ Could not load Item Details sheet from {file_path}: {ie}")
+
+    try:
+        df = pd.read_excel(file_path, sheet_name='Sale Report', skiprows=3)
         if 'Invoice No' in df.columns:
             df = df.dropna(subset=['Invoice No'])
         else:
@@ -100,7 +178,7 @@ def parse_sales_report(file_path, fy_offset=0):
             invoice_num = str(row['Invoice No']).replace(".0", "").strip()
             colorist_name, colorist_code = extract_colorist(row.get('Payment Type', ''))
             client_name = str(row.get('Party Name', '')).strip()
-            total_amt = float(row.get('Total Amount', 0))
+            total_amt = float(row.get('Total Amount', 0)) if not pd.isna(row.get('Total Amount')) else 0.0
             subtotal = round(total_amt / 1.18, 2)
             pay_status = str(row.get('Payment Status', 'Unpaid')).strip()
             
@@ -113,11 +191,22 @@ def parse_sales_report(file_path, fy_offset=0):
             except ValueError:
                 project_code_id = f"{fy_offset}{invoice_num}_MIS_{colorist_code}"
 
+            # Project Name mapped from Item Details page (Item Name column), retaining clean project name
+            items_list = item_map.get(invoice_num, [])
+            if items_list:
+                project_name = " / ".join(items_list)
+            else:
+                raw_desc = str(row.get('Description', '')).strip() if not pd.isna(row.get('Description')) else ""
+                project_name = clean_item_name(raw_desc)
+
+            if not project_name or project_name.lower() == 'nan':
+                project_name = ""
+
             migrated_row = [
                 project_code_id,                  # [BIL-01]
                 invoice_num,                      # [BIL-02] Invoice Number (Column B)
                 row.get('Date', ''),              # [BIL-03]
-                "",                               # [BIL-04]
+                project_name,                     # [BIL-04] Project Name (Column D)
                 client_name,                      # [BIL-05]
                 "",                               # [BIL-06]
                 colorist_name,                    # [BIL-07]

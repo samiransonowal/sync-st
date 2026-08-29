@@ -1,7 +1,7 @@
 # IAM Permissions & User Identity Access Matrix
 
 **Program:** Studio Tunnel Financial Comptroller Program  
-**Engine Shortcode:** `ST-IN-gen`  
+**Engine Shortcode:** `sync-st`  
 **GCP Project:** `sync-st` (`972643538415`)  
 **Target Owner Identity:** Samiran Sonowal (`samiran@studiotunnel.com`)  
 **Infrastructure Admin Identity:** Tech Dev Lab (`lab@studiotunnel.com`)  
@@ -14,7 +14,7 @@
 
 While `lab@studiotunnel.com` serves as the service and infrastructure administration account for automated pipelines, **`samiran@studiotunnel.com`** operates as the **Studio Owner, Managing Director, and Data Owner**.
 
-This document outlines the precise permission matrix required for `samiran@studiotunnel.com` to operate, debug, test, and deploy `ST-IN-gen` across Google Cloud Platform, Google Workspace, Google Apps Script, and GitHub.
+This document outlines the precise permission matrix required for `samiran@studiotunnel.com` to operate, debug, test, and deploy `sync-st` across Google Cloud Platform, Google Workspace, Google Apps Script, and GitHub.
 
 ---
 
@@ -67,7 +67,7 @@ This document outlines the precise permission matrix required for `samiran@studi
 
 ---
 
-### E. 🐙 GitHub Repository & Branch Governance Mandate (`IN-gen`)
+### E. 🐙 GitHub Repository & Branch Governance Mandate (`sync-st`)
 
 | Branch | Default Status | Permission Level | Promotion / Access Mandate |
 | :--- | :--- | :--- | :--- |

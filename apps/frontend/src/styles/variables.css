@@ -1,0 +1,43 @@
+:root {
+  /* Premium Dark Theme Color Palette */
+  --bg-main: #0a0b0e;
+  --bg-panel: rgba(22, 24, 29, 0.65);
+  --bg-panel-hover: rgba(30, 33, 40, 0.85);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(0, 229, 255, 0.2);
+  
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-accent: #00e5ff;
+  
+  /* Status Colors */
+  --status-pending: #fbbf24;
+  --status-active: #00e5ff;
+  --status-approved: #10b981;
+  --status-blocked: #f43f5e;
+  
+  /* Glassmorphism Details */
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  /* Fonts */
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', 'Courier New', monospace;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease-out;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+  color: var(--text-main);
+  font-family: var(--font-primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}

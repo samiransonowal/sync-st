@@ -2,7 +2,7 @@
 
 ## Goal
 
-To refactor the system architecture across all documentation and planned modules in `st-comptroller` to adopt the new **Hybrid OLTP/OLAP Data Architecture**: 
+To refactor the system architecture across all documentation and planned modules in `sync-st` to adopt the new **Hybrid OLTP/OLAP Data Architecture**: 
 `Google Sheets -> Firebase Firestore <-> Firebase Web App -> Google BigQuery`.
 
 This plan ensures that all modules (Invoicing, Reminders, Analytics, Bank Reconciliation) are built on top of this high-speed, real-time sync architecture, replacing legacy concepts like `IMPORTRANGE` and Looker Studio.

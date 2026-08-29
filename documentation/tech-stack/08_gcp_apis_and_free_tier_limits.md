@@ -11,7 +11,7 @@
 
 ## 1. Overview & Zero-Surprise-Billing Philosophy
 
-To ensure **Cineloom Postworks Pvt. Ltd. / Studio Tunnel** never incurs unexpected cloud expenses, **`ST-IN-gen`** operates strictly under the Google Cloud Free Tier and Google Workspace standard allocations.
+To ensure **Cineloom Postworks Pvt. Ltd. / Studio Tunnel** never incurs unexpected cloud expenses, **`sync-st`** operates strictly under the Google Cloud Free Tier and Google Workspace standard allocations.
 
 ### 🛡️ Core Cost-Guard Principles:
 1. **Zero Persistent Compute:** We do **NOT** run compute instances (Compute Engine VMs, Cloud Run, Kubernetes, or always-on Cloud Functions).
@@ -25,7 +25,7 @@ To ensure **Cineloom Postworks Pvt. Ltd. / Studio Tunnel** never incurs unexpect
 
 Below is the verified ledger of all APIs enabled for GCP project `sync-st` (`972643538415`):
 
-| # | Google API Name | API Identifier | Google Free-Tier Allowance | ST-IN-gen Estimated Monthly Usage | Cost Impact |
+| # | Google API Name | API Identifier | Google Free-Tier Allowance | sync-st Estimated Monthly Usage | Cost Impact |
 |---|---|---|---|---|---|
 | **1** | **Gmail API** | `gmail.googleapis.com` | Standard Workspace quota: 2,000 emails/day / 1B units/day | ~50–200 invoices & notifications/month | **₹0.00** |
 | **2** | **Google Apps Script API** | `script.googleapis.com` | Unlimited standard script executions & Clasp pushes | ~20–50 CI/CD pushes & daily triggers | **₹0.00** |

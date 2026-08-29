@@ -1,6 +1,6 @@
-# ST-Comptroller CI/CD & Pipeline Setup Guide
+# sync-st CI/CD & Pipeline Setup Guide
 
-This guide documents the automated Google Apps Script CI/CD pipeline for **ST-Comptroller (st-comptroller)**.
+This guide documents the automated Google Apps Script CI/CD pipeline for **sync-st**.
 
 ---
 
@@ -10,9 +10,9 @@ The deployment architecture uses three isolated Google Apps Script projects tied
 
 | Environment Tier | Git Branch | Apps Script Title | BigQuery Dataset ID | Mode / Permissions |
 |---|---|---|---|---|
-| **Dev** | `dev` | `ST-IN-gen-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
-| **Test** | `test` | `ST-IN-gen-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
-| **PML** *(Production Main Live)* | `pml` | `ST-IN-gen-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/alerts) |
+| **Dev** | `dev` | `sync-st-dev` | `st_comptroller_dev` | `DRY_RUN_MODE = true` (Iterative coding, isolated Drive writes) |
+| **Test** | `test` | `sync-st-test` | `st_comptroller_test` | `DRY_RUN_MODE = true` (Full integration testing, sandbox verification) |
+| **PML** *(Production Main Live)* | `pml` | `sync-st-pml` | `st_comptroller_pml` | `DRY_RUN_MODE = false` (Live PDF invoice generation, real emails/alerts) |
 
 ---
 
@@ -21,7 +21,7 @@ The deployment architecture uses three isolated Google Apps Script projects tied
 - **GCP Project ID**: `sync-st`
 - **GCP Project Number**: `972643538415`
 - **GCP Admin Account**: `lab@studiotunnel.com`
-- **OAuth Client**: `ST-IN-gen-v1` (`972643538415-iotqsas6uh5uanjjgdmal16phvfnsvup.apps.googleusercontent.com`)
+- **OAuth Client**: `sync-st-v1` (`972643538415-iotqsas6uh5uanjjgdmal16phvfnsvup.apps.googleusercontent.com`)
 
 ---
 
@@ -31,15 +31,15 @@ Run the following commands using clasp:
 
 ```bash
 # Create DEV project
-clasp create --title "ST-IN-gen-dev" --type standalone --rootDir ./engine/google-apps-script
+clasp create --title "sync-st-dev" --type standalone --rootDir ./engine/google-apps-script
 # -> Output provides <DEV_SCRIPT_ID>
 
 # Create TEST project
-clasp create --title "ST-IN-gen-test" --type standalone --rootDir ./engine/google-apps-script
+clasp create --title "sync-st-test" --type standalone --rootDir ./engine/google-apps-script
 # -> Output provides <TEST_SCRIPT_ID>
 
 # Create PML project
-clasp create --title "ST-IN-gen-pml" --type standalone --rootDir ./engine/google-apps-script
+clasp create --title "sync-st-pml" --type standalone --rootDir ./engine/google-apps-script
 # -> Output provides <PML_SCRIPT_ID>
 ```
 

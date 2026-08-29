@@ -1,5 +1,5 @@
 /**
- * ST-IN-gen PDF Generation Module
+ * sync-st PDF Generation Module
  * Generates vector PDF invoices from HTMLTemplate.html and dispatches via Drive & MailApp.
  */
 

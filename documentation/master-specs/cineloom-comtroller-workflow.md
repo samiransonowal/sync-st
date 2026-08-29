@@ -1,11 +1,11 @@
 ---
 name: "cineloom-comptroller-workflow"
-description: "Target Outcomes, Current Accounts Workflow, Spreadsheet Overhaul Plan, and Functional Architecture for st-comptroller (Studio Tunnel / Cineloom Postworks Financial Comptroller Agent)."
+description: "Target Outcomes, Current Accounts Workflow, Spreadsheet Overhaul Plan, and Functional Architecture for sync-st (Studio Tunnel / Cineloom Postworks Financial Comptroller Agent)."
 ---
 
-# st-comptroller — Agent Core Target Outcomes & Operational Workflows
+# sync-st — Agent Core Target Outcomes & Operational Workflows
 
-This specification outlines the strategic financial outcomes, current accounts operational workflow, spreadsheet overhaul schedule, and target capabilities for the **st-comptroller Agent** operating across Studio Tunnel / Cineloom Postworks Pvt Ltd.
+This specification outlines the strategic financial outcomes, current accounts operational workflow, spreadsheet overhaul schedule, and target capabilities for the **sync-st Agent** operating across Studio Tunnel / Cineloom Postworks Pvt Ltd.
 
 ---
 
@@ -221,7 +221,7 @@ Every tab strictly maintains an immutable `UUID` as its primary key:
    - Deploy official **Stream Firestore to BigQuery** Firebase Extension for zero-code real-time warehouse replication.
 3. **Task 3: Cloud Functions & Core Logic Implementation**:
    - Implement 21st-day payment reminder trigger, 30-day aging engine, and Monday HDFC bank reconciliation Cloud Functions over Firestore.
-4. **Task 4: Firebase Web App Dashboard (`st-comptroller-portal`)**:
+4. **Task 4: Firebase Web App Dashboard (`cineloom-comptroller`)**:
    - Build interactive bi-directional dashboard for cash flow charts, invoice status updates, and action triggers.
 5. **Task 5: Email Intelligent Agent Integration**:
    - Configure Gmail API listener to process natural language email commands for quotes, invoicing, and expense logging.

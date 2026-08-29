@@ -5,8 +5,8 @@
 > **Target Audience**: Stakeholders, Executive Management, Line Producers, Finance & Accounts Team, Engineering Staff  
 > **Classification**: Internal — Not for External Distribution  
 > **Live Systems**:  
-> - **Studio Operations App** → [https://sync-st.web.app](https://sync-st.web.app)  
-> - **Finance & Billing App** → [https://cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)  
+> - **Studio Operations App** → [https://sync.studiotunnel.com](https://sync.studiotunnel.com)  
+> - **Finance & Billing App** → [https://cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)  
 > - **Master Database Sheet (`LOG BOOK_SYNC`)** → [Google Sheet](https://docs.google.com/spreadsheets/d/1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uzkpg/edit)  
 > - **Data Warehouse (BigQuery)** → GCP Project `sync-st`, Dataset `log_book_sync`, Region `asia-south1` (Mumbai)  
 > - **Reporting** → Google Looker Studio (connected to BigQuery)
@@ -36,8 +36,8 @@ flowchart TD
     end
 
     subgraph Apps ["🌐 Firebase Hosting — Global CDN Tier"]
-        OpsApp["Studio Operations App\nsync-st.web.app\n(Vite + React PWA)"]
-        FinApp["Finance & Billing App\ncineloom-comptroller.web.app\n(HTML5 + Glassmorphism CSS)"]
+        OpsApp["Studio Operations App\nsync.studiotunnel.com\n(Vite + React PWA)"]
+        FinApp["Finance & Billing App\ncineloom-comptroller.studiotunnel.com\n(HTML5 + Glassmorphism CSS)"]
     end
 
     subgraph GAS ["⚡ Serverless API Tier — Google Apps Script (V8 JS)"]
@@ -98,7 +98,7 @@ flowchart TD
 
 ---
 
-### App 1: Studio Operations App (`sync-st.web.app`)
+### App 1: Studio Operations App (`sync.studiotunnel.com`)
 
 **Purpose**: The day-to-day operational command centre for Studio Tunnel. Every hour worked by every artist and producer is logged here in real time.
 
@@ -106,25 +106,44 @@ flowchart TD
 
 | Module | What It Does |
 | :--- | :--- |
-| **PIN Authentication** | Staff log in with their unique 4-digit PIN. No passwords to remember, works on any device instantly. |
-| **Project Registry** | Browse all active and past projects. View project codes, client names, and current status at a glance. |
-| **Atomic Task Logger** | Log individual work sessions: select project, task type, assigned artist, date, hours, and scope notes. |
-| **Day Log Summary** | See all tasks logged for the current day across all artists. |
-| **Submission Tracker** | Record deliverable handoffs (graded files, DCP exports, etc.) to clients. |
+| **PIN Auth & Profile Matrix** | Fast PIN login bound to user profiles `u0`–`u11`. Role-based permissions for Artists, Line Producers, and IT Admin. |
+| **Studio Booking Schedule** | Interactive visual grid displaying live bookings and 9-hour shifts across Studio 01 (HDR+5.1), Studio 02 (SDR+Stereo), Studio 03 (Mastering), Conform, and Assist suites. |
+| **Atomic Task Logger & Time Clock** | Log work sessions with exact start/end times, actual hours, task type (`Booking`, `Conform`, `Assist`, `Mastering`, `Rendering`), and detailed scope notes. |
+| **IT & System Task Dispatcher** | Create, delegate, and track hardware, software deployment, storage expansion (TrueNAS), and networking tickets with file attachment support. |
+| **WhatsApp & Hard Drive Tracker** | Trigger automated WhatsApp client updates for hard drive pick-up readiness and render handoffs directly from the web interface. |
+| **Deliverable Submission Tracker** | Record deliverable handoffs (graded files, DCP exports, IMF packages) with client approval status. |
+| **Embedded Studio Guidebook & SOP** | Live interactive access to studio layout, working hours, general conduct rules, client presence mode, conform rules, and pre-mastering checklists. |
 
-#### 3.1.2 How Data Flows (Operations)
+#### 3.1.2 Authorized Web App User Directory (`u0` – `u11`)
+
+| User ID | Employee Name | Primary Email | Role / Department | `ntfy` Notification Topic |
+| :---: | :--- | :--- | :--- | :--- |
+| **`u0`** | **Jay Dantara** | `jay@studiotunnel.com` | IT Admin | `studio-tunnel-u0` |
+| **`u1`** | **Yash Soni** | `yash@studiotunnel.com` | Lead Colorist (CEO) | `studio-tunnel-u1` |
+| **`u2`** | **Sujith Vijayan** | `sujith@studiotunnel.com` | Lead Colorist | `studio-tunnel-u2` |
+| **`u3`** | **Samiran Sonowal** | `samiran@studiotunnel.com` | Colorist / Mgmt (COO) | `studio-tunnel-u3` *(+ `studio-tunnel-samiran`)* |
+| **`u4`** | **Manoj Sahu** | `manoj@studiotunnel.com` | Colorist / Assist HOD | `studio-tunnel-u4` |
+| **`u5`** | **Golu Saha** | `golu@studiotunnel.com` | Conformist | `studio-tunnel-u5` |
+| **`u6`** | **Ayush Dalvi** | `ayush@studiotunnel.com` | Assistant Colorist | `studio-tunnel-u6` |
+| **`u7`** | **Tamash Ansari** | `tamash@studiotunnel.com` | Production Department | `studio-tunnel-u7` |
+| **`u8`** | **Prakash Jai** | `prakash@studiotunnel.com` | Production Department | `studio-tunnel-u8` |
+| **`u9`** | **Vijay Nool** | `vijay@studiotunnel.com` | Assistant Colorist | `studio-tunnel-u9` |
+| **`u10`** | **Arjun Kohli** | `arjun@studiotunnel.com` | Assistant Colorist | `studio-tunnel-u10` |
+| **`u11`** | **Aaditya Kamble** | `aaditya@studiotunnel.com` | Conformist | `studio-tunnel-u11` |
+
+#### 3.1.3 How Data Flows (Operations)
 
 ```mermaid
 sequenceDiagram
     participant Artist as 🎨 Artist / Staff
-    participant OpsApp as sync-st.web.app (PWA)
+    participant OpsApp as sync.studiotunnel.com (PWA)
     participant GAS as TrackerWebApp.gs (Apps Script API)
     participant Sheet as Google Sheets (LOG BOOK_SYNC)
     participant BQ as BigQuery (log_book_sync)
 
     Artist->>OpsApp: 1. Open app on phone/laptop
-    OpsApp->>GAS: 2. POST { action: 'verifyPin', userId, pin }
-    GAS-->>OpsApp: 3. { success: true, name: "Samiran" }
+    OpsApp->>GAS: 2. POST { action: 'verifyPin', userId: 'u3', pin: '****' }
+    GAS-->>OpsApp: 3. { success: true, name: "Samiran Sonowal" }
     Artist->>OpsApp: 4. Select Project + Task Type + Hours
     OpsApp->>GAS: 5. POST { action: 'processTaskEntry', data: {...} }
     GAS->>Sheet: 6. Append new row to 'Atomic_Task_Logs' tab
@@ -133,7 +152,7 @@ sequenceDiagram
     Note over Sheet,BQ: BigQuery External Table auto-reads\nnew rows on next scheduled query
 ```
 
-#### 3.1.3 Atomic Task Log Schema (`Atomic_Task_Logs` Tab)
+#### 3.1.4 Atomic Task Log Schema (`Atomic_Task_Logs` Tab)
 
 | Column | Code | Field | Values |
 | :---: | :---: | :--- | :--- |
@@ -150,11 +169,23 @@ sequenceDiagram
 
 ---
 
-### App 2: Finance & Billing App (`cineloom-comptroller.web.app`)
+### App 2: Finance & Billing App (`cineloom-comptroller.studiotunnel.com`)
 
-**Purpose**: A real-time financial command centre for the Accounts Team. Manage the entire billing lifecycle — from reviewing unbilled work to dispatching GST Tax Invoices and tracking every rupee owed.
+**Purpose**: A secure, real-time financial command centre for Executive Management and Finance Administrators. Manage the entire billing lifecycle — from reviewing unbilled work to dispatching GST Tax Invoices and tracking receivables.
 
-#### 3.2.1 Dashboard KPI Cards
+#### 3.2.1 Security & Google OAuth Authentication Portal
+
+To ensure strict financial privacy and protect revenue/ledger data, access to `cineloom-comptroller.studiotunnel.com` is protected by a **Google-Hosted Authentication Gateway**:
+
+- **Authentication Provider**: Google OAuth 2.0 / Firebase Auth (Native Google Sign-In).
+- **Access Control Policy**: Strict Email Allow-List (Whitelist).
+- **Authorized Accounts**:
+  - `samiran@studiotunnel.com` (Owner / Managing Director)
+  - `yash@studiotunnel.com` (CEO / Senior Colorist)
+  - *Delegated Finance Officers* (Dynamically managed by Samiran Sonowal)
+- **Access Enforcement**: Any un-whitelisted Google account attempting login is blocked immediately with an **"Access Denied — Financial Portal Restricted"** security boundary.
+
+#### 3.2.2 Dashboard KPI Cards
 
 The top row of the dashboard shows four live key performance indicators, calculated directly from `Project_Billing_Ledger`:
 
@@ -165,7 +196,7 @@ The top row of the dashboard shows four live key performance indicators, calcula
 | **Pending Receivables** | Total outstanding receivable amount | `Invoiced` + `Payment Status` ≠ `Paid` |
 | **Total Collected** | Total amount where payment confirmed | `Payment Status` = `Paid` |
 
-#### 3.2.2 How Data Flows (Finance — Reading)
+#### 3.2.3 How Data Flows (Finance — Reading)
 
 The Finance App uses a **high-speed direct CSV read** from Google Sheets — not the Apps Script API — to load the billing ledger. This design ensures the dashboard always shows live data with **zero caching issues**.
 
@@ -176,7 +207,7 @@ https://docs.google.com/spreadsheets/d/1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uz
 ```mermaid
 sequenceDiagram
     participant User as 💼 Finance Team
-    participant FinApp as cineloom-comptroller.web.app
+    participant FinApp as cineloom-comptroller.studiotunnel.com
     participant Sheet as Google Sheets CSV Export
     participant GAS as BillingWebApp.gs (for writes only)
 
@@ -195,6 +226,39 @@ sequenceDiagram
     GAS-->>FinApp: 12. { success: true, pdfUrl, invoiceNumber }
     FinApp-->>User: 13. ✅ Toast: "Invoice ST/2026-27/010 sent!"
 ```
+
+---
+
+### 3.3 Automated Scheduled Bot & Payment Reminder Workflows
+
+The platform leverages serverless **Google Cloud Scheduler** and **Google Apps Script Installable Triggers** to execute time-based automated operations without manual intervention.
+
+#### 3.3.1 Saturday Night Executive Summary Bot
+- **Cron Schedule**: Every Saturday at 10:00 PM IST (`0 22 * * 6`)
+- **Recipients**: `samiran@studiotunnel.com` and `yash@studiotunnel.com`
+- **Automated Report Content**:
+  1. **Weekly Sales & Bookings per Colorist**: Total billable hours, session counts, and revenue breakdown across all colorists (`Yash Soni`, `Sujith Vijayan`, `Samiran Sonowal`, `Manoj Sahu`).
+  2. **Invoices Generated**: Summary of all GST tax invoices created and dispatched during the current week.
+  3. **Operational Concerns & Flagged Issues**: Unresolved task logs, delayed conforms, or flagged disputes requiring executive review.
+
+#### 3.3.2 Monday Morning Bank Reconciliation & Overdue Collections Bot
+- **Cron Schedule**: Every Monday at 9:00 AM IST (`0 9 * * 1`)
+- **Recipient**: `samiran@studiotunnel.com` (Owner / MD)
+- **Automated Action Payload**:
+  1. **Bank Statement Reconciliation Reminder**: Notification to match recent weekend HDFC bank credit deposits against pending ledger entries.
+  2. **Overdue Receivables List (> 30 Days)**: Summary of invoices where the 30-day payment cycle has expired without payment.
+  3. **Executive Follow-up Action List**: Highlighted list of high-value accounts requiring personal owner/MD phone call or email follow-up.
+
+#### 3.3.3 Staggered 30-Day Payment Reminder Automated Engine
+To enforce the studio's strict **30-Day Maximum Payment Cycle**, an automated cron script evaluates all active `Invoiced` projects daily and dispatches structured reminders according to the schedule below:
+
+| Trigger Timeline | Event / Notification Type | Target Audience | Primary Objective |
+| :---: | :--- | :--- | :--- |
+| **Day 21** (9 Days Before Due) | **Friendly Upcoming Due Notice** | Client Accounts Email | Soft reminder attaching invoice copy and bank details. |
+| **Day 23** (7 Days Before Due) | **Courtesy Check-in** | Client Accounts Email | Courtesy confirmation of invoice receipt and payment scheduling. |
+| **Day 25** (5 Days Before Due) | **Priority Reminder** | Client Accounts Email | Notification highlighting 5 days remaining in payment cycle. |
+| **Day 28** (2 Days Before Due) | **Final Pre-Due Alert** | Client Accounts & Finance | Urgent reminder alerting upcoming due date. |
+| **Day 30** (Due Date) | **Due Date Escalation Notice** | Client & `samiran@studiotunnel.com` | Official due date alert & escalation flag queued for executive follow-up. |
 
 ---
 
@@ -295,12 +359,12 @@ GROUP BY assigned_artist ORDER BY total_hours DESC;
 
 **Responsible**: All studio artists, colorists, and production staff  
 **Frequency**: Daily, at end of each work session  
-**App**: [sync-st.web.app](https://sync-st.web.app)
+**App**: [sync.studiotunnel.com](https://sync.studiotunnel.com)
 
 #### Steps:
 
 **Step 1 — Open the App**  
-Open [sync-st.web.app](https://sync-st.web.app) on your mobile phone or laptop. No installation needed; it works in any browser.
+Open [sync.studiotunnel.com](https://sync.studiotunnel.com) on your mobile phone or laptop. No installation needed; it works in any browser.
 
 **Step 2 — Enter PIN**  
 Type your assigned 4-digit PIN and tap **Login**. If you do not have a PIN, request one from the Line Producer.
@@ -327,7 +391,7 @@ Tap **Submit Task**. A green confirmation message will appear. The entry is now 
 
 **Responsible**: Line Producer or Studio Manager  
 **When**: Every time a new commercial, film, or project begins  
-**App**: [sync-st.web.app](https://sync-st.web.app)
+**App**: [sync.studiotunnel.com](https://sync.studiotunnel.com)
 
 #### Steps:
 
@@ -352,12 +416,12 @@ Tap **Submit Task**. A green confirmation message will appear. The entry is now 
 
 **Responsible**: Finance & Accounts Team  
 **When**: When a project has been completed and approved for billing by the Line Producer  
-**App**: [cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)
+**App**: [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)
 
 #### Steps:
 
-**Step 1 — Open Finance Dashboard**  
-Open [cineloom-comptroller.web.app](https://cineloom-comptroller.web.app). Data loads automatically (no login required — app is restricted to internal network by design).
+**Step 1 — Sign In to Finance Dashboard**  
+Open [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com). Click **Sign in with Google** and authenticate using your authorized Studio Tunnel Google account (`samiran@studiotunnel.com`, `yash@studiotunnel.com`, or delegated accounts). Un-whitelisted Google accounts will be denied access automatically.
 
 **Step 2 — Check the Ready to Bill Tab**  
 The **Ready to Bill** tab shows all projects where `Bill Status` is not yet `Invoiced`. This is your invoice queue.
@@ -391,7 +455,7 @@ A green toast notification confirms the invoice was sent. The project disappears
 
 **Responsible**: Finance & Accounts Team  
 **When**: Upon receiving bank payment or TDS certificate from client  
-**App**: [cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)
+**App**: [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)
 
 #### Steps:
 
@@ -431,6 +495,34 @@ A green toast notification confirms the invoice was sent. The project disappears
 **Step 5** — Escalate to the Line Producer to verify hours in the Atomic Task Logs and resolve with the client. Once resolved, the `Bill Status` is manually reset to `Active / In Progress` to re-enter the Ready to Bill queue.
 
 ---
+
+### SOP-006: Setting Up Employee Notifications (ntfy)
+
+**Responsible**: All studio artists, colorists, production staff, and finance team  
+**When**: During initial employee onboarding or workstation setup  
+**App**: [ntfy](https://ntfy.sh/) (iOS / Android)
+
+#### Overview:
+Studio Tunnel uses **ntfy** (a free, open-source notification service) to broadcast real-time operational alerts to all employee phones. This replaces WhatsApp groups for automated system alerts (e.g., invoice generation, task assignments, and critical studio updates).
+
+#### Steps to Set Up:
+
+**Step 1 — Download the App**  
+Download the **ntfy** app from your device's app store:
+- **iOS**: Apple App Store
+- **Android**: Google Play Store or F-Droid
+
+**Step 2 — Subscribe to Studio Topics**  
+Open the app and tap the **+** (plus) icon to add a new subscription. Enter the studio's designated notification topic name (request the exact topic name from your Line Producer, e.g., `studiotunnel-ops` or `studiotunnel-finance`).
+
+**Step 3 — Configure Settings**  
+- Tap **Subscribe**.
+- Ensure that notifications for the ntfy app are **enabled** in your phone's system settings.
+- For critical roles (e.g., Finance, Line Producers), you can set custom notification sounds or priority overrides within the ntfy app settings for specific topics.
+
+> ⚠️ **Important Rules**: 
+> - Do not mute these notifications during working hours, as time-sensitive operational alerts are routed exclusively through this channel.
+> - Never share internal studio topic names with external clients or unauthorized personnel.
 
 ## 🔒 7. Security, Governance & Data Integrity Rules
 
