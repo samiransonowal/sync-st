@@ -154,7 +154,7 @@ export const USERS = [
     role: ROLES.COLORIST, 
     studio: 'Studio 03', 
     isAdmin: false,
-    emails: ['manoj@studiotunnel.com', 'contactmanojsahu@gmail.com']
+    emails: ['contactmanojsahu@gmail.com']
   },
   { 
     id: 'u11', 
