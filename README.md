@@ -7,8 +7,9 @@
 **GCP Project ID:** `sync-st` (Project Number: `972643538415`)  
 **GitHub Repository:** [github.com/samiransonowal/sync-st](https://github.com/samiransonowal/sync-st)  
 **Live Web Applications:**
-- 🏢 **Operations App (SyncBoard):** [https://sync-st.web.app](https://sync-st.web.app)
-- 💰 **Finance App (Cineloom Comptroller):** [https://cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)
+- 🏢 **Operations App (SyncBoard):** [https://sync.studiotunnel.com](https://sync.studiotunnel.com) *(Fallback: [sync-st.web.app](https://sync-st.web.app))*
+- 💰 **Finance App (Cineloom Comptroller):** [https://cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com) *(Fallback: [cineloom-comptroller.web.app](https://cineloom-comptroller.web.app))*
+
 
 ---
 
