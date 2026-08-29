@@ -39,11 +39,26 @@ service firebase.storage {
       );
     }
 
+    // Master Studio Administrators
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserEmail() in [
+          'samiran@studiotunnel.com',
+          'samiran26sonowal@gmail.com',
+          'yash@studiotunnel.com',
+          'yashsoni@gmail.com',
+          'lab@studiotunnel.com'
+        ]
+      );
+    }
+
     // Team Chat Attachments (max 50MB)
     match /artifacts/{appId}/public/chat/{fileName} {
       allow read: if isApprovedUser();
       allow write: if isApprovedUser() && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if isAdmin();
     }
+
 
     // Long Format / Project Attachments (max 100MB)
     match /artifacts/{appId}/long_format_files/{fileName} {

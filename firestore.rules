@@ -41,21 +41,31 @@ service cloud.firestore {
       );
     }
 
-    // Executive & Line Production leadership roles
-    function isManagementOrProducer() {
+    // Master Studio Administrators
+    function isAdmin() {
       return isAuthenticated() && (
         getUserEmail() in [
           'samiran@studiotunnel.com',
           'samiran26sonowal@gmail.com',
           'yash@studiotunnel.com',
-          'tamash@studiotunnel.com',
-          'tamashansari4@gmail.com',
-          'prakash@studiotunnel.com',
-          'prakashjai.tunnel@gmail.com',
+          'yashsoni@gmail.com',
           'lab@studiotunnel.com'
         ]
       );
     }
+
+    // Executive & Line Production leadership roles
+    function isManagementOrProducer() {
+      return isAdmin() || (
+        getUserEmail() in [
+          'tamash@studiotunnel.com',
+          'tamashansari4@gmail.com',
+          'prakash@studiotunnel.com',
+          'prakashjai.tunnel@gmail.com'
+        ]
+      );
+    }
+
 
     // --- Data Collections (Scoped to artifacts hierarchy) ---
     match /artifacts/{appId}/public/data {
