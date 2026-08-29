@@ -1,150 +1,204 @@
-# sync-st — Financial Comptroller & Operations Platform
+# sync-st — Studio Operations & Financial Comptroller Platform
 
-**Release Version:** `v0.9` (*3tier-governance-dedicated-sheets*)  
-**Shortcode:** `sync-st`  
+**Platform:** `sync-st` | `cineloom-comptroller`  
 **Organization:** Cineloom Postworks Pvt. Ltd. / Studio Tunnel  
-**Lead Developer:** Samiran Sonowal (`samiran@studiotunnel.com` / GitHub: `samiransonowal`)  
-**Collaborator:** Jay (`jay@studiotunnel.com` / GitHub: `jd-tunnel`)  
+**Lead / Studio Owner:** Samiran Sonowal ([samiran@studiotunnel.com](mailto:samiran@studiotunnel.com) / GitHub: [@samiransonowal](https://github.com/samiransonowal))  
 **GCP Administration Account:** `lab@studiotunnel.com`  
 **GCP Project ID:** `sync-st` (Project Number: `972643538415`)  
-**Documentation Index:** [`documentation/documentation_index.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/documentation/documentation_index.md)  
-**Changelog & Version History:** [`CHANGELOG.md`](file:///Users/samiransonowal/Documents/GitHub/IN-gen-reimagined_v1/CHANGELOG.md)  
-**GitHub Repository:** [github.com/samiransonowal/sync-st](https://github.com/samiransonowal/sync-st)  
+**GitHub Repository:** [github.com/samiransonowal/st-comptroller](https://github.com/samiransonowal/st-comptroller)  
+**Live Web Applications:**
+- 🏢 **Operations App (SyncBoard):** [https://sync-st.web.app](https://sync-st.web.app)
+- 💰 **Finance App (Cineloom Comptroller):** [https://cineloom-comptroller.web.app](https://cineloom-comptroller.web.app)
+
+---
 
 > [!CAUTION]
 > ### 🛑 MANDATORY OUTBOUND EMAIL SAFETY RULE
-> **UNTIL EXPLICITLY NOTIFIED OTHERWISE, THIS AUTOMATION WILL NEVER SEND EMAILS DIRECTLY TO EXTERNAL CLIENTS UNDER ANY CIRCUMSTANCES.**  
+> **THIS AUTOMATION WILL NEVER SEND EMAILS DIRECTLY TO EXTERNAL CLIENTS UNDER ANY CIRCUMSTANCES.**  
 > All generated invoices, draft previews, and email dispatches are strictly locked and routed exclusively to authorized internal Studio Tunnel addresses:
 > - `finance@studiotunnel.com`
 > - `samiran@studiotunnel.com`
 > - `contact@studiotunnel.com`
 > - `tamash@studiotunnel.com`
 
-> [!CAUTION]
-> ### 🛑 BRANCH PROMOTION & GOVERNANCE MANDATE
-> - **`dev` Branch (Permanent Default)**: Primary branch for all development work. Direct commits and iterative feature branches must originate here.
-> - **`test` Branch (Restricted Sandbox)**: **HUMAN ESCALATION MANDATORY.** Attempting to work on or push to `test` is permitted only after explicit human testing verification and formal escalation.
-> - **`pml` Branch (Production Main Live)**: **2-PARTY CONFIRMATION REQUIRED.** Promoting or deploying to `pml` requires dual authorization from the Lead Developer/Author AND GCP Admin (`lab@studiotunnel.com`) via the interactive push consent system.
-
-
----
-
-## 🚀 Overview
-
-`sync-st` is the automated financial comptroller, vector PDF invoice generation system, and CI/CD deployment engine for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.**
+> [!IMPORTANT]
+> ### 🛡️ 3-TIER CLOUD-NATIVE ARCHITECTURE
+> - **100% Native on Google Cloud & Google Workspace:** Workflows, event triggers, and business logic run strictly within GCP, Firebase, and Google Workspace.
+> - **Zero Python Dependency in Production:** Production runtimes run on Node.js / TypeScript (Vite/React) and Google Apps Script (JavaScript V8).
+> - **Multi-Tier Branch Strategy:**
+>   - `dev` (Default Development Branch) &rarr; Staging Sheets & `st_comptroller_dev`
+>   - `test` (Automated Staging & Testing) &rarr; Test Sheets & `st_comptroller_test`
+>   - `pml` / `main` (Production Master Live) &rarr; Official Sheets & `st_comptroller_pml`
 
 ---
 
-## 🏗 System Architecture & Technology Stack
+## 🎯 Purpose & Overview
 
-1. **Google Apps Script (JavaScript V8)**: Dynamic UI bindings, custom trigger hooks, and vector PDF rendering engine (`engine/google-apps-script`).
-2. **Google BigQuery (`sync-st.st_comptroller`)**: Master relational data warehouse, tax modeling engine, and historical audit ledger.
-3. **Google Looker Studio**: Executive financial reporting portal & real-time overdue chase list dashboards.
-4. **Google Apps Script Master Engine (`sync-st`)**: Event-driven vector HTML web & PDF invoice generation, Drive archiving, and Gmail routing.
-5. **Automated 3-Silo CI/CD Pipeline**: Branch-mapped deployments (`dev`, `test`, `prod`) to isolated Google Apps Script cloud projects via GitHub Actions.
+**`sync-st`** (powered by **Cineloom Comptroller**) is the unified operations and financial management platform for **Studio Tunnel** / **Cineloom Postworks Pvt. Ltd.** 
+
+It replaces fragmented spreadsheets and disjointed tools with a modern, real-time reactive architecture:
+1. **Real-time Project & Operations Tracking:** Live project boards, studio booking schedules, client CRM directories, and operational checklists.
+2. **Automated Financial Comptroller:** Vector HTML & PDF invoice generation, GST tax modeling (CGST, SGST, IGST), TDS/withholding tracking, and Google Drive archival.
+3. **Data Warehouse & Audit Ledger:** High-performance BigQuery analytics connected to Google Looker Studio for executive overview and overdue payment chasing.
+4. **Instant Team Communication:** Automated WhatsApp templates, Discord/Ntfy push notifications, and team collaboration feeds.
+
+---
+
+## 🏗️ Applications & Core Tools
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Web Applications (Firebase Hosting)"]
+        OPS["🏢 Ops App (SyncBoard)<br/>sync-st.web.app"]
+        FIN["💰 Finance App (Cineloom Comptroller)<br/>cineloom-comptroller.web.app"]
+    end
+
+    subgraph RealtimeData ["Real-Time State & Data Layer"]
+        FS[("🔥 Firebase Firestore")]
+        AUTH["🔑 Firebase Authentication"]
+        SHEETS[("📊 Master Google Sheets<br/>Project_Billing_Ledger")]
+    end
+
+    subgraph AutomationEngine ["Cloud Automation & PDF Engine"]
+        GAS["⚡ Google Apps Script V8<br/>Vector PDF Renderer & Webhooks"]
+        DRIVE["📁 Google Drive Storage"]
+        MAIL["📬 Gmail Internal Audit Router"]
+    end
+
+    subgraph DataWarehouse ["Analytics & Business Intelligence"]
+        BQ[("🏛️ Google BigQuery<br/>st_comptroller")]
+        LOOKER["📈 Google Looker Studio"]
+    end
+
+    OPS <--> FS
+    FIN <--> FS
+    OPS <--> SHEETS
+    FIN <--> SHEETS
+    SHEETS --> GAS
+    GAS --> DRIVE
+    GAS --> MAIL
+    SHEETS --> BQ
+    BQ --> LOOKER
+```
+
+---
+
+### 1. 🏢 Operations App (`apps/ops-app`)
+A modern, responsive React 19 + Vite web application deployed on Firebase Hosting:
+* **Project Tracker:** Real-time visibility into project statuses (`Quoted`, `In Progress`, `Delivered`, `Invoiced`, `Paid`).
+* **Studio Bookings & Calendar:** Suite booking management for color grading, conform, and mastering suites.
+* **Client CRM:** Central directory of production houses, agency contacts, and billing profiles.
+* **Communication & Templates:** Quick-action WhatsApp dispatch templates, Discord notifications, and Ntfy push alerts.
+* **Team Utilities:** Interactive SOP Guides, IT Support Ticketing, Team Notepad, and Recycle Bin recovery.
+
+### 2. 💰 Finance App — Cineloom Comptroller (`apps/finance-app`)
+A specialized billing and accounting interface:
+* **Vector Invoice Generator:** Generates pixel-perfect, GST-compliant vector invoices.
+* **Multi-Currency & Tax Engine:** Auto-calculates CGST/SGST (intra-state) vs. IGST (inter-state), reverse charges, and PAN/GSTIN validation.
+* **Ledger Synchronization:** Bi-directional sync with master Google Sheets (`Project_Billing_Ledger`).
+* **Google Drive Document Vault:** Directly stores generated invoices in structured Drive folders (`ST-Invoices/FY26-27`).
+
+### 3. ⚡ Google Apps Script Automation Engine (`engine/google-apps-script`)
+* **`3_PdfAndEmailer.gs`:** Renders vector HTML templates to high-resolution PDF documents.
+* **`5_ScheduledBotsAndReminders.gs`:** Cron triggers for overdue payment reminders and booking alerts.
+* **`operations-app/TrackerWebApp.gs`:** REST webhook endpoints connecting frontend actions to Google Sheets.
+* **`DesignSystem.gs`:** Standardized visual tokens, typography (Lexend), and contrast ratios.
+
+### 4. 🏛️ Google BigQuery & Looker Studio
+* **Dataset:** `sync-st.st_comptroller`
+* **Features:** Partitioned event logs, automated SQL views, historical payment velocity analysis, and Looker Studio executive financial dashboards.
 
 ---
 
 ## 📁 Repository Structure
 
 ```text
-INVOICE_APP/
-├── CHANGELOG.md                         <-- Version History (Data Logic, Data Flow, UI/UX)
-├── README.md                            <-- Sole Root Project Overview & Navigation Index
-├── package.json                         <-- Node npm scripts & @google/clasp tooling
-├── .gitignore                           <-- Git Security Filters (.env, keys, clasp credentials)
+SYNC_ST/
+├── .github/workflows/gas-ci.yml        <-- Automated CI/CD Pipeline (dev/test/pml)
+├── .gitignore                          <-- Multi-layer security ignore rules
+├── firebase.json                       <-- Firebase Hosting, Firestore & Storage targets
+├── firestore.rules                     <-- Firestore security rules
+├── storage.rules                       <-- Cloud Storage security rules
+├── package.json                        <-- Deployment scripts & dependencies
 │
-├── ⚙️ .github/                          <-- GitHub Automation Workflows
-│   └── workflows/
-│       └── gas-ci.yml                   <-- Automated 3-Silo CI/CD Pipeline (dev/test/prod)
+├── apps/
+│   ├── ops-app/                        <-- React 19 + Vite Operations Web App (sync-st)
+│   │   ├── src/components/             <-- ProjectTracker, Bookings, CRM, SOPs, Chat
+│   │   ├── src/services/               <-- Firebase, Discord, Ntfy integrations
+│   │   └── package.json                <-- Frontend dependencies (Tailwind, Lucide, Firebase)
+│   └── finance-app/                    <-- Financial Comptroller & Invoicing UI
+│       └── public/                     <-- Web app frontend assets (cineloom-comptroller)
 │
-├── 🔐 credentials/                     <-- Security & Access Configuration
-│   ├── private/                         <-- [Git-Ignored] Local Secrets & Private Keys
-│   │   ├── secrets.env                 <-- Unified private secrets file
-│   │   └── client_secret_*.json        <-- Google OAuth client JSON key
-│   └── public/                          <-- Public Configuration Templates & Synced Data
-│       ├── credentials.env.example     <-- Safe public environment template for developers
-│       └── users.json                   <-- Synced public JSON user matrix
+├── engine/
+│   └── google-apps-script/             <-- Core Google Apps Script automation
+│       ├── 3_PdfAndEmailer.gs          <-- Vector PDF generator & internal email dispatcher
+│       ├── 5_ScheduledBotsAndReminders.gs <-- Automated cron bots and reminder triggers
+│       ├── DesignSystem.gs             <-- Corporate branding & styling tokens
+│       └── operations-app/             <-- Apps Script web app endpoint handlers
 │
-├── ⚙️ engine/                          <-- Automation Scripts & Processing Engine
-│   ├── google-apps-script/             <-- Google Apps Script Master Engine (sync-st)
-│   │   ├── 0_Config.gs                 <-- Core cell maps, constants, DRY_RUN_MODE & timezone
-│   │   ├── constants.gs                <-- External master spreadsheets (STEM Registry, Accounts)
-│   │   ├── 1_Utils.gs                  <-- Date formatters, currency converter & validators
-│   │   ├── 2_InvoiceParser.gs          <-- Sheet range & line-item parser
-│   │   ├── 3_PdfAndEmailer.gs          <-- Vector HTML & PDF generator with Drive permissions
-│   │   ├── 4_MenuUI.gs                 <-- Google Sheets top menu bar
-
-│   │   ├── 6_SelfTest.gs               <-- 7-point in-script self-test & reachability suite
-│   │   ├── DesignSystem.gs             <-- Lexend typography & color contrast spec
-│   │   ├── HTMLTemplate.html           <-- Vector HTML invoice print template
-│   │   └── apps_script_guide.md        <-- Beginner Guide for Artists & Apps Script Usage
-│   └── python-scripts/                 <-- Local Utilities & Dry-Run Test Scripts
-│       ├── dry_run_bigquery.py         <-- BigQuery SQL generation & data flow dry-run test
-│       ├── sync_users.py               <-- Auto-sync script (users.yaml -> users.json)
-│       └── test_system_integrity.py    <-- System Integrity & Validation Test Suite (100% Pass)
+├── documentation/                      <-- Complete Architectural Documentation & SOPs
+│   ├── SYSTEM_ARCHITECTURE_AND_OPERATIONS_MANUAL.md <-- Master SOP & Ops Manual
+│   ├── organization/users.yaml         <-- Verified organization directory & roles
+│   ├── master-specs/                   <-- Specifications & workflow designs
+│   └── tech-stack/                     <-- Technical deep-dives (01 to 08)
 │
-├── 🛠️ scripts/                         <-- CI/CD & Workstation Tooling
-│   ├── check_dev_environment.py        <-- Cross-platform OS diagnostic (Win/Mac/Debian/Rocky)
-│   └── setEnv.js                       <-- Dynamic branch resolver & .clasp.json generator
+├── credentials/
+│   ├── public/                         <-- Public metadata & credentials.env.example
+│   └── private/                        <-- [GIT-IGNORED] Local service accounts & secrets
 │
-├── 📚 documentation/                   <-- Specifications, Schemas & User Directory
-│   ├── ci_setup.md                     <-- CI/CD Deployment & 3-Silo Pipeline Guide
-│   ├── master-specs/                   <-- Master Specifications & Versions
-│   │   ├── cineloom-comptroller.md     <-- [LOCKED & READONLY] Version 1.0 Original Spec
-│   │   └── cineloom-comptroller-v2.md  <-- Version 2.0 Active BigQuery Hybrid Architecture Spec
-│   ├── schemas/                        <-- Database Schemas & DDL Scripts
-│   │   └── bigquery_schema.sql         <-- BigQuery st_fin_com_prog DDL script
-│   ├── organization/                   <-- Verified Team Directory & Identity Matrices
-│   │   ├── users.yaml                  <-- Master User Directory (YAML source of truth)
-│   │   ├── user_log.json               <-- Formatted Google Workspace Admin API export
-│   │   └── stem_user_registry.md       <-- STEM External User Registry Specification
-│   ├── tech-stack/                     <-- Technical Choice Modules (01 to 07)
-│   │   ├── 01_core_architecture.md
-│   │   ├── 02_database_and_warehouse.md
-│   │   ├── 03_automation_and_webhooks.md
-│   │   ├── 04_design_system_and_pdf.md
-│   │   ├── 05_security_and_credentials.md
-│   │   ├── 06_verification_and_dry_runs.md
-│   │   ├── 07_developer_environment_and_os_support.md
-│   │   └── tech_stack_index.md         <-- Tech Stack Module Navigation Index
-│   └── documentation_index.md          <-- Master Documentation Index
-│
-└── 📑 sample-documents/                <-- Reference Samples & Customer PDF Specs
-    └── 91_ZOMATO_RYZE STUDIO_REVISED INVOICE_010726.pdf
+└── sample-documents/                   <-- [GIT-IGNORED] Local confidential files & statements
+    └── bank statements/                <-- Private bank statements (Protected by 4-layer security)
 ```
 
 ---
 
-## 🔬 Workstation Diagnostic & Verification Commands
+## 🚀 Deployment & Development Commands
 
+### 💻 Local Development
 ```bash
-# 1. Check Local Workstation Readiness (Windows 11, macOS, Debian, Rocky Linux)
-npm run check-env
-# or: python scripts/check_dev_environment.py
+# Install root dependencies
+npm install
 
-# 2. Run System Integrity & Schema Validation Suite (100% Pass Rate)
-npm test
-# or: python engine/python-scripts/test_system_integrity.py
+# Run Operations App locally
+cd apps/ops-app
+npm install
+npm run dev
 
-# 3. Run BigQuery Data Flow & SQL Generation Dry-Run Engine
-python engine/python-scripts/dry_run_bigquery.py
+# Build Operations App for production
+npm run build
+```
 
-# 4. Sync Master YAML User Directory to Public JSON Matrix
-python engine/python-scripts/sync_users.py
+### 🚢 Firebase Hosting Deployments
+```bash
+# Deploy Operations App to https://sync-st.web.app
+npm run deploy:ops
+
+# Deploy Finance App to https://cineloom-comptroller.web.app
+npm run deploy:finance
+
+# Deploy all apps simultaneously
+npm run deploy:all
+```
+
+### ☁️ Google Apps Script (Clasp)
+```bash
+# Deploy Apps Script engine via Clasp
+npm run clasp-push
 ```
 
 ---
 
-## 🏷️ Release History Summary
+## 🔐 Security & Confidentiality Safeguards
 
-- **v0.8 (`services_apis_enabled`)**: GCP Enabled APIs & Zero-Cost Financial Ledger (`08_gcp_apis_and_free_tier_limits.md`), legacy Firebase web app ingestion specification (`firebase_ingestion_specification.md`), and raw staging schema for Firestore collections.
-- **v0.7 (`gas-cicd-pipeline`)**: Automated Google Apps Script CI/CD deployment (`sync-st-dev`, `sync-st-test`, `sync-st-pml`) with branch-to-project mapping, cross-platform workstation diagnostic suite (`scripts/check_dev_environment.py`), STEM User Registry integration (`constants.gs`), and full OS support documentation.
-- **v0.6 (`verification`)**: Created System Integrity & Validation Suite (`test_system_integrity.py` - 100% pass), BigQuery data flow dry runs, and tech stack verification module (`06_verification_and_dry_runs.md`).
-- **v0.5 (`user-details`)**: Provisioned exact verified Google Workspace Admin Directory data (`customer_id: C00yqau03`), created formatted `user_log.json`, and integrated account aliases/phones into `users.yaml` & `sync_users.py`.
-- **v0.4 (`additional structure`)**: Reorganized codebase into human-friendly folders (`engine/`, `documentation/`, `sample-documents/`) and renamed nested README files to specific names.
-- **v0.3 (`aesthetic`)**: Created `DesignSystem.gs` (Lexend font, 90%/20% gray contrast rules), added Google Drive live HTML web invoice creation with domain permissions, and locked v1 spec.
-- **v0.2 (`inclusion`)**: Provisioned full Google Workspace User Directory (`users.yaml` & `users.json`), IST `Asia/Kolkata` timezone standards, `YYYYMMDD` date formatting, and GSTIN/PAN regex validators.
-- **v0.1 (`genesis`)**: Decoupled Sheets Doorway from BigQuery Data Warehouse (`st_fin_com_prog`), added Looker Studio visual dashboard architecture & modular Apps Script vector PDF generator.
+1. **4-Layer Bank Statement & Secret Defense:**
+   - Multi-pattern rules in `.gitignore` and `.git/info/exclude`.
+   - Local `.git/hooks/pre-commit` and `.git/hooks/pre-push` that abort any commit/push containing confidential financial records or private keys.
+2. **Strict Internal Routing:** Outbound email dispatches are hard-locked to verified `@studiotunnel.com` addresses.
+3. **Branch Protection:** Code promotion from `dev` &rarr; `test` &rarr; `pml` is strictly governed.
 
-*(Full categorized breakdown in [`CHANGELOG.md`](file:///d:/Studio%20Tunnel/INVOICE_APP/CHANGELOG.md))*
+---
+
+## 📄 License & Governance
+
+Copyright &copy; 2026 **Cineloom Postworks Pvt. Ltd. / Studio Tunnel**. All rights reserved.  
+Confidential & Proprietary.
