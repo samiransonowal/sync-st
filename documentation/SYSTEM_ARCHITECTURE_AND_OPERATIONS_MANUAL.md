@@ -6,7 +6,7 @@
 > **Classification**: Internal — Not for External Distribution  
 > **Live Systems**:  
 > - **Studio Operations App** → [https://sync.studiotunnel.com](https://sync.studiotunnel.com)  
-> - **Finance & Billing App** → [https://cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)  
+> - **Finance & Billing App** → [https://comptroller.studiotunnel.com](https://comptroller.studiotunnel.com)  
 > - **Master Database Sheet (`LOG BOOK_SYNC`)** → [Google Sheet](https://docs.google.com/spreadsheets/d/1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uzkpg/edit)  
 > - **Data Warehouse (BigQuery)** → GCP Project `sync-st`, Dataset `log_book_sync`, Region `asia-south1` (Mumbai)  
 > - **Reporting** → Google Looker Studio (connected to BigQuery)
@@ -37,7 +37,7 @@ flowchart TD
 
     subgraph Apps ["🌐 Firebase Hosting — Global CDN Tier"]
         OpsApp["Studio Operations App\nsync.studiotunnel.com\n(Vite + React PWA)"]
-        FinApp["Finance & Billing App\ncineloom-comptroller.studiotunnel.com\n(HTML5 + Glassmorphism CSS)"]
+        FinApp["Finance & Billing App\ncomptroller.studiotunnel.com\n(HTML5 + Glassmorphism CSS)"]
     end
 
     subgraph GAS ["⚡ Serverless API Tier — Google Apps Script (V8 JS)"]
@@ -169,13 +169,13 @@ sequenceDiagram
 
 ---
 
-### App 2: Finance & Billing App (`cineloom-comptroller.studiotunnel.com`)
+### App 2: Finance & Billing App (`comptroller.studiotunnel.com`)
 
 **Purpose**: A secure, real-time financial command centre for Executive Management and Finance Administrators. Manage the entire billing lifecycle — from reviewing unbilled work to dispatching GST Tax Invoices and tracking receivables.
 
 #### 3.2.1 Security & Google OAuth Authentication Portal
 
-To ensure strict financial privacy and protect revenue/ledger data, access to `cineloom-comptroller.studiotunnel.com` is protected by a **Google-Hosted Authentication Gateway**:
+To ensure strict financial privacy and protect revenue/ledger data, access to `comptroller.studiotunnel.com` is protected by a **Google-Hosted Authentication Gateway**:
 
 - **Authentication Provider**: Google OAuth 2.0 / Firebase Auth (Native Google Sign-In).
 - **Access Control Policy**: Strict Email Allow-List (Whitelist).
@@ -207,7 +207,7 @@ https://docs.google.com/spreadsheets/d/1YEvUPQ_ZKJyUUPM2Ib-7ZnrliZoOs5Byhf9Ga8Uz
 ```mermaid
 sequenceDiagram
     participant User as 💼 Finance Team
-    participant FinApp as cineloom-comptroller.studiotunnel.com
+    participant FinApp as comptroller.studiotunnel.com
     participant Sheet as Google Sheets CSV Export
     participant GAS as BillingWebApp.gs (for writes only)
 
@@ -416,12 +416,12 @@ Tap **Submit Task**. A green confirmation message will appear. The entry is now 
 
 **Responsible**: Finance & Accounts Team  
 **When**: When a project has been completed and approved for billing by the Line Producer  
-**App**: [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)
+**App**: [comptroller.studiotunnel.com](https://comptroller.studiotunnel.com)
 
 #### Steps:
 
 **Step 1 — Sign In to Finance Dashboard**  
-Open [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com). Click **Sign in with Google** and authenticate using your authorized Studio Tunnel Google account (`samiran@studiotunnel.com`, `yash@studiotunnel.com`, or delegated accounts). Un-whitelisted Google accounts will be denied access automatically.
+Open [comptroller.studiotunnel.com](https://comptroller.studiotunnel.com). Click **Sign in with Google** and authenticate using your authorized Studio Tunnel Google account (`samiran@studiotunnel.com`, `yash@studiotunnel.com`, or delegated accounts). Un-whitelisted Google accounts will be denied access automatically.
 
 **Step 2 — Check the Ready to Bill Tab**  
 The **Ready to Bill** tab shows all projects where `Bill Status` is not yet `Invoiced`. This is your invoice queue.
@@ -455,7 +455,7 @@ A green toast notification confirms the invoice was sent. The project disappears
 
 **Responsible**: Finance & Accounts Team  
 **When**: Upon receiving bank payment or TDS certificate from client  
-**App**: [cineloom-comptroller.studiotunnel.com](https://cineloom-comptroller.studiotunnel.com)
+**App**: [comptroller.studiotunnel.com](https://comptroller.studiotunnel.com)
 
 #### Steps:
 
