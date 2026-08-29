@@ -57,13 +57,57 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: true
+  },
+  [ROLES.LEAD_COLORIST]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: false,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
+    [PERMISSIONS.EDIT_BOOKINGS]: true,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: false
+  },
+  [ROLES.COLORIST_ASSIST_HOD]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: false,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
+    [PERMISSIONS.EDIT_BOOKINGS]: true,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: false
+  },
+  [ROLES.CONFORMIST]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: false,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: false,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: false,
+    [PERMISSIONS.EDIT_BOOKINGS]: false,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: false
+  },
+  [ROLES.ASSIST]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: false,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: false,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: false,
+    [PERMISSIONS.EDIT_BOOKINGS]: false,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   }
 };
 
 export const USERS = [
   { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true, isArchived: true },
   { id: 'u0_b', name: 'Prakash Jai', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true },
-  { id: 'u0_c', name: 'Jay Dantara', role: ROLES.IT_ADMIN, studio: 'Office', isAdmin: true },
+  { id: 'u0_c', name: 'Jay Dantara', role: ROLES.IT_ADMIN, studio: 'Office', isAdmin: true, isArchived: true },
   { id: 'u1', name: 'Yash Soni', role: ROLES.LEAD_COLORIST, studio: 'Studio 01', isAdmin: true },
   { id: 'u2', name: 'Sujith Vijayan', role: ROLES.LEAD_COLORIST, studio: 'Studio 02', isAdmin: false },
   { id: 'u3', name: 'Samiran Sonowal', role: ROLES.COLORIST_MGMT, studio: 'Studio 03', isAdmin: true },
@@ -76,6 +120,7 @@ export const USERS = [
   { id: 'u10', name: 'Arjun Kohli', role: ROLES.ASSIST, studio: 'Assist Studio', isAdmin: false },
   { id: 'u11', name: 'Tamash Ansari', role: ROLES.PRODUCTION_DEPT, studio: 'Office', isAdmin: true, replacesUserId: 'u0_a' }
 ];
+
 
 /**
  * Returns an array containing the user's own ID and any predecessor ID they replaced
