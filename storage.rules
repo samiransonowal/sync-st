@@ -17,26 +17,33 @@ service firebase.storage {
           'samiran@studiotunnel.com',
           'yash@studiotunnel.com',
           'sujith@studiotunnel.com',
-          'contactmanojsahu@gmail.com',
+          'sujithnair991@gmail.com',
           'manoj@studiotunnel.com',
-          'tamashansari4@gmail.com',
+          'contactmanojsahu@gmail.com',
           'tamash@studiotunnel.com',
-          'prakashjai.tunnel@gmail.com',
+          'ansarialtamash04@gmail.com',
+          'tamashansari4@gmail.com',
           'prakash@studiotunnel.com',
-          'arjunkohli@gmail.com',
+          'prakashjai.tunnel@gmail.com',
           'arjun@studiotunnel.com',
-          'ayushdalvi@gmail.com',
+          'arjuns825@gmail.com',
+          'arjunkohli@gmail.com',
           'ayush@studiotunnel.com',
-          'vijaynool@gmail.com',
+          'dalviayush10@gmail.com',
+          'ayushdalvi@gmail.com',
           'vijay@studiotunnel.com',
+          'vijaynool17@gmail.com',
+          'vijaynool@gmail.com',
           'golu@studiotunnel.com',
           'golu.tunnel@gmail.com',
           'aaditya@studiotunnel.com',
+          'aadikamble11@gmail.com',
           'aaditya.tunnel@gmail.com',
           'lab@studiotunnel.com'
         ]
       );
     }
+
 
     // Master Studio Administrators
     function isAdmin() {

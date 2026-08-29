@@ -146,7 +146,7 @@ export const USERS = [
     role: ROLES.SR_COLORIST, 
     studio: 'Studio 02', 
     isAdmin: false,
-    emails: ['sujith@studiotunnel.com']
+    emails: ['sujith@studiotunnel.com', 'sujithnair991@gmail.com']
   },
   { 
     id: 'u4', 
@@ -163,7 +163,7 @@ export const USERS = [
     studio: 'Office', 
     isAdmin: true, 
     replacesUserId: 'u0_a',
-    emails: ['tamash@studiotunnel.com', 'tamashansari4@gmail.com']
+    emails: ['tamash@studiotunnel.com', 'ansarialtamash04@gmail.com', 'tamashansari4@gmail.com']
   },
   { 
     id: 'u0_b', 
@@ -179,7 +179,7 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['arjun@studiotunnel.com', 'arjunkohli@gmail.com']
+    emails: ['arjun@studiotunnel.com', 'arjuns825@gmail.com', 'arjunkohli@gmail.com']
   },
   { 
     id: 'u6', 
@@ -187,7 +187,7 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['ayush@studiotunnel.com', 'ayushdalvi@gmail.com']
+    emails: ['ayush@studiotunnel.com', 'dalviayush10@gmail.com', 'ayushdalvi@gmail.com']
   },
   { 
     id: 'u9', 
@@ -195,7 +195,7 @@ export const USERS = [
     role: ROLES.ASSISTANT_COLORIST, 
     studio: 'Assist Studio', 
     isAdmin: false,
-    emails: ['vijay@studiotunnel.com', 'vijaynool@gmail.com']
+    emails: ['vijay@studiotunnel.com', 'vijaynool17@gmail.com', 'vijaynool@gmail.com']
   },
   { 
     id: 'u5', 
@@ -211,8 +211,9 @@ export const USERS = [
     role: ROLES.CONFORMIST, 
     studio: 'Data & Conform', 
     isAdmin: false,
-    emails: ['aaditya@studiotunnel.com', 'aaditya.tunnel@gmail.com']
+    emails: ['aaditya@studiotunnel.com', 'aadikamble11@gmail.com', 'aaditya.tunnel@gmail.com']
   },
+
 
   // Archived predecessors for legacy data & log continuity
   { id: 'u0_a', name: 'Vaibhav Sorte', role: ROLES.LINE_PRODUCER, studio: 'Office', isAdmin: true, isArchived: true, emails: [] },
