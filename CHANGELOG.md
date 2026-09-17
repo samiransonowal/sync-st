@@ -8,6 +8,23 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
+### 📦 Release Version `v1.0` — *"party-ledger-recon-log-vyapar-import"*
+**Date:** 2026-09-17
+
+#### 👥 Party-Wise (Client) Financial Ledger
+- Added a **Party Ledger** tab to the Comptroller app aggregating every invoiced project by client into a live receivables summary (invoices, total invoiced, total received, TDS deducted, outstanding balance).
+- Added a per-client **Ledger Statement** modal with running-balance Dr/Cr entries (invoices as debits, settled bank/manual payments as credits) and a CSV export.
+
+#### 🏦 Bank Reconciliation Audit Trail
+- Introduced the `Bank_Reconciliation_Log` sheet (auto-created) as an append-only audit ledger written by every settlement path (auto-match settle, 1-click batch settle, manual link, manual payment record).
+- Added `getReconciliationLog` API action; the log now powers the Party Ledger's payment history entries.
+
+#### 📥 Vyapar Sales Report Import (Recurring Sync)
+- Added a **Vyapar Import** tab: upload a Vyapar "Sale Report" `.xlsx` export at any interval, preview new vs. already-known invoices, and bulk-upsert into `Project_Billing_Ledger` via the new `importVyaparRows` API action.
+- Matching is keyed on Invoice Number so re-importing the same or a refreshed export is idempotent — existing invoices are refreshed in place, only genuinely new invoices are appended, and manually-enriched fields (GSTIN, PAN, billing address, POC, email) are never clobbered.
+
+---
+
 ### 📦 Release Version `v0.9` — *"3tier-governance-dedicated-sheets"*
 **Date:** 2026-08-19  
 **Git Tag:** `v0.9` / `v0.9.0`  

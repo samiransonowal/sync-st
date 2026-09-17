@@ -529,6 +529,18 @@
       border: 1px solid rgba(59, 130, 246, 0.4);
     }
 
+    .badge-new {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+
+    .badge-refresh {
+      background: rgba(6, 182, 212, 0.18);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+
     .mono {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.82rem;
@@ -869,6 +881,12 @@
     <button class="tab-btn" id="tabLedgerBtn" onclick="switchTab('ledger')">
       📑 Invoiced Receivables Ledger <span class="tab-count" id="tabLedgerBadge">0</span>
     </button>
+    <button class="tab-btn" id="tabPartyBtn" onclick="switchTab('party')">
+      👥 Party Ledger <span class="tab-count" id="tabPartyBadge">0</span>
+    </button>
+    <button class="tab-btn" id="tabVyaparBtn" onclick="switchTab('vyapar')">
+      📥 Vyapar Import <span class="tab-count" id="tabVyaparBadge">0</span>
+    </button>
   </div>
 
   <!-- ========================================================= -->
@@ -1032,6 +1050,86 @@
   </div>
 
   <!-- ========================================================= -->
+  <!-- TAB 3: PARTY-WISE (CLIENT) FINANCIAL LEDGER               -->
+  <!-- ========================================================= -->
+  <div id="partyView" style="display: none;">
+    <div class="filter-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="partySearchInput" class="search-input" placeholder="Search by client / production house name..." oninput="renderPartyLedgerTable()">
+      </div>
+      <select id="partyStatusFilter" class="filter-select" onchange="renderPartyLedgerTable()">
+        <option value="ALL">All Clients</option>
+        <option value="OUTSTANDING">With Outstanding Balance</option>
+        <option value="SETTLED">Fully Settled</option>
+      </select>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Client / Production House</th>
+            <th>Invoices</th>
+            <th>Total Invoiced</th>
+            <th>Total Received</th>
+            <th>TDS Deducted</th>
+            <th>Outstanding Balance</th>
+            <th>Last Activity</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="partyLedgerTableBody">
+          <tr><td colspan="8" class="empty-state">Loading Party Ledger...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- TAB 4: VYAPAR SALES REPORT IMPORT (RECURRING SYNC)         -->
+  <!-- ========================================================= -->
+  <div id="vyaparView" style="display: none;">
+    <div class="recon-toolbar">
+      <div class="recon-toolbar-left">
+        <label class="btn-recon-action btn-recon-primary" style="cursor: pointer;">
+          <span>📂 Upload Vyapar Sale Report (.xlsx)</span>
+          <input type="file" id="vyaparFileInput" accept=".xlsx, .xls" style="display: none;" onchange="handleVyaparFileUpload(event)">
+        </label>
+        <span style="font-size: 0.78rem; color: var(--text-dim);">Export "Sale Report" from Vyapar and upload here anytime — matched invoices are refreshed in place, new ones are added. Safe to re-run on any interval.</span>
+      </div>
+      <div class="recon-toolbar-right">
+        <button class="btn-recon-action btn-recon-secondary" id="btnClearVyaparPreview" onclick="clearVyaparPreview()" style="display: none;">
+          <span>✕ Clear Preview</span>
+        </button>
+        <button class="btn-recon-action btn-recon-primary" id="btnSubmitVyaparImport" onclick="submitVyaparImport()" style="display: none;">
+          <span>⬆ Import Selected Rows</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 34px;"><input type="checkbox" id="vyaparSelectAll" onchange="toggleVyaparSelectAll(this.checked)"></th>
+            <th>Action</th>
+            <th>Invoice No</th>
+            <th>Invoice Date</th>
+            <th>Client / Party</th>
+            <th>Colorist</th>
+            <th>Amount (₹)</th>
+            <th>Payment Status</th>
+          </tr>
+        </thead>
+        <tbody id="vyaparPreviewTableBody">
+          <tr><td colspan="8" class="empty-state"><div class="empty-state-icon">📥</div>Upload a Vyapar Sale Report export (.xlsx) to preview new & updated invoices before importing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
   <!-- MODALS                                                    -->
   <!-- ========================================================= -->
 
@@ -1143,6 +1241,35 @@
     </div>
   </div>
 
+  <!-- Modal: Party (Client) Ledger Statement -->
+  <div id="partyStatementModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="partyStatementTitle">👥 Client Ledger Statement</h3>
+        <button class="btn-secondary" onclick="closeModal('partyStatementModal')" style="padding: 4px 8px;">✕</button>
+      </div>
+      <div id="partyStatementSummary" style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);"></div>
+      <div class="table-container" style="max-height: 420px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Particulars</th>
+              <th>Debit (₹)</th>
+              <th>Credit (₹)</th>
+              <th>Balance (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="partyStatementTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('partyStatementModal')">Close</button>
+        <button class="btn-recon-action btn-recon-primary" onclick="exportPartyStatementCSV()">📥 Export Statement CSV</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Bar -->
   <div id="toast" class="toast">
     <span id="toastIcon">✓</span>
@@ -1161,9 +1288,12 @@
 
     /** Global Application States */
     let rawProjectsData = [];
-    let currentTab = 'reconcile'; // 'reconcile' | 'ledger'
+    let currentTab = 'reconcile'; // 'reconcile' | 'ledger' | 'party' | 'vyapar'
     let bankStatementTransactions = [];
     let selectedTxnForManualMatch = null;
+    let reconciliationLog = [];
+    let vyaparPreviewRows = [];
+    let expandedPartyClient = null;
 
     /** Parse CSV text handling quoted fields with commas */
     function parseCSV(text) {
@@ -1291,6 +1421,15 @@
         .catch(err => {
           showToast('Failed to load data: ' + (err.message || err), 'danger');
         });
+
+      callBackend('getReconciliationLog')
+        .then(res => {
+          if (res.success) {
+            reconciliationLog = res.data || [];
+            if (currentTab === 'party') renderTables();
+          }
+        })
+        .catch(err => console.warn('Reconciliation log unavailable:', err));
     }
 
     function onDataLoaded(data) {
@@ -1329,16 +1468,24 @@
       document.getElementById('kpiReconRate').innerText = rate + '%';
       document.getElementById('kpiReconSummary').innerText = `${bankStatementTransactions.length} Credits Ingested (₹${totalStatementCredits.toLocaleString('en-IN')})`;
       document.getElementById('tabReconBadge').innerText = bankStatementTransactions.length;
+
+      // 5. Party Ledger badge (distinct clients with at least one invoice)
+      const distinctClients = new Set(rawProjectsData.map(p => (p.company || '').trim()).filter(Boolean));
+      document.getElementById('tabPartyBadge').innerText = distinctClients.size;
     }
 
     function switchTab(tabName) {
       currentTab = tabName;
       document.getElementById('tabReconBtn').classList.toggle('active', tabName === 'reconcile');
       document.getElementById('tabLedgerBtn').classList.toggle('active', tabName === 'ledger');
-      
+      document.getElementById('tabPartyBtn').classList.toggle('active', tabName === 'party');
+      document.getElementById('tabVyaparBtn').classList.toggle('active', tabName === 'vyapar');
+
       document.getElementById('reconView').style.display = tabName === 'reconcile' ? 'block' : 'none';
       document.getElementById('ledgerView').style.display = tabName === 'ledger' ? 'block' : 'none';
-      
+      document.getElementById('partyView').style.display = tabName === 'party' ? 'block' : 'none';
+      document.getElementById('vyaparView').style.display = tabName === 'vyapar' ? 'block' : 'none';
+
       renderTables();
     }
 
@@ -1349,8 +1496,12 @@
     function renderTables() {
       if (currentTab === 'reconcile') {
         renderReconTables();
-      } else {
+      } else if (currentTab === 'ledger') {
         renderLedgerTable();
+      } else if (currentTab === 'party') {
+        renderPartyLedgerTable();
+      } else if (currentTab === 'vyapar') {
+        renderVyaparPreviewTable();
       }
     }
 
@@ -1625,6 +1776,409 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    /* ========================================================= */
+    /* PARTY-WISE (CLIENT) FINANCIAL LEDGER                      */
+    /* ========================================================= */
+
+    /** Groups all invoiced projects by client into a running receivables summary. */
+    function buildPartyLedgerSummary() {
+      const invoiced = rawProjectsData.filter(p => p.status === 'Invoiced' || p.invoiceNumber);
+      const byClient = {};
+
+      invoiced.forEach(p => {
+        const client = (p.company || 'General Client').trim() || 'General Client';
+        if (!byClient[client]) {
+          byClient[client] = { client, invoiceCount: 0, totalInvoiced: 0, totalPending: 0, totalTds: 0, lastActivity: null };
+        }
+        const bucket = byClient[client];
+        bucket.invoiceCount += 1;
+        bucket.totalInvoiced += (p.amount || 0);
+        bucket.totalPending += (p.amountPending !== undefined && p.amountPending !== null ? p.amountPending : (p.amount || 0));
+        bucket.totalTds += (p.tdsAmount || 0);
+        const activityDate = p.lastActivity ? new Date(p.lastActivity) : null;
+        if (activityDate && !isNaN(activityDate.getTime()) && (!bucket.lastActivity || activityDate > bucket.lastActivity)) {
+          bucket.lastActivity = activityDate;
+        }
+      });
+
+      return Object.values(byClient).map(b => ({
+        ...b,
+        totalReceived: Math.max(0, b.totalInvoiced - b.totalPending)
+      })).sort((a, b) => b.totalPending - a.totalPending || a.client.localeCompare(b.client));
+    }
+
+    /** Optimistically mirrors a just-settled payment into the local reconciliation log so the
+     *  Party Ledger reflects it immediately, without waiting on a full dashboard reload. */
+    function pushLocalReconEntry(inv, creditAmount, tdsAmount, status, narration, source) {
+      if (!inv) return;
+      reconciliationLog.unshift({
+        uuid: `local-${Date.now()}`,
+        reconciledAt: new Date(),
+        bankTxnDate: '',
+        narration: narration || `Payment update — ${status}`,
+        creditAmount: creditAmount !== undefined && creditAmount !== null ? creditAmount : Math.max(0, (inv.amount || 0) - (inv.amountPending || 0)),
+        projectCode: inv.projectCode,
+        invoiceNumber: inv.invoiceNumber,
+        clientName: inv.company,
+        tdsDeducted: tdsAmount || 0,
+        status: status,
+        source: source || 'Manual'
+      });
+    }
+
+    function renderPartyLedgerTable() {
+      const tbody = document.getElementById('partyLedgerTableBody');
+      tbody.innerHTML = '';
+
+      const search = (document.getElementById('partySearchInput')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('partyStatusFilter')?.value || 'ALL';
+
+      let parties = buildPartyLedgerSummary();
+      if (search) parties = parties.filter(p => p.client.toLowerCase().includes(search));
+      if (statusFilter === 'OUTSTANDING') parties = parties.filter(p => p.totalPending > 0);
+      if (statusFilter === 'SETTLED') parties = parties.filter(p => p.totalPending <= 0);
+
+      if (parties.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">👥</div>No clients match this filter.</td></tr>';
+        return;
+      }
+
+      parties.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(p.client)}</strong></td>
+          <td class="mono">${p.invoiceCount}</td>
+          <td>₹${p.totalInvoiced.toLocaleString('en-IN')}</td>
+          <td style="color: var(--brand-green);">₹${p.totalReceived.toLocaleString('en-IN')}</td>
+          <td style="color: var(--text-muted);">₹${p.totalTds.toLocaleString('en-IN')}</td>
+          <td><strong style="color:${p.totalPending > 0 ? 'var(--brand-amber)' : 'var(--brand-green)'}">₹${p.totalPending.toLocaleString('en-IN')}</strong></td>
+          <td class="mono" style="font-size: 0.78rem;">${p.lastActivity ? formatDate(p.lastActivity) : '-'}</td>
+          <td style="text-align: right;">
+            <button class="btn-action btn-secondary" onclick="openPartyStatementModal('${escapeHtml(p.client).replace(/'/g, "\\'")}')">
+              View Statement
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /** Builds a running-balance statement for one client: invoices are debits, settled/reconciled payments are credits. */
+    function buildPartyStatementRows(clientName) {
+      const entries = [];
+
+      rawProjectsData
+        .filter(p => (p.company || '').trim() === clientName && (p.status === 'Invoiced' || p.invoiceNumber))
+        .forEach(p => {
+          entries.push({
+            date: p.invoiceDate ? new Date(p.invoiceDate) : new Date(0),
+            particulars: `Invoice ${p.invoiceNumber || p.projectCode} — ${p.projectName || ''}`.trim(),
+            debit: p.amount || 0,
+            credit: 0
+          });
+        });
+
+      reconciliationLog
+        .filter(l => (l.clientName || '').trim() === clientName && l.status !== 'Import')
+        .forEach(l => {
+          entries.push({
+            date: l.reconciledAt ? new Date(l.reconciledAt) : new Date(0),
+            particulars: `Payment received — ${l.narration || l.invoiceNumber || l.projectCode || 'Bank Credit'}${l.tdsDeducted ? ` (TDS ₹${l.tdsDeducted.toLocaleString('en-IN')})` : ''}`,
+            debit: 0,
+            credit: l.creditAmount || 0
+          });
+        });
+
+      entries.sort((a, b) => a.date - b.date);
+
+      let running = 0;
+      return entries.map(e => {
+        running += (e.debit - e.credit);
+        return { ...e, balance: running };
+      });
+    }
+
+    function openPartyStatementModal(clientName) {
+      expandedPartyClient = clientName;
+      document.getElementById('partyStatementTitle').innerText = `👥 ${clientName} — Ledger Statement`;
+
+      const rows = buildPartyStatementRows(clientName);
+      const totalDebit = rows.reduce((s, r) => s + r.debit, 0);
+      const totalCredit = rows.reduce((s, r) => s + r.credit, 0);
+      const closingBalance = rows.length ? rows[rows.length - 1].balance : 0;
+
+      document.getElementById('partyStatementSummary').innerHTML = `
+        <span>Total Invoiced: <strong style="color: var(--text-main);">₹${totalDebit.toLocaleString('en-IN')}</strong></span>
+        <span>Total Received: <strong style="color: var(--brand-green);">₹${totalCredit.toLocaleString('en-IN')}</strong></span>
+        <span>Closing Balance: <strong style="color:${closingBalance > 0 ? 'var(--brand-amber)' : 'var(--brand-green)'}">₹${closingBalance.toLocaleString('en-IN')}</strong></span>
+      `;
+
+      const tbody = document.getElementById('partyStatementTableBody');
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No ledger entries for this client yet.</td></tr>';
+      } else {
+        tbody.innerHTML = rows.map(r => `
+          <tr>
+            <td class="mono" style="font-size: 0.78rem;">${formatDate(r.date)}</td>
+            <td>${escapeHtml(r.particulars)}</td>
+            <td>${r.debit ? '₹' + r.debit.toLocaleString('en-IN') : '-'}</td>
+            <td style="color: var(--brand-green);">${r.credit ? '₹' + r.credit.toLocaleString('en-IN') : '-'}</td>
+            <td><strong style="color:${r.balance > 0 ? 'var(--brand-amber)' : 'var(--brand-green)'}">₹${r.balance.toLocaleString('en-IN')}</strong></td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('partyStatementModal').style.display = 'flex';
+    }
+
+    function exportPartyStatementCSV() {
+      if (!expandedPartyClient) return;
+      const rows = buildPartyStatementRows(expandedPartyClient);
+      let csv = 'Date,Particulars,Debit (INR),Credit (INR),Balance (INR)\n';
+      rows.forEach(r => {
+        csv += `"${formatDate(r.date)}","${(r.particulars || '').replace(/"/g, '""')}",${r.debit || 0},${r.credit || 0},${r.balance}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${expandedPartyClient.replace(/[^a-z0-9]+/gi, '_')}_Ledger_Statement_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Client ledger statement exported.', 'success');
+    }
+
+    /* ========================================================= */
+    /* VYAPAR SALES REPORT IMPORT (RECURRING, IDEMPOTENT SYNC)    */
+    /* ========================================================= */
+
+    const VYAPAR_COLORIST_CODES = {
+      'yash soni': 'YS',
+      'sujith vijayan': 'SV',
+      'samiran sonowal': 'SS',
+      'manoj sahu': 'MS'
+    };
+
+    async function handleVyaparFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showToast(`Parsing Vyapar report ${file.name}...`, 'info');
+
+      try {
+        const rows = await parseVyaparFile(file);
+        if (rows.length === 0) {
+          showToast('No invoice rows found in this file. Make sure you exported the "Sale Report" from Vyapar.', 'danger');
+          return;
+        }
+
+        const existingByInvoice = {};
+        rawProjectsData.forEach(p => {
+          if (p.invoiceNumber) existingByInvoice[p.invoiceNumber.toString().trim().toLowerCase()] = p;
+        });
+
+        vyaparPreviewRows = rows.map(r => {
+          const existing = existingByInvoice[(r.invoiceNumber || '').toString().trim().toLowerCase()];
+          return {
+            ...r,
+            action: existing ? 'UPDATE' : 'NEW',
+            existingClient: existing ? existing.company : null,
+            selected: true
+          };
+        });
+
+        currentTab = 'vyapar';
+        switchTab('vyapar');
+        const newCount = vyaparPreviewRows.filter(r => r.action === 'NEW').length;
+        const updateCount = vyaparPreviewRows.filter(r => r.action === 'UPDATE').length;
+        showToast(`✓ Parsed ${vyaparPreviewRows.length} invoices — ${newCount} new, ${updateCount} to refresh. Review & import below.`, 'success');
+      } catch (err) {
+        console.error('Vyapar parse error:', err);
+        showToast(`Error parsing Vyapar report: ${err.message}`, 'danger');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    /** Parses a Vyapar "Sale Report" export (.xlsx), tolerant of the export's variable header row offset. */
+    function parseVyaparFile(file) {
+      return new Promise((resolve, reject) => {
+        if (typeof XLSX === 'undefined') {
+          reject(new Error('SheetJS library is loading, please try again.'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+
+            // Locate the "Sale Report" sheet (fallback to first sheet with an "Invoice No" header).
+            const saleSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('sale')) || workbook.SheetNames[0];
+            const saleRows = XLSX.utils.sheet_to_json(workbook.Sheets[saleSheetName], { header: 1, defval: '', raw: false });
+
+            let headerIdx = -1;
+            const colIdx = {};
+            for (let r = 0; r < Math.min(saleRows.length, 15); r++) {
+              const row = (saleRows[r] || []).map(c => String(c).toLowerCase().trim());
+              row.forEach((cell, c) => {
+                if (cell.includes('invoice no') && colIdx.invoiceNumber === undefined) colIdx.invoiceNumber = c;
+                if (cell === 'date' && colIdx.invoiceDate === undefined) colIdx.invoiceDate = c;
+                if (cell.includes('party name') && colIdx.clientName === undefined) colIdx.clientName = c;
+                if (cell.includes('party phone') && colIdx.phone === undefined) colIdx.phone = c;
+                if (cell.includes('payment type') && colIdx.paymentType === undefined) colIdx.paymentType = c;
+                if (cell.includes('total amount') && colIdx.totalAmount === undefined) colIdx.totalAmount = c;
+                if (cell.includes('payment status') && colIdx.paymentStatus === undefined) colIdx.paymentStatus = c;
+                if (cell.includes('description') && colIdx.description === undefined) colIdx.description = c;
+              });
+              if (colIdx.invoiceNumber !== undefined) { headerIdx = r; break; }
+            }
+
+            if (headerIdx === -1) {
+              resolve([]);
+              return;
+            }
+
+            // Optional "Item Details" sheet: Invoice No./Txn No. -> Item Name, used for the project name.
+            const itemMap = {};
+            const itemSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('item detail'));
+            if (itemSheetName) {
+              const itemRows = XLSX.utils.sheet_to_json(workbook.Sheets[itemSheetName], { header: 1, defval: '', raw: false });
+              let itemHeaderIdx = -1, invCol = -1, nameCol = -1;
+              for (let r = 0; r < Math.min(itemRows.length, 10); r++) {
+                const row = (itemRows[r] || []).map(c => String(c).toLowerCase().trim());
+                row.forEach((cell, c) => {
+                  if (cell.includes('invoice no') && invCol === -1) invCol = c;
+                  if (cell.includes('item name') && nameCol === -1) nameCol = c;
+                });
+                if (invCol !== -1) { itemHeaderIdx = r; break; }
+              }
+              if (itemHeaderIdx !== -1) {
+                for (let r = itemHeaderIdx + 1; r < itemRows.length; r++) {
+                  const row = itemRows[r];
+                  if (!row) continue;
+                  const invId = String(row[invCol] || '').replace(/\.0$/, '').trim();
+                  const itemName = String(row[nameCol] || '').trim();
+                  if (!invId || !itemName) continue;
+                  if (!itemMap[invId]) itemMap[invId] = [];
+                  if (!itemMap[invId].includes(itemName)) itemMap[invId].push(itemName);
+                }
+              }
+            }
+
+            const results = [];
+            for (let r = headerIdx + 1; r < saleRows.length; r++) {
+              const row = saleRows[r];
+              if (!row || row.length === 0) continue;
+              const invoiceNumber = String(row[colIdx.invoiceNumber] || '').replace(/\.0$/, '').trim();
+              if (!invoiceNumber) continue;
+
+              const paymentTypeRaw = colIdx.paymentType !== undefined ? String(row[colIdx.paymentType] || '') : '';
+              const coloristMatch = paymentTypeRaw.match(/Colorist:\s*([A-Za-z\s]+)/i);
+              const colorist = coloristMatch ? coloristMatch[1].trim() : '';
+
+              results.push({
+                invoiceNumber: invoiceNumber,
+                invoiceDate: colIdx.invoiceDate !== undefined ? standardizeDateString(row[colIdx.invoiceDate]) : '',
+                clientName: colIdx.clientName !== undefined ? String(row[colIdx.clientName] || '').trim() : '',
+                phone: colIdx.phone !== undefined ? String(row[colIdx.phone] || '').trim() : '',
+                colorist: colorist,
+                totalAmount: colIdx.totalAmount !== undefined ? cleanAmountValue(row[colIdx.totalAmount]) : 0,
+                paymentStatus: colIdx.paymentStatus !== undefined ? (String(row[colIdx.paymentStatus] || '').trim() || 'Unpaid') : 'Unpaid',
+                description: colIdx.description !== undefined ? String(row[colIdx.description] || '').trim() : '',
+                projectName: (itemMap[invoiceNumber] || []).join(' / ')
+              });
+            }
+
+            resolve(results);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function renderVyaparPreviewTable() {
+      const tbody = document.getElementById('vyaparPreviewTableBody');
+      const clearBtn = document.getElementById('btnClearVyaparPreview');
+      const submitBtn = document.getElementById('btnSubmitVyaparImport');
+
+      document.getElementById('tabVyaparBadge').innerText = vyaparPreviewRows.length;
+
+      if (vyaparPreviewRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">📥</div>Upload a Vyapar Sale Report export (.xlsx) to preview new & updated invoices before importing.</td></tr>';
+        clearBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+        return;
+      }
+
+      clearBtn.style.display = 'inline-flex';
+      submitBtn.style.display = 'inline-flex';
+
+      tbody.innerHTML = vyaparPreviewRows.map((r, idx) => {
+        const badge = r.action === 'NEW'
+          ? '<span class="badge badge-new">✦ New</span>'
+          : '<span class="badge badge-refresh">↻ Refresh</span>';
+        return `
+          <tr>
+            <td><input type="checkbox" ${r.selected ? 'checked' : ''} onchange="toggleVyaparRowSelection(${idx}, this.checked)"></td>
+            <td>${badge}</td>
+            <td class="mono">${escapeHtml(r.invoiceNumber)}</td>
+            <td class="mono" style="font-size: 0.78rem;">${escapeHtml(r.invoiceDate)}</td>
+            <td>${escapeHtml(r.clientName)}${r.existingClient && r.existingClient !== r.clientName ? ` <span style="color: var(--text-dim); font-size: 0.72rem;">(was: ${escapeHtml(r.existingClient)})</span>` : ''}</td>
+            <td>${escapeHtml(r.colorist || '-')}</td>
+            <td>₹${(r.totalAmount || 0).toLocaleString('en-IN')}</td>
+            <td><span class="badge ${r.paymentStatus.toLowerCase() === 'paid' ? 'badge-paid' : 'badge-unpaid'}">${escapeHtml(r.paymentStatus)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function toggleVyaparRowSelection(idx, checked) {
+      if (vyaparPreviewRows[idx]) vyaparPreviewRows[idx].selected = checked;
+    }
+
+    function toggleVyaparSelectAll(checked) {
+      vyaparPreviewRows.forEach(r => r.selected = checked);
+      renderVyaparPreviewTable();
+    }
+
+    function clearVyaparPreview() {
+      vyaparPreviewRows = [];
+      renderVyaparPreviewTable();
+      showToast('Vyapar import preview cleared.', 'info');
+    }
+
+    function submitVyaparImport() {
+      const selected = vyaparPreviewRows.filter(r => r.selected);
+      if (selected.length === 0) {
+        showToast('Select at least one row to import.', 'danger');
+        return;
+      }
+
+      if (!confirm(`Import ${selected.length} invoice(s) from the Vyapar Sale Report into the live Master Ledger?`)) return;
+
+      showToast(`Importing ${selected.length} Vyapar invoice(s)...`, 'info');
+      const importedBy = (auth.currentUser && auth.currentUser.email) || JSON.parse(sessionStorage.getItem('st_comptroller_user') || '{}').email || '';
+
+      callBackend('importVyaparRows', { rows: selected, importedBy: importedBy })
+        .then(res => {
+          if (res.success) {
+            vyaparPreviewRows = [];
+            showToast(res.message, 'success');
+            loadDashboardData();
+            renderVyaparPreviewTable();
+          } else {
+            showToast('Import failed: ' + res.message, 'danger');
+          }
+        })
+        .catch(err => {
+          showToast('Import failed: ' + (err.message || err), 'danger');
+        });
     }
 
     /* ========================================================= */
@@ -1975,7 +2529,11 @@
         projectCode: inv.projectCode,
         newPaymentStatus: 'Paid',
         amountPending: 0,
-        tdsAmount: txn.estimatedTds || inv.tdsAmount || 0
+        tdsAmount: txn.estimatedTds || inv.tdsAmount || 0,
+        narration: txn.narration,
+        refNo: txn.refNo,
+        creditAmount: txn.amount,
+        source: 'Bank Reconciliation'
       })
       .then(res => {
         if (res.success) {
@@ -1983,6 +2541,7 @@
           inv.paymentStatus = 'Paid';
           inv.amountPending = 0;
           inv.tdsAmount = txn.estimatedTds || inv.tdsAmount || 0;
+          pushLocalReconEntry(inv, txn.amount, inv.tdsAmount, 'Paid', txn.narration, 'Bank Reconciliation');
           updateKPIs();
           renderTables();
           showToast(`✓ Settled ${inv.projectCode} against Bank Ref ${txn.refNo}!`, 'success');
@@ -2014,12 +2573,18 @@
           projectCode: inv.projectCode,
           newPaymentStatus: 'Paid',
           amountPending: 0,
-          tdsAmount: txn.estimatedTds || inv.tdsAmount || 0
+          tdsAmount: txn.estimatedTds || inv.tdsAmount || 0,
+          narration: txn.narration,
+          refNo: txn.refNo,
+          creditAmount: txn.amount,
+          source: 'Bank Reconciliation'
         }).then(res => {
           if (res.success) {
             txn.isSettled = true;
             inv.paymentStatus = 'Paid';
             inv.amountPending = 0;
+            inv.tdsAmount = txn.estimatedTds || inv.tdsAmount || 0;
+            pushLocalReconEntry(inv, txn.amount, inv.tdsAmount, 'Paid', txn.narration, 'Bank Reconciliation');
           }
         });
       });
@@ -2098,11 +2663,16 @@
       closeModal('manualMatchModal');
       showToast(`Saving manual reconciliation for ${pCode}...`, 'info');
 
+      const manualCreditAmount = selectedTxnForManualMatch ? selectedTxnForManualMatch.amount : undefined;
       callBackend('updatePaymentStatus', {
         projectCode: pCode,
         newPaymentStatus: status,
         amountPending: pending,
-        tdsAmount: tds
+        tdsAmount: tds,
+        narration: selectedTxnForManualMatch ? selectedTxnForManualMatch.narration : undefined,
+        refNo: utr,
+        creditAmount: manualCreditAmount,
+        source: 'Manual Bank Link'
       })
       .then(res => {
         if (res.success) {
@@ -2115,6 +2685,7 @@
             inv.paymentStatus = status;
             inv.amountPending = pending;
             inv.tdsAmount = tds;
+            pushLocalReconEntry(inv, manualCreditAmount, tds, status, selectedTxnForManualMatch ? selectedTxnForManualMatch.narration : `Manual reconciliation — ${status}`, 'Manual Bank Link');
           }
           updateKPIs();
           renderTables();
@@ -2167,7 +2738,7 @@
       closeModal('paymentModal');
       showToast(`Saving payment record for ${projectCode}...`, 'info');
 
-      callBackend('updatePaymentStatus', { projectCode: projectCode, newPaymentStatus: status, amountPending: amountPending, tdsAmount: tds })
+      callBackend('updatePaymentStatus', { projectCode: projectCode, newPaymentStatus: status, amountPending: amountPending, tdsAmount: tds, source: 'Manual Payment Record' })
         .then(res => {
           if (res.success) {
             showToast(res.message, 'success');

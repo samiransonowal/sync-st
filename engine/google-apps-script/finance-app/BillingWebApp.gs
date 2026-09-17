@@ -35,11 +35,21 @@ function doPost(e) {
         break;
 
       case 'updatePaymentStatus':
-        result = updatePaymentStatus(data.projectCode, data.newPaymentStatus, data.amountPending, data.tdsAmount);
+        result = updatePaymentStatus(data.projectCode, data.newPaymentStatus, data.amountPending, data.tdsAmount, {
+          narration: data.narration, refNo: data.refNo, creditAmount: data.creditAmount, source: data.source
+        });
         break;
 
       case 'flagDisputedProject':
         result = flagDisputedProject(data.projectCode, data.reason);
+        break;
+
+      case 'getReconciliationLog':
+        result = { success: true, data: getReconciliationLog() };
+        break;
+
+      case 'importVyaparRows':
+        result = importVyaparRows(data.rows || [], data.importedBy || '');
         break;
 
       default:
@@ -315,8 +325,10 @@ function generateAndDispatchInvoice(projectCode, targetFolderId, overrideRecipie
 
 /**
  * Updates payment status and pending amount for a project in Project_Billing_Ledger.
+ * `logContext` (optional) carries bank-statement details so the settlement is also
+ * written to the Bank_Reconciliation_Log audit trail (used by the Party Ledger view).
  */
-function updatePaymentStatus(projectCode, newPaymentStatus, amountPending, tdsAmount) {
+function updatePaymentStatus(projectCode, newPaymentStatus, amountPending, tdsAmount, logContext) {
   try {
     const ss = SpreadsheetApp.openById(ACCOUNTS_SPREADSHEET_ID);
     const sheet = ss.getSheetByName('Project_Billing_Ledger');
@@ -324,6 +336,7 @@ function updatePaymentStatus(projectCode, newPaymentStatus, amountPending, tdsAm
 
     const data = sheet.getDataRange().getValues();
     let updated = false;
+    let matchedRow = null;
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] && data[i][0].toString().trim() === projectCode.toString().trim()) {
@@ -335,16 +348,117 @@ function updatePaymentStatus(projectCode, newPaymentStatus, amountPending, tdsAm
           sheet.getRange(i + 1, 31).setValue(Number(tdsAmount));                 // Col AE: TDS [BIL-31]
         }
         sheet.getRange(i + 1, 32).setValue(new Date());                          // Col AF: Last Activity [BIL-32]
+        matchedRow = data[i];
         updated = true;
         break;
       }
     }
 
     if (!updated) throw new Error(`Project ${projectCode} not found.`);
+
+    // Best-effort audit trail write. Never fail the payment update because logging failed.
+    try {
+      const invoiceNumber = matchedRow[1] || projectCode;
+      const clientName = matchedRow[4] || '';
+      const invoiceAmount = Number(matchedRow[17] || 0);
+      const creditAmount = (logContext && logContext.creditAmount !== undefined && logContext.creditAmount !== null)
+        ? Number(logContext.creditAmount)
+        : Math.max(0, invoiceAmount - Number(amountPending || 0));
+
+      appendReconciliationLogEntry_({
+        bankTxnDate: (logContext && logContext.narration) ? '' : Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd/MM/yyyy'),
+        narration: (logContext && logContext.narration) || `Manual payment update — ${newPaymentStatus}`,
+        refNo: (logContext && logContext.refNo) || '',
+        creditAmount: creditAmount,
+        projectCode: projectCode,
+        invoiceNumber: invoiceNumber,
+        clientName: clientName,
+        tdsDeducted: Number(tdsAmount || 0),
+        status: newPaymentStatus,
+        source: (logContext && logContext.source) || 'Manual'
+      });
+    } catch (logErr) {
+      Logger.log('Reconciliation log write skipped: ' + logErr.toString());
+    }
+
     return { success: true, message: `Payment status for ${projectCode} updated to ${newPaymentStatus}.` };
   } catch(err) {
     Logger.log('Error updating payment status: ' + err.toString());
     return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Bank_Reconciliation_Log sheet: append-only audit ledger of every credit that has
+ * been matched/settled against an invoice. Powers the per-client Party Ledger statement.
+ */
+const RECON_LOG_SHEET_NAME = 'Bank_Reconciliation_Log';
+const RECON_LOG_HEADERS = [
+  'UUID', 'Reconciled At', 'Bank Txn Date', 'Narration / UTR Ref', 'Credit Amount (INR)',
+  'Project Code', 'Invoice Number', 'Client Name', 'TDS Deducted (INR)', 'Status', 'Source'
+];
+
+function getOrCreateReconLogSheet_() {
+  const ss = SpreadsheetApp.openById(ACCOUNTS_SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(RECON_LOG_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(RECON_LOG_SHEET_NAME);
+    sheet.getRange(1, 1, 1, RECON_LOG_HEADERS.length).setValues([RECON_LOG_HEADERS]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function appendReconciliationLogEntry_(entry) {
+  const sheet = getOrCreateReconLogSheet_();
+  const uuid = Utilities.getUuid();
+  sheet.appendRow([
+    uuid,
+    new Date(),
+    entry.bankTxnDate || '',
+    entry.narration || '',
+    Number(entry.creditAmount || 0),
+    entry.projectCode || '',
+    entry.invoiceNumber || '',
+    entry.clientName || '',
+    Number(entry.tdsDeducted || 0),
+    entry.status || '',
+    entry.source || 'Manual'
+  ]);
+  return uuid;
+}
+
+/**
+ * Returns the full Bank_Reconciliation_Log audit trail, newest first.
+ * Used to build the party-wise (client-wise) financial ledger in the frontend.
+ */
+function getReconciliationLog() {
+  try {
+    const sheet = getOrCreateReconLogSheet_();
+    const rows = sheet.getDataRange().getValues();
+    const log = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0]) continue;
+      log.push({
+        uuid: r[0],
+        reconciledAt: r[1],
+        bankTxnDate: r[2],
+        narration: r[3],
+        creditAmount: Number(r[4] || 0),
+        projectCode: r[5],
+        invoiceNumber: r[6],
+        clientName: r[7],
+        tdsDeducted: Number(r[8] || 0),
+        status: r[9],
+        source: r[10]
+      });
+    }
+    log.reverse();
+    return log;
+  } catch (err) {
+    Logger.log('Error reading reconciliation log: ' + err.toString());
+    return [];
   }
 }
 
@@ -413,4 +527,130 @@ function numberToWordsINR(amount) {
   if (amount === 0) return 'Zero Rupees Only';
   const val = Math.floor(amount);
   return numToWords(val) + ' Rupees Only';
+}
+
+/* ============================================================= */
+/* VYAPAR SALES REPORT IMPORT (recurring, idempotent upsert)     */
+/* ============================================================= */
+
+const VYAPAR_COLORIST_CODES = {
+  'yash soni': 'YS',
+  'sujith vijayan': 'SV',
+  'samiran sonowal': 'SS',
+  'manoj sahu': 'MS'
+};
+
+/**
+ * Bulk-upserts rows parsed from a Vyapar "Sale Report" export into Project_Billing_Ledger.
+ * Matching is done on Invoice Number (Col B), so re-importing the same/updated Vyapar
+ * export on a later date never creates duplicate rows — existing invoices are refreshed
+ * in place and only genuinely new invoices are appended.
+ * `rows`: [{ invoiceNumber, invoiceDate, clientName, phone, colorist, totalAmount,
+ *            paymentStatus, description, projectName }]
+ */
+function importVyaparRows(rows, importedBy) {
+  try {
+    if (!rows || !rows.length) return { success: true, created: 0, updated: 0, skipped: 0, message: 'No rows to import.' };
+
+    const ss = SpreadsheetApp.openById(ACCOUNTS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Project_Billing_Ledger');
+    if (!sheet) throw new Error('Project_Billing_Ledger sheet not found.');
+
+    const data = sheet.getDataRange().getValues();
+
+    // Index existing rows by Invoice Number (Col B, index 1) for O(1) lookup.
+    const invoiceIndex = {};
+    let maxSeq = 0;
+    for (let i = 1; i < data.length; i++) {
+      const invNo = (data[i][1] || '').toString().trim().toLowerCase();
+      if (invNo) invoiceIndex[invNo] = i; // 0-based data row index
+      const codeMatch = (data[i][0] || '').toString().match(/^(\d+)_/);
+      if (codeMatch) maxSeq = Math.max(maxSeq, parseInt(codeMatch[1], 10));
+    }
+
+    let created = 0, updated = 0, skipped = 0;
+    const now = new Date();
+    const newRows = [];
+
+    rows.forEach(row => {
+      const invNo = (row.invoiceNumber || '').toString().trim();
+      if (!invNo) { skipped++; return; }
+      const key = invNo.toLowerCase();
+      const totalAmt = Number(row.totalAmount || 0);
+      const payStatus = (row.paymentStatus || 'Unpaid').toString().trim() || 'Unpaid';
+      const pendingAmt = payStatus.toLowerCase() === 'paid' ? 0 : totalAmt;
+      const coloristCode = VYAPAR_COLORIST_CODES[(row.colorist || '').toString().trim().toLowerCase()] || 'OT';
+
+      if (invoiceIndex.hasOwnProperty(key)) {
+        // Existing invoice: refresh live billing fields, never clobber manually-enriched
+        // fields (email, GSTIN, PAN, billing address, POC) that Vyapar exports don't carry.
+        const rowIdx = invoiceIndex[key]; // 0-based
+        const sheetRow = rowIdx + 1;
+        sheet.getRange(sheetRow, 3).setValue(row.invoiceDate || data[rowIdx][2]);    // Col C: Invoice Date
+        if (totalAmt > 0) sheet.getRange(sheetRow, 18).setValue(totalAmt);            // Col R: GST Bill Amount
+        sheet.getRange(sheetRow, 28).setValue(payStatus);                             // Col AB: Payment Status
+        sheet.getRange(sheetRow, 29).setValue(pendingAmt);                            // Col AC: Amount Pending
+        sheet.getRange(sheetRow, 32).setValue(now);                                   // Col AF: Last Activity
+        updated++;
+      } else {
+        maxSeq += 1;
+        const projectCode = `${maxSeq.toString().padStart(4, '0')}_MIS_${coloristCode}`;
+        const subtotal = totalAmt > 0 ? Math.round((totalAmt / 1.18) * 100) / 100 : 0;
+        newRows.push([
+          projectCode,                       // A: Project Code ID
+          invNo,                             // B: Invoice Number
+          row.invoiceDate || '',              // C: Invoice Date
+          row.projectName || '',              // D: Project Name
+          row.clientName || '',               // E: Company / Client
+          '',                                 // F: Director
+          row.colorist || '',                 // G: Colorist
+          'Vyapar Import',                    // H: Type
+          '', '', '', '', '', '',             // I-N: Hrs fields (n/a for Vyapar rows)
+          '',                                 // O: Rate
+          '',                                 // P: Discount
+          subtotal,                           // Q: Subtotal Amount
+          totalAmt,                           // R: GST Bill Amount
+          '',                                 // S: POC Name
+          '',                                 // T: Client Email
+          row.phone || '',                    // U: Phone
+          '', '',                             // V-W: GSTIN, PAN
+          '',                                 // X: Billing Address
+          row.description || '',              // Y: Notes / Scope
+          '',                                 // Z: PO No.
+          'Invoiced',                         // AA: Bill Status
+          payStatus,                          // AB: Payment Status
+          pendingAmt,                         // AC: Amount Pending
+          '',                                 // AD: Due Date
+          '',                                 // AE: TDS Amount
+          now                                 // AF: Last Activity
+        ]);
+        created++;
+      }
+    });
+
+    if (newRows.length) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+    }
+
+    try {
+      appendReconciliationLogEntry_({
+        narration: `Vyapar Sales Report import (${created} new, ${updated} updated, ${skipped} skipped)`,
+        status: 'Import',
+        source: `Vyapar Import${importedBy ? ' — ' + importedBy : ''}`
+      });
+    } catch (logErr) {
+      Logger.log('Vyapar import log write skipped: ' + logErr.toString());
+    }
+
+    return {
+      success: true,
+      created: created,
+      updated: updated,
+      skipped: skipped,
+      message: `Vyapar import complete: ${created} new invoice(s) added, ${updated} existing invoice(s) refreshed, ${skipped} row(s) skipped (missing invoice number).`
+    };
+  } catch (err) {
+    Logger.log('Error importing Vyapar rows: ' + err.toString());
+    return { success: false, message: err.message };
+  }
 }
