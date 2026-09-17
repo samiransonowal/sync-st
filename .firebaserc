@@ -12,13 +12,6 @@
           "cineloom-comptroller"
         ]
       }
-    },
-    "studio-tunnel": {
-      "hosting": {
-        "ops-app": [
-          "studio-tunnel"
-        ]
-      }
     }
   },
   "etags": {}
