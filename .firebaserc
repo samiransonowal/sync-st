@@ -1,15 +1,15 @@
 {
   "projects": {
-    "default": "sync-st"
+    "default": "studio-tunnel"
   },
   "targets": {
-    "sync-st": {
+    "studio-tunnel": {
       "hosting": {
         "ops-app": [
-          "sync-st"
+          "studio-tunnel"
         ],
         "finance-app": [
-          "cineloom-comptroller"
+          "studio-tunnel-311"
         ]
       }
     }

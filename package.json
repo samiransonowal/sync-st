@@ -7,9 +7,9 @@
     "lint": "echo \"[PASS] Linting check passed.\"",
     "test": "echo \"[PASS] Cloud-native verification suite.\"",
     "clasp-push": "npx clasp push --force",
-    "deploy:ops": "npx firebase deploy --project sync-st --only hosting:ops-app",
-    "deploy:finance": "npx firebase deploy --project sync-st --only hosting:finance-app",
-    "deploy:all": "npx firebase deploy --project sync-st --only hosting"
+    "deploy:ops": "npx firebase deploy --project studio-tunnel --only hosting:ops-app",
+    "deploy:finance": "npx firebase deploy --project studio-tunnel --only hosting:finance-app",
+    "deploy:all": "npx firebase deploy --project studio-tunnel --only hosting"
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2",
