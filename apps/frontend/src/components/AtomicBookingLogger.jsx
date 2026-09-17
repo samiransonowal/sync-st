@@ -219,6 +219,7 @@ export const AtomicBookingLogger = ({ onComplete }) => {
                 <option value="Studio 01 Booking">Studio 01 Booking</option>
                 <option value="Studio 02 Booking">Studio 02 Booking</option>
                 <option value="Studio 03 Booking">Studio 03 Booking</option>
+                <option value="Studio 04 Booking">Studio 04 Booking</option>
                 <option value="Color Grade">Color Grade</option>
                 <option value="Conform Session">Conform Session</option>
                 <option value="Assist Session">Assist Session</option>

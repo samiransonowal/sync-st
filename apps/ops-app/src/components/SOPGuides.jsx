@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, ShieldAlert, Timer, Activity, AlertCircle, Crown, Briefcase, HeartHandshake, EyeOff, Zap, PhoneOff, MessageCircle, Monitor, Layers, CheckCircle2, Volume2, HardDrive, Clock, ChevronDown, ChevronRight, FileText } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import guideMd from '../../README/guide.md?raw';
-import startMd from '../../README/start.md?raw';
-import techStackMd from '../../README/tech-stack.md?raw';
-import deployMd from '../../README/deploy.md?raw';
-import credMd from '../../README/cred.md?raw';
+import { BookOpen, ShieldAlert, Timer, Activity, AlertCircle, Crown, Briefcase, HeartHandshake, EyeOff, Zap, PhoneOff, MessageCircle, Monitor, Layers, CheckCircle2, Volume2, HardDrive, Clock } from 'lucide-react';
 
 const shiftData = [
   { name: 'Yash Soni', studio: 'Studio 01', color: 'studio01', left: 27.08, width: 37.5, label: '11:30A — 8:30P' },
@@ -25,6 +18,7 @@ const barColors = {
   studio01: 'bg-indigo-500/[.35] border border-indigo-500/50',
   studio02: 'bg-emerald-500/[.30] border border-emerald-500/[.45]',
   studio03: 'bg-amber-500/[.30] border border-amber-500/[.45]',
+  studio04: 'bg-rose-500/[.30] border border-rose-500/[.45]',
   conform: 'bg-cyan-400/[.25] border border-cyan-400/40',
   assist: 'bg-purple-500/[.30] border border-purple-500/[.45]',
   operations: 'bg-rose-500/[.25] border border-rose-500/40',
@@ -34,6 +28,7 @@ const legendItems = [
   { label: 'Studio 01', color: 'bg-indigo-500/50' },
   { label: 'Studio 02', color: 'bg-emerald-500/50' },
   { label: 'Studio 03', color: 'bg-amber-500/50' },
+  { label: 'Studio 04', color: 'bg-rose-500/50' },
   { label: 'Conform', color: 'bg-cyan-400/[.45]' },
   { label: 'Assist', color: 'bg-purple-500/50' },
   { label: 'Operations', color: 'bg-rose-500/[.45]' },
@@ -46,39 +41,7 @@ for (let i = 0; i <= 24; i++) {
   if (i < 24) gridLines.push({ pct: ((i + 0.5) / 24) * 100, type: 'half' });
 }
 
-const mdComponents = {
-  h1: ({node, ...props}) => <h3 className="text-xl font-black text-white uppercase tracking-widest mt-6 mb-4" {...props} />,
-  h2: ({node, ...props}) => <h4 className="text-lg font-black text-indigo-400 uppercase tracking-widest mt-8 mb-4 border-b border-slate-800 pb-2 flex items-center gap-2" {...props} />,
-  h3: ({node, ...props}) => <h5 className="text-md font-bold text-emerald-400 mt-6 mb-2 uppercase tracking-wider text-xs" {...props} />,
-  h4: ({node, ...props}) => <h6 className="text-sm font-bold text-slate-200 mt-4 mb-2" {...props} />,
-  p: ({node, ...props}) => <p className="text-sm text-slate-400 leading-relaxed mb-4" {...props} />,
-  ul: ({node, ...props}) => <ul className="list-disc pl-5 space-y-2 mb-6 text-sm text-slate-400" {...props} />,
-  ol: ({node, ...props}) => <ol className="list-decimal pl-5 space-y-2 mb-6 text-sm text-slate-400" {...props} />,
-  li: ({node, ...props}) => <li className="pl-1" {...props} />,
-  a: ({node, ...props}) => <a className="text-indigo-400 hover:text-indigo-300 font-bold underline decoration-indigo-500/30 underline-offset-4" {...props} />,
-  code: ({node, inline, className, children, ...props}) => {
-    return inline ? (
-      <code className="bg-slate-800/80 px-1.5 py-0.5 rounded text-indigo-300 font-mono text-xs border border-slate-700/50" {...props}>{children}</code>
-    ) : (
-      <div className="bg-slate-900/60 p-5 rounded-2xl font-mono text-xs border border-slate-800 mb-6 overflow-x-auto text-emerald-400 shadow-inner">
-        <code {...props}>{children}</code>
-      </div>
-    )
-  },
-  strong: ({node, ...props}) => <strong className="text-slate-200 font-bold" {...props} />,
-  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500/50 pl-5 py-2 mb-6 italic text-slate-500 bg-slate-900/30 rounded-r-xl" {...props} />,
-  table: ({node, ...props}) => (
-    <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl overflow-hidden mb-6 mt-4 w-full overflow-x-auto">
-      <table className="w-full text-left text-xs whitespace-nowrap" {...props} />
-    </div>
-  ),
-  thead: ({node, ...props}) => <thead className="bg-slate-800/50 text-slate-500 font-black uppercase tracking-widest text-[10px]" {...props} />,
-  th: ({node, ...props}) => <th className="px-6 py-4" {...props} />,
-  tbody: ({node, ...props}) => <tbody className="divide-y divide-slate-800/50" {...props} />,
-  tr: ({node, ...props}) => <tr className="hover:bg-slate-800/20 transition-colors" {...props} />,
-  td: ({node, ...props}) => <td className="px-6 py-4 text-slate-300 font-medium" {...props} />,
-  hr: ({node, ...props}) => <hr className="border-slate-800 my-8 border-dashed" {...props} />
-};
+
 
 const SOPGuides = () => {
   return (
@@ -113,6 +76,7 @@ const SOPGuides = () => {
             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">STUDIO 01</p><p className="text-xs text-slate-400 uppercase tracking-widest">GRADE - HDR + SDR + 5.1</p></div>
             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">STUDIO 02</p><p className="text-xs text-slate-400 uppercase tracking-widest">GRADE - SDR + Stereo</p></div>
             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">STUDIO 03</p><p className="text-xs text-slate-400 uppercase tracking-widest">MASTERING & GRADE - SDR + HDR + Stereo</p></div>
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">STUDIO 04</p><p className="text-xs text-slate-400 uppercase tracking-widest">GRADE & FINISHING - SDR + Stereo</p></div>
             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">ASSIST STUDIO</p><p className="text-xs text-slate-400 uppercase tracking-widest">COLOR GRADE - ASSIST 1 + ASSIST 2 / CONFORM 2</p></div>
             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"><p className="font-bold text-white mb-1">DATA & CONFORM</p><p className="text-xs text-slate-400 uppercase tracking-widest">CONFORM 1</p></div>
           </div>
@@ -561,101 +525,6 @@ const SOPGuides = () => {
           </div>
         </section>
 
-        <section id="app-guides" className="pt-8 border-t border-slate-800">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-indigo-500/10 rounded-xl shrink-0">
-              <FileText className="text-indigo-400" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white uppercase tracking-widest leading-none">Tunnel Task Management Web App Guides</h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Technical Documentation & Internal Manuals</p>
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            <DocumentationItem
-              title="1. Application Philosophy & Logic"
-              subtitle="Core pillars and workflow logic of the Tunnel system"
-            >
-              <div className="markdown-body">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{guideMd}</ReactMarkdown>
-              </div>
-            </DocumentationItem>
-
-            <DocumentationItem
-               title="2. Studio Tunnel: Quick Start & Troubleshooting"
-               subtitle="Environment initialization and common fixes"
-            >
-               <div className="markdown-body">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{startMd}</ReactMarkdown>
-               </div>
-            </DocumentationItem>
-
-            <DocumentationItem
-               title="3. Tech Stack (Developer Reference)"
-               subtitle="Frameworks, libraries, and integration logic"
-            >
-               <div className="markdown-body">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{techStackMd}</ReactMarkdown>
-               </div>
-            </DocumentationItem>
-
-            <DocumentationItem
-               title="4. Mandatory Firebase Deployment Workflow"
-               subtitle="Strict stability sequence: Build → Preview → Promote"
-            >
-               <div className="markdown-body">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{deployMd}</ReactMarkdown>
-               </div>
-            </DocumentationItem>
-
-            <DocumentationItem
-               title="5. Project Credentials & Ownership"
-               subtitle="Identity mapping and deployment permissions"
-            >
-               <div className="markdown-body">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{credMd}</ReactMarkdown>
-               </div>
-            </DocumentationItem>
-          </div>
-        </section>
-
-      </div>
-    </div>
-  );
-};
-
-const DocumentationItem = ({ title, subtitle, children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className={`bg-slate-800/30 border transition-all duration-300 rounded-3xl overflow-hidden ${isOpen ? 'border-slate-700 ring-1 ring-slate-700/50 shadow-2xl bg-slate-800/50' : 'border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'}`}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-6 md:px-8 md:py-7 flex items-center justify-between group/btn text-left"
-      >
-        <div className="flex items-center gap-4">
-          <div className={`p-2 rounded-lg transition-colors ${isOpen ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 group-hover/btn:bg-slate-700'}`}>
-            <FileText size={18} />
-          </div>
-          <div>
-            <h4 className={`font-black uppercase tracking-widest text-sm transition-colors ${isOpen ? 'text-white' : 'text-slate-300 group-hover/btn:text-white'}`}>{title}</h4>
-            {subtitle && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{subtitle}</p>}
-          </div>
-        </div>
-        <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover/btn:text-white'}`}>
-          <ChevronDown size={20} />
-        </div>
-      </button>
-
-      {isOpen && (
-        <div className="px-6 pb-8 md:px-8 md:pb-10 animate-in slide-in-from-top-2 duration-300">
-          <div className="h-px bg-slate-800/60 mb-8 mx-0" />
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default SOPGuides;

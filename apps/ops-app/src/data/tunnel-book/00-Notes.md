@@ -1,0 +1,1 @@
+[PROPSAL] All exports have to be QC'd by 2 personnel. QC has to be done on a calibrated monitor or apple device. Once QC done said personnel has to add a note on the first mark with QC by, date, time. 

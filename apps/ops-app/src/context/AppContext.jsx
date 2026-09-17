@@ -49,6 +49,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
+    let isInitialMessagesLoad = true;
     const collections = ['tasks', 'leaves', 'bookings', 'user_profiles', 'projects', 'messages', 'notepads', 'shift_logs', 'submissions', 'long_format_logs', 'wa_templates'];
     const unsubscribes = [];
 
@@ -69,9 +70,15 @@ export function AppContextProvider({ children }) {
           setMessages(prev => {
             const prevIds = new Set(prev.map(m => m.id));
             // Only trigger toast for live incoming messages, preventing mention toast storm on initial login
-            if (prev.length > 0) {
+            if (!isInitialMessagesLoad && prev.length > 0) {
               sorted.forEach(msg => {
-                if (!prevIds.has(msg.id) && msg.senderId !== currentUserProfile?.id && msg.mentions?.includes(currentUserProfile?.id)) {
+                const isRecent = msg.createdAt && (Date.now() - new Date(msg.createdAt).getTime() < 3 * 60 * 1000);
+                if (
+                  !prevIds.has(msg.id) &&
+                  msg.senderId !== currentUserProfile?.id &&
+                  msg.mentions?.includes(currentUserProfile?.id) &&
+                  isRecent
+                ) {
                   setToast({ message: `@You were mentioned by ${msg.senderName}`, type: 'mention' });
                   setTimeout(() => setToast(null), 5000);
                 }
@@ -79,6 +86,7 @@ export function AppContextProvider({ children }) {
             }
             return sorted;
           });
+          isInitialMessagesLoad = false;
         }
 
         if (collName === 'user_profiles') {

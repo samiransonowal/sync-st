@@ -12,6 +12,7 @@ credentials/public/*.json
 Thumbs.db
 .vscode/
 .idea/
+.claude/
 
 # Node dependencies
 node_modules/

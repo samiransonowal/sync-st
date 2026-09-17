@@ -95,10 +95,10 @@ const TeamNotepad = ({ db, appId, currentUserProfile, notepads, setNotepads, waT
   return (
     <div className="animate-in fade-in space-y-8">
       <header>
-        <h2 className="text-2xl md:text-3xl font-black text-white flex items-center">
-          <FileText className="mr-3 text-indigo-400" /> Notepad
+        <h2 className="text-xl md:text-2xl font-black text-white flex items-center">
+          <FileText className="mr-3 text-indigo-400" /> Notepad & Scratchpad
         </h2>
-        <p className="text-slate-400 font-medium text-sm md:text-base">Your private notes and a shared team scratchpad.</p>
+        <p className="text-slate-400 font-medium text-xs md:text-sm mt-0.5">Your private staff notes, shared team scratchpad, and delivery templates.</p>
       </header>
 
       {/* PERSONAL + SHARED NOTEPADS */}
@@ -135,7 +135,7 @@ const TeamNotepad = ({ db, appId, currentUserProfile, notepads, setNotepads, waT
               <Users size={20} className="text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-black text-white uppercase tracking-widest text-sm">Team Notepad</h3>
+              <h3 className="font-black text-white uppercase tracking-widest text-sm">Team Scratchpad</h3>
               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">Shared · Visible to everyone</p>
             </div>
             <span className="ml-auto text-[9px] font-black text-slate-600 uppercase tracking-widest animate-pulse">auto-save</span>

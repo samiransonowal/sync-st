@@ -23,7 +23,7 @@
     },
     {
       "target": "finance-app",
-      "public": "apps/finance-app/public",
+      "public": "apps/finance-app/dist",
       "ignore": [
         "firebase.json",
         "**/.*",

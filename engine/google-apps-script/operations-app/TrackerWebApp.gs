@@ -125,6 +125,20 @@ function doPost(e) {
         ensureSheetHeaders();
         result = { success: true, message: 'All 9 sheet headers formatted and standardized on LOG BOOK_SYNC!' };
         break;
+      case 'sendMorningBookings':
+      case 'sendDailyBookingEmail':
+        result = sendMorningBookingsDailyEmail(data);
+        break;
+      case 'deleteBooking':
+      case 'cancelBooking':
+        result = handleCancelBooking(data);
+        break;
+      case 'setupDailyMorningTrigger':
+        result = setupDailyMorningTrigger();
+        break;
+      case 'sendWelcomeEmail':
+        result = handleSendWelcomeEmail(data);
+        break;
     }
 
     return ContentService.createTextOutput(JSON.stringify(result))
@@ -1384,3 +1398,547 @@ function handleAddClient(data) {
   SpreadsheetApp.flush();
   return { success: true, message: `Client ${name} added to CRM` };
 }
+
+/**
+ * ☀️ Daily Morning Bookings Email Digest Bot
+ * Queries today's scheduled bookings from Atomic_Task_Logs,
+ * uses smart chronological & room-overlap filtering to eliminate removed/stale bookings,
+ * resolves client names, auto-installs 7:30 AM IST daily trigger,
+ * and sends an executive morning briefing to the team.
+ */
+function sendMorningBookingsDailyEmail(options) {
+  options = options || {};
+  const tz = 'Asia/Kolkata';
+  const now = new Date();
+  const todayStr = options.targetDate || Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+  const displayDate = Utilities.formatDate(now, tz, 'dd MMMM yyyy');
+
+  // Auto-install daily 7:30 AM IST trigger if not already registered
+  try {
+    const existing = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'sendMorningBookingsDailyEmail');
+    if (!existing) {
+      ScriptApp.newTrigger('sendMorningBookingsDailyEmail')
+        .timeBased()
+        .everyDays(1)
+        .atHour(7)
+        .nearMinute(30)
+        .create();
+      Logger.log('✅ Auto-installed 7:30 AM IST daily trigger.');
+    }
+  } catch(e) {
+    Logger.log('Trigger auto-check note: ' + e.message);
+  }
+
+  const defaultRecipients = [
+    'samiran@studiotunnel.com',
+    'yash@studiotunnel.com',
+    'art@studiotunnel.com',
+    'manoj@studiotunnel.com',
+    'tamash@studiotunnel.com',
+    'golu@studiotunnel.com',
+    'contact@studiotunnel.com',
+    'ops@studiotunnel.com',
+    'sujithnair991@gmail.com',
+    'Dalviayush10@gmail.com',
+    'arjuns825@gmail.com',
+    'golu.tunnel@gmail.com',
+    'aadikamble11@gmail.com',
+    'prakashjai.tunnel@gmail.com',
+    'natasha.cineloom@gmail.com'
+  ];
+
+  let recipients = defaultRecipients;
+  if (options.recipients) {
+    recipients = Array.isArray(options.recipients) 
+      ? options.recipients 
+      : String(options.recipients).split(',').map(s => s.trim());
+  }
+
+  const ss = getSpreadsheet();
+  const atomicSheet = ss.getSheetByName('Atomic_Task_Logs');
+  if (!atomicSheet) {
+    return { success: false, message: 'Atomic_Task_Logs sheet not found' };
+  }
+
+  const rows = atomicSheet.getDataRange().getValues();
+  const rawCandidates = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const taskType = String(row[4] || '').trim(); // Col E
+    let rowDate = '';
+    if (row[6] instanceof Date) {
+      rowDate = Utilities.formatDate(row[6], tz, 'yyyy-MM-dd');
+    } else if (row[6]) {
+      rowDate = String(row[6]).trim().split('T')[0];
+    }
+
+    if (taskType.toLowerCase() === 'booking' && rowDate === todayStr) {
+      const taskStatus = String(row[12] || '').trim().toLowerCase();
+      // Skip explicitly cancelled or deleted tasks
+      if (taskStatus.includes('cancel') || taskStatus.includes('delete')) {
+        continue;
+      }
+
+      const notes = String(row[13] || '').trim();
+      let studio = 'Studio 01';
+      let startTime = '00:00';
+      let endTime = '23:59';
+      let rawTime = '';
+
+      const studioMatch = notes.match(/Studio:\s*([^(]+)/i);
+      if (studioMatch) studio = studioMatch[1].trim();
+      const timeMatch = notes.match(/\(([^)]+)\)/);
+      if (timeMatch) {
+        rawTime = timeMatch[1].trim();
+        const parts = rawTime.split('-').map(s => s.trim());
+        if (parts.length === 2) {
+          startTime = parts[0];
+          endTime = parts[1];
+        }
+      }
+
+      // Parse timestamp to numeric epoch for chronological sorting
+      let epoch = i;
+      const tsRaw = String(row[1] || '');
+      if (row[1] instanceof Date) {
+        epoch = row[1].getTime();
+      } else {
+        const parts = tsRaw.split(/[\/\s:]/);
+        if (parts.length >= 6) {
+          epoch = new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4], parts[5]).getTime() || i;
+        }
+      }
+
+      rawCandidates.push({
+        rowIdx: i + 1,
+        taskId: row[0],
+        timestamp: tsRaw,
+        epoch: epoch,
+        projCode: String(row[2] || '').trim(),
+        projName: String(row[3] || '').trim(),
+        artist: String(row[5] || 'Unassigned').trim(),
+        studio: studio,
+        startTime: startTime,
+        endTime: endTime,
+        rawTime: rawTime,
+        notes: notes
+      });
+    }
+  }
+
+  // Sort candidate rows newest-first (descending epoch)
+  rawCandidates.sort((a, b) => b.epoch - a.epoch);
+
+  function timeToMin(t) {
+    if (!t) return 0;
+    const parts = String(t).split(':').map(Number);
+    return (parts[0] || 0) * 60 + (parts[1] || 0);
+  }
+
+  // Smart Room-Slot & Project Conflict Resolution:
+  // 1. If project was updated/moved later, skip older revisions of the same project.
+  // 2. If a room time slot is already claimed by a newer confirmed session, skip older conflicting bookings.
+  const confirmedBookings = [];
+  const occupiedSlots = [];
+  const seenProjects = new Set();
+
+  for (const item of rawCandidates) {
+    const projKey = item.projName.toLowerCase() || item.projCode.toLowerCase();
+    if (seenProjects.has(projKey)) {
+      continue; // Skip older revision of this project
+    }
+
+    const itemStart = timeToMin(item.startTime);
+    const itemEnd = timeToMin(item.endTime);
+
+    const hasConflict = occupiedSlots.some(slot => {
+      if (slot.studio.toLowerCase() !== item.studio.toLowerCase()) return false;
+      const slotStart = timeToMin(slot.start);
+      const slotEnd = timeToMin(slot.end);
+      return (itemStart < slotEnd && itemEnd > slotStart);
+    });
+
+    if (hasConflict) {
+      continue; // Skip older booking that overlaps with a newer confirmed session
+    }
+
+    confirmedBookings.push(item);
+    seenProjects.add(projKey);
+    occupiedSlots.push({ studio: item.studio, start: item.startTime, end: item.endTime, proj: item.projName });
+  }
+
+  // Rotating quotes of the day
+  const quotes = [
+    'Creativity is intelligence having fun. — Albert Einstein',
+    'Simplicity is the ultimate sophistication. — Leonardo da Vinci',
+    'Design is not just what it looks like and feels like. Design is how it works. — Steve Jobs',
+    'Quality is not an act, it is a habit. — Aristotle',
+    'Colors, like features, follow the changes of the emotions. — Pablo Picasso',
+    'The details are not the details. They make the design. — Charles Eames',
+    'Every artist was first an amateur. — Ralph Waldo Emerson'
+  ];
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+  const quoteOfTheDay = quotes[dayOfYear % quotes.length];
+
+  // Group by artist (with preferred order: Yash, Sujith, Manoj, Samiran, others)
+  const grouped = {};
+  confirmedBookings.forEach(b => {
+    let artistKey = b.artist;
+    if (artistKey.toLowerCase().includes('yash')) artistKey = 'Yash';
+    else if (artistKey.toLowerCase().includes('sujith')) artistKey = 'Sujith';
+    else if (artistKey.toLowerCase().includes('manoj')) artistKey = 'Manoj';
+    else if (artistKey.toLowerCase().includes('samiran')) artistKey = 'Samiran';
+
+    if (!grouped[artistKey]) grouped[artistKey] = [];
+    
+    // Resolve Client / Production House
+    let clientName = '—';
+    const meta = findProjectMetadata(b.projCode || b.projName);
+    if (meta && meta.client) {
+      clientName = meta.client;
+    }
+
+    grouped[artistKey].push({
+      project: b.projName || b.projCode,
+      client: clientName,
+      studio: b.studio,
+      time: b.rawTime,
+      startMin: timeToMin(b.startTime)
+    });
+  });
+
+  // Sort each artist's sessions chronologically
+  for (const artist in grouped) {
+    grouped[artist].sort((a, b) => a.startMin - b.startMin);
+  }
+
+  // Construct Plain Text Body
+  let textBody = `Good morning,\n\nHere are the bookings for the day (${displayDate}):\n\n`;
+  if (Object.keys(grouped).length === 0) {
+    textBody += `No active studio bookings scheduled for today.\n\n`;
+  } else {
+    for (const [artist, list] of Object.entries(grouped)) {
+      textBody += `${artist}:\n`;
+      list.forEach(item => {
+        const timePart = item.time ? ` — ${item.time}` : '';
+        const roomPart = item.studio ? ` (${item.studio})` : '';
+        textBody += `• ${item.project} — ${item.client}${timePart}${roomPart}\n`;
+      });
+      textBody += `\n`;
+    }
+  }
+  textBody += `"${quoteOfTheDay}"\n\n— SYNC - Studio Tunnel\n`;
+
+  // Construct Branded Responsive HTML Body
+  let artistHtmlBlocks = '';
+  if (Object.keys(grouped).length === 0) {
+    artistHtmlBlocks = `
+      <div style="background: #1e293b; border-radius: 8px; padding: 20px; text-align: center; color: #94a3b8;">
+        ☀️ No active studio bookings logged for today. Have a productive day ahead!
+      </div>`;
+  } else {
+    for (const [artist, list] of Object.entries(grouped)) {
+      let rowsHtml = '';
+      list.forEach((item, idx) => {
+        const bg = idx % 2 === 0 ? '#1e293b' : '#0f172a';
+        rowsHtml += `
+          <tr style="background-color: ${bg};">
+            <td style="padding: 12px 16px; font-weight: 700; color: #f8fafc; font-size: 14px;">
+              ${item.project}
+            </td>
+            <td style="padding: 12px 16px; color: #38bdf8; font-size: 13px;">
+              ${item.client}
+            </td>
+            <td style="padding: 12px 16px; color: #fde047; font-weight: 600; font-size: 13px;">
+              ${item.time || '—'}
+            </td>
+            <td style="padding: 12px 16px; color: #a78bfa; font-size: 12px;">
+              ${item.studio}
+            </td>
+          </tr>`;
+      });
+
+      artistHtmlBlocks += `
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 16px; font-weight: 800; color: #10b981; letter-spacing: 0.5px; text-transform: uppercase;">
+              👤 ${artist}
+            </span>
+            <span style="margin-left: 10px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+              ${list.length} ${list.length === 1 ? 'Booking' : 'Bookings'}
+            </span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; margin-bottom: 8px;">
+            <thead>
+              <tr style="background-color: #334155; color: #cbd5e1; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left;">
+                <th style="padding: 8px 16px;">Project</th>
+                <th style="padding: 8px 16px;">Production House / Client</th>
+                <th style="padding: 8px 16px;">Time</th>
+                <th style="padding: 8px 16px;">Room</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>`;
+    }
+  }
+
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #0b0f17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 680px; margin: 20px auto; background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+          
+          <!-- Header Banner -->
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 28px 32px; border-bottom: 2px solid #3b82f6;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h1 style="margin: 0; color: #f8fafc; font-size: 22px; font-weight: 900; letter-spacing: -0.5px;">
+                  STUDIO TUNNEL <span style="color: #38bdf8;">• SYNC</span>
+                </h1>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px; font-weight: 500;">
+                  Daily Schedule & Artist Briefing — <strong style="color: #e2e8f0;">${displayDate}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Body Content -->
+          <div style="padding: 28px 32px;">
+            <p style="margin-top: 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+              Good morning Team, here are the studio sessions and client bookings confirmed for today:
+            </p>
+
+            ${artistHtmlBlocks}
+
+            <!-- Quote of the Day -->
+            <div style="margin-top: 32px; padding: 18px 20px; background: rgba(59, 130, 246, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px;">
+              <p style="margin: 0; color: #93c5fd; font-size: 13px; font-style: italic; line-height: 1.5;">
+                "${quoteOfTheDay}"
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="padding: 18px 32px; background: #0b0f17; border-top: 1px solid #1e293b; text-align: center;">
+            <p style="margin: 0; color: #64748b; font-size: 11px;">
+              SYNC Operations Hub • Cineloom Postworks Pvt. Ltd. • <a href="https://sync.studiotunnel.com" style="color: #38bdf8; text-decoration: none;">sync.studiotunnel.com</a>
+            </p>
+          </div>
+
+        </div>
+      </body>
+    </html>`;
+
+  // Dispatch Email via Google Workspace
+  const recipientStr = recipients.join(',');
+  MailApp.sendEmail({
+    to: recipientStr,
+    subject: `☀️ Studio Bookings for Today — ${displayDate}`,
+    body: textBody,
+    htmlBody: htmlBody
+  });
+
+  Logger.log(`✅ Daily morning briefing email sent to: ${recipientStr}`);
+  return {
+    success: true,
+    recipients: recipients,
+    date: todayStr,
+    bookingCount: confirmedBookings.length,
+    message: `Morning briefing dispatched successfully to ${recipients.length} recipients for ${displayDate}!`
+  };
+}
+
+/**
+ * Installs or updates the daily morning time trigger (7:30 AM IST sharp)
+ */
+function setupDailyMorningTrigger() {
+  const existingTriggers = ScriptApp.getProjectTriggers();
+  existingTriggers.forEach(t => {
+    if (t.getHandlerFunction() === 'sendMorningBookingsDailyEmail') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger('sendMorningBookingsDailyEmail')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .nearMinute(30)
+    .create();
+
+  Logger.log('✅ Daily Morning 7:30 AM IST Trigger configured successfully!');
+  return { success: true, message: 'Automated 7:30 AM IST morning trigger installed successfully!' };
+}
+
+/**
+ * Cancels/removes booking entries from Atomic_Task_Logs
+ */
+function handleCancelBooking(data) {
+  const ss = getSpreadsheet();
+  const atomicSheet = ss.getSheetByName('Atomic_Task_Logs');
+  if (!atomicSheet) return { success: false, message: 'Sheet not found' };
+
+  const targetId = String(data.id || '').trim();
+  const targetProj = String(data.project || data.projectName || '').trim().toLowerCase();
+  const targetDate = String(data.date || '').trim();
+
+  const rows = atomicSheet.getDataRange().getValues();
+  let cancelledCount = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    const rowId = String(rows[i][0] || '').trim();
+    const rowProj = String(rows[i][3] || '').trim().toLowerCase();
+    let rowDate = '';
+    if (rows[i][6] instanceof Date) {
+      rowDate = Utilities.formatDate(rows[i][6], 'Asia/Kolkata', 'yyyy-MM-dd');
+    } else if (rows[i][6]) {
+      rowDate = String(rows[i][6]).trim().split('T')[0];
+    }
+
+    if ((targetId && rowId === targetId) || (targetProj && rowProj === targetProj && (!targetDate || rowDate === targetDate))) {
+      atomicSheet.getRange(i + 1, 13).setValue('Cancelled / Deleted');
+      cancelledCount++;
+    }
+  }
+
+  SpreadsheetApp.flush();
+  return { success: true, cancelledCount: cancelledCount, message: `Cancelled ${cancelledCount} booking log entries` };
+}
+
+/**
+ * Sends a welcome email with onboarding and login instructions to a newly provisioned team member.
+ */
+function handleSendWelcomeEmail(data) {
+  const recipient = (data && data.email) ? String(data.email).trim() : 'natasha.cineloom@gmail.com';
+  const name = (data && data.name) ? String(data.name).trim() : 'Natasha Dodiya';
+  const role = (data && data.role) ? String(data.role).trim() : 'Admin Executive';
+  const userId = (data && data.userId) ? String(data.userId).trim() : 'u13';
+  const username = (data && data.username) ? String(data.username).trim() : 'natasha';
+
+  const subject = `Welcome to Cineloom Postworks & Studio Tunnel — ${role} Account Setup`;
+
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+      <body style="margin: 0; padding: 0; background-color: #0b0f17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+        <div style="max-width: 600px; margin: 0 auto; background: #0f172a; border-radius: 16px; overflow: hidden; border: 1px solid #1e293b; margin-top: 24px; margin-bottom: 24px;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); padding: 32px; text-align: center; border-bottom: 1px solid #312e81;">
+            <div style="display: inline-block; padding: 8px 16px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 9999px; margin-bottom: 16px;">
+              <span style="color: #a5b4fc; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">CINELOOM POSTWORKS × STUDIO TUNNEL</span>
+            </div>
+            <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 24px; font-weight: 800;">Welcome to the Team, ${name}!</h1>
+            <p style="margin: 0; color: #94a3b8; font-size: 14px;">Your <strong>${role}</strong> profile has been provisioned on the SYNC Operations & Finance Platform.</p>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 32px;">
+            <div style="background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 24px;">
+              <h2 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Credentials</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8; width: 140px;">Full Name:</td>
+                  <td style="padding: 6px 0; color: #ffffff; font-weight: 600;">${name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Role / Designation:</td>
+                  <td style="padding: 6px 0; color: #34d399; font-weight: 600;">${role} (Office Admin)</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Primary Email:</td>
+                  <td style="padding: 6px 0; color: #ffffff; font-weight: 600;">${recipient}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">User ID / Login:</td>
+                  <td style="padding: 6px 0; color: #fde047; font-weight: 700; font-family: monospace;">${username} <span style="color: #64748b; font-weight: normal;">(or ${recipient})</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">System ID:</td>
+                  <td style="padding: 6px 0; color: #a78bfa; font-family: monospace;">${userId}</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Login Instructions -->
+            <div style="margin-bottom: 28px;">
+              <h2 style="color: #ffffff; font-size: 16px; margin: 0 0 12px 0;">How to Set Up Your Password & Log In</h2>
+              <ol style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.8;">
+                <li>Open the SYNC Operations Hub at: <br/><a href="https://sync.studiotunnel.com" style="color: #38bdf8; font-weight: 700; text-decoration: none;">https://sync.studiotunnel.com</a></li>
+                <li>On the login screen, click <strong>"First time? Click here to set up password"</strong>.</li>
+                <li>Enter your registered email (<code>${recipient}</code>) or User ID (<code>${username}</code>).</li>
+                <li>Choose a secure password and click <strong>"Create Account & Sign In"</strong>.</li>
+                <li>You're in! You will have immediate access to the Executive Dashboard, Studio Bookings, Attendance, Project Tracker, and Operations Hub.</li>
+              </ol>
+            </div>
+
+            <!-- Button -->
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://sync.studiotunnel.com" style="display: inline-block; background: #6366f1; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+                Open SYNC Portal →
+              </a>
+            </div>
+
+            <!-- Access Privileges -->
+            <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+              <h3 style="margin: 0 0 8px 0; color: #34d399; font-size: 13px; text-transform: uppercase;">Your Administrative Scope</h3>
+              <p style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">
+                As Admin Executive, you have full administrative oversight for studio booking schedules, staff leaves and shifts, client project tracking, delivery pipelines, daily morning briefings, and operational communication.
+              </p>
+            </div>
+
+            <!-- Help -->
+            <p style="margin: 0; color: #64748b; font-size: 12px; line-height: 1.5;">
+              If you have any questions or need technical support, reach out to Samiran Sonowal or the Tech Dev team at <a href="mailto:samiran@studiotunnel.com" style="color: #38bdf8;">samiran@studiotunnel.com</a>.
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="padding: 18px 32px; background: #0b0f17; border-top: 1px solid #1e293b; text-align: center;">
+            <p style="margin: 0; color: #64748b; font-size: 11px;">
+              SYNC Operations Hub • Cineloom Postworks Pvt. Ltd. • Studio Tunnel
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const textBody = `Welcome to Cineloom Postworks & Studio Tunnel, ${name}!\n\n`
+    + `Your ${role} account has been provisioned on the SYNC Operations & Finance Platform.\n\n`
+    + `Login Details:\n`
+    + `• Portal: https://sync.studiotunnel.com\n`
+    + `• Email: ${recipient}\n`
+    + `• User ID: ${username} (or ${userId})\n`
+    + `• Role: ${role}\n\n`
+    + `How to Log In for the First Time:\n`
+    + `1. Go to https://sync.studiotunnel.com\n`
+    + `2. Click "First time? Click here to set up password"\n`
+    + `3. Enter your email (${recipient}) or User ID (${username})\n`
+    + `4. Set your password and click "Create Account & Sign In"\n\n`
+    + `If you need any assistance, please contact Samiran Sonowal.\n\n`
+    + `— Cineloom Postworks & Studio Tunnel Management`;
+
+  MailApp.sendEmail({
+    to: recipient,
+    subject: subject,
+    body: textBody,
+    htmlBody: htmlBody
+  });
+
+  Logger.log(`✅ Welcome email dispatched to: ${recipient}`);
+  return {
+    success: true,
+    recipient: recipient,
+    message: `Welcome email successfully dispatched to ${recipient}`
+  };
+}
+
+

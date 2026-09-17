@@ -1,19 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, Copy, ClipboardCopy, UserCircle, AlertCircle, Archive, Undo2, RefreshCw, Clock
+  Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, Copy, ClipboardCopy, UserCircle, AlertCircle, Archive, Undo2, RefreshCw, Clock, ArrowLeftRight, GripVertical
 } from 'lucide-react';
 import { 
   collection, addDoc, updateDoc, doc, deleteDoc 
 } from 'firebase/firestore';
 import { sendOpsAlert, sendDirectUserAlert } from '../services/ntfy';
+import { hasPermission, PERMISSIONS, ROLES } from './users';
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const studioColors = {
   'Studio 01': 'bg-indigo-500',
   'Studio 02': 'bg-emerald-500',
-  'Studio 03': 'bg-rose-500'
+  'Studio 03': 'bg-rose-500',
+  'Studio 04': 'bg-amber-500'
 };
-const STUDIO_ROOMS = ['Studio 01', 'Studio 02', 'Studio 03'];
+const STUDIO_ROOMS = ['Studio 01', 'Studio 02', 'Studio 03', 'Studio 04'];
 
 const StudioBookings = ({ 
   bookings, 
@@ -27,7 +29,7 @@ const StudioBookings = ({
   formatLocalDate,
   users
 }) => {
-  const [calendarView, setCalendarView] = useState('list');
+  const [calendarView, setCalendarView] = useState('month');
   const [calendarDate, setCalendarDate] = useState(formatLocalDate(new Date()));
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -36,11 +38,28 @@ const StudioBookings = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [coloristFilter, setColoristFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('schedule'); // 'schedule' or 'week'
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [draggedBooking, setDraggedBooking] = useState(null);
+  const [dragOverTarget, setDragOverTarget] = useState(null);
+  const [activeSwapSource, setActiveSwapSource] = useState(null);
+  const [showSwapModal, setShowSwapModal] = useState(null);
+  const [swapColoristsToggle, setSwapColoristsToggle] = useState(false);
+  const [dragState, setDragState] = useState(null);
+  const [hoverTarget, setHoverTarget] = useState(null);
+  const [optimisticOverrides, setOptimisticOverrides] = useState({});
+
+  const canManageBookings = Boolean(
+    currentUserProfile && (
+      currentUserProfile.isAdmin ||
+      currentUserProfile.role === ROLES.LINE_PRODUCER
+    )
+  );
 
   const currentDate = formatLocalDate(new Date());
-  const activeBookings = useMemo(() => bookings.filter(b => !b.isDeleted && !b.isVaulted), [bookings]);
+  const activeBookings = useMemo(() => {
+    return bookings
+      .filter(b => !b.isDeleted && !b.isVaulted)
+      .map(b => optimisticOverrides[b.id] ? { ...b, ...optimisticOverrides[b.id] } : b);
+  }, [bookings, optimisticOverrides]);
   const deletedBookings = useMemo(() => bookings.filter(b => b.isDeleted), [bookings]);
   const vaultedBookings = useMemo(() => bookings.filter(b => (b.isVaulted || (!b.isVaulted && b.date < currentDate)) && !b.isDeleted), [bookings, currentDate]);
 
@@ -82,6 +101,7 @@ const StudioBookings = ({
 
   const handleConfirmDelete = async () => {
     if (!showDeleteConfirmation || !db) return;
+    const targetBooking = bookings.find(b => b.id === showDeleteConfirmation);
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', showDeleteConfirmation), {
         isDeleted: true,
@@ -89,184 +109,322 @@ const StudioBookings = ({
       });
       showToast('Booking moved to Vault (Recycle Bin)', 'success');
       setShowDeleteConfirmation(null);
+
+      if (syncToGoogleSheets && targetBooking) {
+        try {
+          syncToGoogleSheets('deleteBooking', {
+            id: showDeleteConfirmation,
+            project: targetBooking.project,
+            projectName: targetBooking.project,
+            date: targetBooking.date,
+            studio: targetBooking.studio
+          }, 'booking');
+        } catch (syncErr) {
+          console.error('Error syncing booking deletion to Sheets:', syncErr);
+        }
+      }
     } catch (e) {
       console.error(e);
       showToast('Error cancelling booking', 'error');
     }
   };
-  const formRef = React.useRef(null);
 
-  React.useEffect(() => {
-    if (showBookingModal) {
-      // Delay validation slightly to ensure form defaults are populated
-      setTimeout(validateModalForm, 50);
-    } else {
-      setModalValidation({ isIdentical: false });
-    }
-  }, [showBookingModal]);
+  const handleInterchangeBookings = async (bookingA, bookingB, swapColorists = false) => {
+    if (!bookingA || !bookingB || bookingA.id === bookingB.id || !db) return;
 
-  // Derived calendar states
-  const calYear = calendarMonth.getFullYear();
-  const calMonth = calendarMonth.getMonth();
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
+    // 1. Instant optimistic swap for zero-lag game-like UI response
+    setOptimisticOverrides(prev => ({
+      ...prev,
+      [bookingA.id]: {
+        studio: bookingB.studio,
+        startTime: bookingB.startTime,
+        endTime: bookingB.endTime,
+        ...(swapColorists ? { coloristId: bookingB.coloristId } : {})
+      },
+      [bookingB.id]: {
+        studio: bookingA.studio,
+        startTime: bookingA.startTime,
+        endTime: bookingA.endTime,
+        ...(swapColorists ? { coloristId: bookingA.coloristId } : {})
+      }
+    }));
 
-  const calDays = useMemo(() => {
-    const days = [];
-    // Padding from prev month
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const d = prevMonthLastDay - i;
-      days.push({ dayStr: d, date: formatLocalDate(new Date(calYear, calMonth - 1, d)), isCurrentMonth: false });
-    }
-    // Curr month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({ dayStr: i, date: formatLocalDate(new Date(calYear, calMonth, i)), isCurrentMonth: true });
-    }
-    // Padding for next month
-    const total = 42;
-    const nextPadding = total - days.length;
-    for (let i = 1; i <= nextPadding; i++) {
-      days.push({ dayStr: i, date: formatLocalDate(new Date(calYear, calMonth + 1, i)), isCurrentMonth: false });
-    }
-    return days;
-  }, [calYear, calMonth, firstDay, daysInMonth, prevMonthLastDay, formatLocalDate]);
+    try {
+      const updateA = {
+        studio: bookingB.studio,
+        startTime: bookingB.startTime,
+        endTime: bookingB.endTime,
+        lastModified: new Date().toISOString()
+      };
+      const updateB = {
+        studio: bookingA.studio,
+        startTime: bookingA.startTime,
+        endTime: bookingA.endTime,
+        lastModified: new Date().toISOString()
+      };
 
-  const [isMobileGrid, setIsMobileGrid] = useState(window.innerWidth < 768);
-  React.useEffect(() => {
-    const handleResize = () => setIsMobileGrid(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+      if (swapColorists) {
+        updateA.coloristId = bookingB.coloristId;
+        updateB.coloristId = bookingA.coloristId;
+      }
 
-  const weekDays = useMemo(() => {
-    const start = new Date(calendarDate);
-    if (!isMobileGrid) {
-      start.setDate(start.getDate() - start.getDay()); // Start on Sunday
-    }
-    const daysCount = isMobileGrid ? 4 : 7;
-    const days = [];
-    for (let i = 0; i < daysCount; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      days.push(formatLocalDate(d));
-    }
-    return days;
-  }, [calendarDate, formatLocalDate, isMobileGrid]);
+      await Promise.all([
+        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', bookingA.id), updateA),
+        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', bookingB.id), updateB)
+      ]);
 
-  const today = formatLocalDate(new Date());
+      showToast(`Swapped: ${bookingA.project} (${bookingB.studio}, ${bookingB.startTime}–${bookingB.endTime}) ⇄ ${bookingB.project} (${bookingA.studio}, ${bookingA.startTime}–${bookingA.endTime})`, 'success');
 
-  // Time metrics (6 AM to Midnight)
-  const START_HOUR = 6;
-  const END_HOUR = 24;
-  const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
-  const HOUR_HEIGHT = 60; // 60px per hour means 1px per minute
-
-  const getPositionMetrics = (startTime, endTime) => {
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    
-    let top = ((startH - START_HOUR) * HOUR_HEIGHT) + startM;
-    let endMinutes = (endH - START_HOUR) * HOUR_HEIGHT + endM;
-    
-    // Handle overnight bookings (ending at or before 6 AM)
-    if (endH < START_HOUR) {
-      endMinutes = (endH + 24 - START_HOUR) * HOUR_HEIGHT + endM;
-    }
-    
-    const height = Math.max(endMinutes - top, 20); // Minimum 20px height
-    return { top, height };
-  };
-
-  const calculateOverlaps = (dayBookings) => {
-    const parseTime = (t) => { let [h,m] = t.split(':').map(Number); return (h<6 ? h+24 : h)*60 + m; };
-    let groups = [];
-    
-    dayBookings.forEach(b => {
-      const bStart = parseTime(b.startTime);
-      let addedToGroup = false;
-      for (let group of groups) {
-        const groupEnd = Math.max(...group.map(gb => parseTime(gb.endTime)));
-        if (bStart < groupEnd) {
-          group.push(b);
-          addedToGroup = true;
-          break;
+      if (syncToGoogleSheets) {
+        try {
+          syncToGoogleSheets('update', { id: bookingA.id, ...bookingA, ...updateA, projectName: bookingA.project }, 'booking');
+          syncToGoogleSheets('update', { id: bookingB.id, ...bookingB, ...updateB, projectName: bookingB.project }, 'booking');
+        } catch (err) {
+          console.error('Sheets sync error on swap:', err);
         }
       }
-      if (!addedToGroup) groups.push([b]);
-    });
 
-    const positioned = [];
-    groups.forEach(group => {
-      let columns = [];
-      const colMap = new Map();
-      group.forEach(b => {
-        const bStart = parseTime(b.startTime);
-        let placed = false;
-        for (let i = 0; i < columns.length; i++) {
-          const lastInCol = columns[i][columns[i].length - 1];
-          if (bStart >= parseTime(lastInCol.endTime)) {
-            columns[i].push(b);
-            placed = true;
-            colMap.set(b.id, i);
-            break;
+      sendOpsAlert(
+        `🔄 Bookings Interchanged: ${bookingA.project} ⇄ ${bookingB.project}`,
+        `${bookingA.project} is now in ${bookingB.studio} (${bookingB.startTime}–${bookingB.endTime}). ${bookingB.project} is now in ${bookingA.studio} (${bookingA.startTime}–${bookingA.endTime}).`
+      );
+
+      if (bookingA.coloristId) {
+        sendDirectUserAlert(
+          bookingA.coloristId,
+          `🔄 Studio Session Rescheduled`,
+          `${bookingA.project} on ${bookingA.date} moved to ${bookingB.studio} (${bookingB.startTime}–${bookingB.endTime}).`
+        );
+      }
+      if (bookingB.coloristId && bookingB.coloristId !== bookingA.coloristId) {
+        sendDirectUserAlert(
+          bookingB.coloristId,
+          `🔄 Studio Session Rescheduled`,
+          `${bookingB.project} on ${bookingB.date} moved to ${bookingA.studio} (${bookingA.startTime}–${bookingA.endTime}).`
+        );
+      }
+    } catch (e) {
+      console.error('Interchange error:', e);
+      showToast('Error interchanging bookings', 'error');
+    }
+  };
+
+  const handleMoveBookingToRoom = async (booking, targetRoom) => {
+    if (!booking || !targetRoom || booking.studio === targetRoom || !db) return;
+
+    // Check if targetRoom has an overlapping booking on the same date
+    const sameRoomBookings = activeBookings.filter(b => 
+      b.id !== booking.id && 
+      b.date === booking.date && 
+      b.studio === targetRoom
+    );
+
+    const conflictingBooking = sameRoomBookings.find(b => 
+      (booking.startTime < b.endTime && booking.endTime > b.startTime)
+    );
+
+    if (conflictingBooking) {
+      setShowSwapModal(booking);
+      showToast(`${targetRoom} already has ${conflictingBooking.project} (${conflictingBooking.startTime}–${conflictingBooking.endTime}). Select to interchange!`, 'info');
+      return;
+    }
+
+    // Instant optimistic move
+    setOptimisticOverrides(prev => ({
+      ...prev,
+      [booking.id]: { studio: targetRoom }
+    }));
+
+    try {
+      const updateData = {
+        studio: targetRoom,
+        lastModified: new Date().toISOString()
+      };
+
+      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', booking.id), updateData);
+      showToast(`Moved ${booking.project} to ${targetRoom} (${booking.startTime}–${booking.endTime})`, 'success');
+
+      if (syncToGoogleSheets) {
+        try {
+          syncToGoogleSheets('update', { id: booking.id, ...booking, ...updateData, projectName: booking.project }, 'booking');
+        } catch (err) {
+          console.error('Sheets sync error on move:', err);
+        }
+      }
+
+      sendOpsAlert(
+        `📍 Booking Moved: ${booking.project} to ${targetRoom}`,
+        `${booking.project} on ${booking.date} (${booking.startTime}–${booking.endTime}) moved to ${targetRoom}.`
+      );
+    } catch (e) {
+      console.error('Move error:', e);
+      showToast('Error moving booking', 'error');
+    }
+  };
+
+  const playSound = (type = 'swap') => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'pickup') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(540, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      } else if (type === 'swap') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } else if (type === 'drop') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(340, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      }
+    } catch (e) {}
+  };
+
+  const handleCardPointerDown = (e, booking) => {
+    if (!canManageBookings) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') || e.target.closest('a')) {
+      return;
+    }
+
+    const cardEl = e.currentTarget;
+    const rect = cardEl.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const initialDragState = {
+      booking,
+      width: rect.width,
+      height: rect.height,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      currentX: e.clientX,
+      currentY: e.clientY,
+      isDragging: false,
+    };
+
+    let hasStartedDragging = false;
+
+    const onPointerMove = (moveEvent) => {
+      const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+      if (!hasStartedDragging && dist > 3) {
+        hasStartedDragging = true;
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'grabbing';
+        playSound('pickup');
+        setDragState({
+          ...initialDragState,
+          currentX: moveEvent.clientX,
+          currentY: moveEvent.clientY,
+          isDragging: true
+        });
+      }
+
+      if (hasStartedDragging) {
+        if (moveEvent.cancelable) moveEvent.preventDefault();
+
+        setDragState(prev => ({
+          ...(prev || initialDragState),
+          currentX: moveEvent.clientX,
+          currentY: moveEvent.clientY,
+          isDragging: true
+        }));
+
+        const elemUnder = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+        if (elemUnder) {
+          const targetCard = elemUnder.closest('[data-booking-id]');
+          if (targetCard) {
+            const targetId = targetCard.getAttribute('data-booking-id');
+            if (targetId && targetId !== booking.id) {
+              const targetBooking = activeBookings.find(b => b.id === targetId);
+              if (targetBooking) {
+                setHoverTarget({ type: 'booking', booking: targetBooking, room: targetBooking.studio });
+                return;
+              }
+            }
+          }
+
+          const targetRoom = elemUnder.closest('[data-room-id]');
+          if (targetRoom) {
+            const roomId = targetRoom.getAttribute('data-room-id');
+            if (roomId) {
+              setHoverTarget({ type: 'room', room: roomId });
+              return;
+            }
           }
         }
-        if (!placed) {
-          colMap.set(b.id, columns.length);
-          columns.push([b]);
+        setHoverTarget(null);
+      }
+    };
+
+    const onPointerUp = (upEvent) => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+
+      if (hasStartedDragging) {
+        const elemUnder = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        let targetHandled = false;
+
+        if (elemUnder) {
+          const targetCard = elemUnder.closest('[data-booking-id]');
+          if (targetCard) {
+            const targetId = targetCard.getAttribute('data-booking-id');
+            if (targetId && targetId !== booking.id) {
+              const targetBooking = activeBookings.find(b => b.id === targetId);
+              if (targetBooking) {
+                playSound('swap');
+                handleInterchangeBookings(booking, targetBooking, swapColoristsToggle);
+                targetHandled = true;
+              }
+            }
+          }
+
+          if (!targetHandled) {
+            const targetRoom = elemUnder.closest('[data-room-id]');
+            if (targetRoom) {
+              const roomId = targetRoom.getAttribute('data-room-id');
+              if (roomId && roomId !== booking.studio) {
+                playSound('drop');
+                handleMoveBookingToRoom(booking, roomId);
+                targetHandled = true;
+              }
+            }
+          }
         }
-      });
-      group.forEach(b => {
-        positioned.push({
-          ...b,
-          colIndex: colMap.get(b.id) ?? 0,
-          totalCols: columns.length
-        });
-      });
-    });
-    return positioned;
-  };
-
-  const duplicateBooking = (booking) => {
-    setShowBookingModal({
-      ...booking,
-      id: null,
-      isDuplicate: true
-    });
-    showToast('Duplicating booking details...', 'info');
-  };
-
-  const handleProjectFieldChange = (field, value) => {
-    if (!formRef.current) return;
-    const form = formRef.current;
-    if (field === 'projectCode') {
-      const matched = projects.find(p => p.code?.toLowerCase() === value.trim().toLowerCase());
-      if (matched) {
-        if (form.elements['projectName']) form.elements['projectName'].value = matched.name || '';
-        if (form.elements['productionHouse']) form.elements['productionHouse'].value = matched.client || '';
-        if (form.elements['director']) form.elements['director'].value = matched.director || '';
-        if (form.elements['dop']) form.elements['dop'].value = matched.dop || '';
-        if (form.elements['postProducer']) form.elements['postProducer'].value = matched.postProducer || '';
-        if (form.elements['clientPhone']) form.elements['clientPhone'].value = matched.clientPhone || '';
-        if (form.elements['clientEmail']) form.elements['clientEmail'].value = matched.clientEmail || '';
-        if (form.elements['deliverables']) form.elements['deliverables'].value = matched.deliverables || '';
       }
-    } else if (field === 'projectName') {
-      const matched = projects.find(p => p.name?.toLowerCase() === value.trim().toLowerCase());
-      if (matched) {
-        if (form.elements['projectCode']) form.elements['projectCode'].value = matched.code || '';
-        if (form.elements['productionHouse']) form.elements['productionHouse'].value = matched.client || '';
-        if (form.elements['director']) form.elements['director'].value = matched.director || '';
-        if (form.elements['dop']) form.elements['dop'].value = matched.dop || '';
-        if (form.elements['postProducer']) form.elements['postProducer'].value = matched.postProducer || '';
-        if (form.elements['clientPhone']) form.elements['clientPhone'].value = matched.clientPhone || '';
-        if (form.elements['clientEmail']) form.elements['clientEmail'].value = matched.clientEmail || '';
-        if (form.elements['deliverables']) form.elements['deliverables'].value = matched.deliverables || '';
-      }
-    }
-    validateModalForm();
+
+      setDragState(null);
+      setHoverTarget(null);
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
   };
+  const formRef = React.useRef(null);
 
   const validateModalForm = () => {
     if (!formRef.current) return;
@@ -332,6 +490,85 @@ const StudioBookings = ({
 
     setModalValidation({ isIdentical, isUnchangedRevive, isPastRevive, isMissingFields });
   };
+
+  React.useEffect(() => {
+    if (showBookingModal) {
+      // Delay validation slightly to ensure form defaults are populated
+      setTimeout(validateModalForm, 50);
+    } else {
+      setModalValidation({ isIdentical: false });
+    }
+  }, [showBookingModal]);
+
+  // Derived calendar states
+  const calYear = calendarMonth.getFullYear();
+  const calMonth = calendarMonth.getMonth();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
+
+  const calDays = useMemo(() => {
+    const days = [];
+    // Padding from prev month
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const d = prevMonthLastDay - i;
+      days.push({ dayStr: d, date: formatLocalDate(new Date(calYear, calMonth - 1, d)), isCurrentMonth: false });
+    }
+    // Curr month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ dayStr: i, date: formatLocalDate(new Date(calYear, calMonth, i)), isCurrentMonth: true });
+    }
+    // Padding for next month
+    const total = 42;
+    const nextPadding = total - days.length;
+    for (let i = 1; i <= nextPadding; i++) {
+      days.push({ dayStr: i, date: formatLocalDate(new Date(calYear, calMonth + 1, i)), isCurrentMonth: false });
+    }
+    return days;
+  }, [calYear, calMonth, firstDay, daysInMonth, prevMonthLastDay, formatLocalDate]);
+
+  const today = formatLocalDate(new Date());
+
+  const duplicateBooking = (booking) => {
+    setShowBookingModal({
+      ...booking,
+      id: null,
+      isDuplicate: true
+    });
+    showToast('Duplicating booking details...', 'info');
+  };
+
+  const handleProjectFieldChange = (field, value) => {
+    if (!formRef.current) return;
+    const form = formRef.current;
+    if (field === 'projectCode') {
+      const matched = projects.find(p => p.code?.toLowerCase() === value.trim().toLowerCase());
+      if (matched) {
+        if (form.elements['projectName']) form.elements['projectName'].value = matched.name || '';
+        if (form.elements['productionHouse']) form.elements['productionHouse'].value = matched.client || '';
+        if (form.elements['director']) form.elements['director'].value = matched.director || '';
+        if (form.elements['dop']) form.elements['dop'].value = matched.dop || '';
+        if (form.elements['postProducer']) form.elements['postProducer'].value = matched.postProducer || '';
+        if (form.elements['clientPhone']) form.elements['clientPhone'].value = matched.clientPhone || '';
+        if (form.elements['clientEmail']) form.elements['clientEmail'].value = matched.clientEmail || '';
+        if (form.elements['deliverables']) form.elements['deliverables'].value = matched.deliverables || '';
+      }
+    } else if (field === 'projectName') {
+      const matched = projects.find(p => p.name?.toLowerCase() === value.trim().toLowerCase());
+      if (matched) {
+        if (form.elements['projectCode']) form.elements['projectCode'].value = matched.code || '';
+        if (form.elements['productionHouse']) form.elements['productionHouse'].value = matched.client || '';
+        if (form.elements['director']) form.elements['director'].value = matched.director || '';
+        if (form.elements['dop']) form.elements['dop'].value = matched.dop || '';
+        if (form.elements['postProducer']) form.elements['postProducer'].value = matched.postProducer || '';
+        if (form.elements['clientPhone']) form.elements['clientPhone'].value = matched.clientPhone || '';
+        if (form.elements['clientEmail']) form.elements['clientEmail'].value = matched.clientEmail || '';
+        if (form.elements['deliverables']) form.elements['deliverables'].value = matched.deliverables || '';
+      }
+    }
+    validateModalForm();
+  };
+
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -526,8 +763,9 @@ const StudioBookings = ({
           </span>
           <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{booking.studio}</span>
         </div>
-        {currentUserProfile.isAdmin && (
+        {canManageBookings && (
           <div className="flex items-center space-x-2">
+            <button onClick={() => { setActiveSwapSource(booking); setShowSwapModal(booking); }} className="text-slate-300 hover:text-cyan-400 transition-colors bg-slate-900/50 p-2 rounded-xl" title="Interchange / Swap Room & Timing"><ArrowLeftRight size={16} /></button>
             <button onClick={() => duplicateBooking(booking)} className="text-slate-300 hover:text-indigo-400 transition-colors bg-slate-900/50 p-2 rounded-xl" title="Duplicate Booking"><Copy size={16} /></button>
             <button onClick={() => setShowBookingModal(booking)} className="text-slate-300 hover:text-indigo-400 transition-colors bg-slate-900/50 p-2 rounded-xl" title="Edit Booking"><Edit size={16} /></button>
             <button onClick={() => moveToVault(booking.id)} className="text-slate-300 hover:text-amber-400 transition-colors bg-slate-900/50 p-2 rounded-xl" title="Vault Booking"><Archive size={16} /></button>
@@ -579,99 +817,397 @@ const StudioBookings = ({
     </div>
   );
 
-  const DaySection = ({ dateStr, isSelected, showEmpty = false }) => {
-    const dayBookings = activeBookings.filter(b => b.date === dateStr).sort((a, b) => a.startTime.localeCompare(b.startTime));
-    if (dayBookings.length === 0 && !showEmpty) return null;
-    const isToday = dateStr === today;
-    const [y, m, dayNum] = dateStr.split('-').map(Number);
-    const d = new Date(y, m - 1, dayNum);
-    const isPast = dateStr < today;
-    return (
-      <div className={`rounded-2xl border-2 transition-all ${isSelected ? 'border-indigo-500/60 bg-indigo-500/5' : isToday ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-800 bg-slate-900/50'} ${isPast && !isSelected ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-        <div
-          className="flex items-center gap-4 px-5 pt-4 pb-3 cursor-pointer"
-          onClick={() => setCalendarDate(dateStr)}
-        >
-          <div className={`text-center w-12 shrink-0 p-2 rounded-xl ${isToday ? 'bg-emerald-500/20' : isSelected ? 'bg-indigo-500/20' : 'bg-slate-800'}`}>
-            <div className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-emerald-400' : isSelected ? 'text-indigo-400' : 'text-slate-500'}`}>
-              {d.toLocaleDateString('en-IN', { weekday: 'short' })}
-            </div>
-            <div className={`text-2xl font-black leading-none mt-0.5 ${isToday ? 'text-emerald-300' : isSelected ? 'text-indigo-300' : 'text-white'}`}>
-              {d.getDate()}
-            </div>
-            <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isToday ? 'text-emerald-500' : 'text-slate-600'}`}>
-              {d.toLocaleDateString('en-IN', { month: 'short' })}
-            </div>
-          </div>
-          <div className="flex-1 flex flex-wrap gap-2">
-            {dayBookings.map(b => (
-              <span key={b.id} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold ${studioColors[b.studio]?.replace('bg-', 'bg-').replace('500', '500/15') || 'bg-slate-700'} border ${studioColors[b.studio]?.replace('bg-', 'border-').replace('500', '500/30') || 'border-slate-600'} text-slate-200`}>
-                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${studioColors[b.studio]}`} />
-                {b.projectCode ? `[${b.projectCode}] ` : ''}{b.project}
-                <span className="text-slate-400 font-normal">{b.startTime}–{b.endTime}</span>
-              </span>
-            ))}
-          </div>
-          <span className="text-xs font-black text-slate-500 bg-slate-800 px-2.5 py-1 rounded-lg shrink-0">{dayBookings.length} booking{dayBookings.length !== 1 ? 's' : ''}</span>
-        </div>
-        {isSelected && (
-          <div className="px-5 pb-5 pt-2 space-y-3 border-t border-slate-800/60">
-            {dayBookings.map(b => <BookingCard key={b.id} booking={b} />)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const sortedDates = [...new Set(activeBookings.map(b => b.date))].sort();
-  const upcomingDates = sortedDates.filter(d => d >= today);
-  const pastDates = sortedDates.filter(d => d < today).reverse();
-
   return (
-    <div className="h-full flex flex-col animate-in fade-in space-y-6">
+    <div className="w-full flex flex-col animate-in fade-in space-y-6">
       <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 shrink-0">
         <div>
           <h2 className="text-2xl md:text-3xl font-black text-white">Studio Bookings</h2>
           <p className="text-slate-400 font-medium text-sm md:text-base">Manage studio availability and daily schedules.</p>
         </div>
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 shrink-0 items-start md:items-center w-full md:w-auto mt-2 md:mt-0">
-          <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 w-full md:w-auto justify-between md:justify-start">
-            {[['list', 'Schedule'], ['week', 'Week'], ['month', 'Month']].map(([v, label]) => (
-              <button
-                key={v}
-                onClick={() => setCalendarView(v)}
-                className={`flex-1 md:flex-none px-4 py-2.5 md:py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest rounded-lg transition-colors ${calendarView === v ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {currentUserProfile.isAdmin && (
-            <div className="flex flex-row gap-2 w-full md:w-auto">
-              <button onClick={() => setCalendarView('vault')} className="flex-1 md:flex-none justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 md:px-6 py-2.5 md:py-3 rounded-xl text-[11px] md:text-sm font-bold transition-colors flex items-center shadow-lg">
-                <Archive size={14} className="mr-1.5 md:mr-2" /> VAULT
-              </button>
-              <button onClick={() => setShowBookingModal(true)} className="flex-[2] md:flex-none justify-center bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-6 py-2.5 md:py-3 rounded-xl text-[11px] md:text-sm font-bold transition-colors flex items-center shadow-lg">
-                <Plus size={14} className="mr-1.5 md:mr-2" /> ADD BOOKING
-              </button>
-            </div>
+        <div className="flex flex-row gap-2 shrink-0 items-center w-full md:w-auto mt-2 md:mt-0 justify-end">
+          {calendarView === 'vault' ? (
+            <button 
+              onClick={() => setCalendarView('month')} 
+              className="flex-1 md:flex-none justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 md:px-6 py-2.5 md:py-3 rounded-xl text-[11px] md:text-sm font-bold transition-colors flex items-center shadow-lg"
+            >
+              <Calendar size={14} className="mr-1.5 md:mr-2" /> CALENDAR
+            </button>
+          ) : (
+            <button 
+              onClick={() => setCalendarView('vault')} 
+              className="flex-1 md:flex-none justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 md:px-6 py-2.5 md:py-3 rounded-xl text-[11px] md:text-sm font-bold transition-colors flex items-center shadow-lg"
+            >
+              <Archive size={14} className="mr-1.5 md:mr-2" /> VAULT
+            </button>
+          )}
+          {canManageBookings && (
+            <button 
+              onClick={() => setShowBookingModal(true)} 
+              className="flex-[2] md:flex-none justify-center bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-6 py-2.5 md:py-3 rounded-xl text-[11px] md:text-sm font-bold transition-colors flex items-center shadow-lg"
+            >
+              <Plus size={14} className="mr-1.5 md:mr-2" /> ADD BOOKING
+            </button>
           )}
         </div>
       </header>
 
       {/* MONTHLY CALENDAR VIEW */}
       {calendarView === 'month' && (
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col space-y-8 pb-8 animate-in fade-in">
+        <div className="w-full flex flex-col space-y-8 pb-8 animate-in fade-in">
+          <div className="shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-slate-800 pb-4 mb-6 gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className="text-xl font-black text-white flex items-center">
+                    <Calendar size={24} className="mr-3 text-indigo-400 shrink-0" />
+                    Schedule for {(() => {
+                      const [y, m, d] = (calendarDate || '').split('-').map(Number);
+                      const dt = y && m && d ? new Date(y, m - 1, d) : new Date();
+                      return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                    })()}
+                  </h3>
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [y, m, d] = calendarDate.split('-').map(Number);
+                        const prevDate = new Date(y, m - 1, d - 1);
+                        setCalendarDate(formatLocalDate(prevDate));
+                        setCalendarMonth(prevDate);
+                      }}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-white transition-colors border border-slate-700"
+                      title="Previous Day"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const now = new Date();
+                        setCalendarDate(formatLocalDate(now));
+                        setCalendarMonth(now);
+                      }}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider text-white transition-colors border border-slate-700"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [y, m, d] = calendarDate.split('-').map(Number);
+                        const nextDate = new Date(y, m - 1, d + 1);
+                        setCalendarDate(formatLocalDate(nextDate));
+                        setCalendarMonth(nextDate);
+                      }}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-white transition-colors border border-slate-700"
+                      title="Next Day"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-200 cursor-pointer bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-700/60 transition-colors select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={swapColoristsToggle} 
+                    onChange={(e) => setSwapColoristsToggle(e.target.checked)} 
+                    className="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700 focus:ring-indigo-500" 
+                  />
+                  <span>Swap colorists</span>
+                </label>
+                <button
+                  onClick={copyScheduleBrief}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-xl text-xs font-black tracking-widest transition-all shadow-lg"
+                >
+                  <ClipboardCopy size={16} />
+                  COPY BRIEF
+                </button>
+              </div>
+            </div>
+            {activeSwapSource && (
+              <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 border-2 border-cyan-500/50 rounded-2xl p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl animate-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 animate-pulse">
+                    <ArrowLeftRight size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                      <span>Interchange Mode Active</span>
+                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">
+                        {activeSwapSource.studio} • {activeSwapSource.startTime}–{activeSwapSource.endTime}
+                      </span>
+                    </p>
+                    <p className="text-sm font-bold text-white mt-0.5">
+                      Click another booking to interchange Room & Timing with <span className="text-cyan-300 font-black">[{activeSwapSource.project}]</span>, or click an empty studio to move.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+                  <button
+                    onClick={() => setShowSwapModal(activeSwapSource)}
+                    className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg hover:scale-105 active:scale-95"
+                  >
+                    Open Swap Dialog
+                  </button>
+                  <button
+                    onClick={() => setActiveSwapSource(null)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-slate-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {STUDIO_ROOMS.map(room => {
+                const roomBookings = activeBookings
+                  .filter(b => b.date === calendarDate && b.studio === room)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const isRoomHovered = hoverTarget?.type === 'room' && hoverTarget.room === room && dragState?.booking?.studio !== room;
+                const activeDraggingBooking = dragState?.booking;
+
+                return (
+                  <div 
+                    key={room}
+                    data-room-id={room}
+                    className={`bg-slate-900 rounded-3xl border p-6 flex flex-col h-full shadow-xl transition-all ${
+                      isRoomHovered 
+                        ? 'border-2 border-emerald-400 bg-emerald-950/20 shadow-[0_0_30px_rgba(16,185,129,0.35)] scale-[1.01]' 
+                        : 'border-slate-800'
+                    }`}
+                  >
+                    <div className="border-b border-slate-800 pb-4 mb-5 flex items-center justify-between">
+                      <h3 className="font-black text-lg text-white flex items-center uppercase tracking-widest">
+                        <div className={`w-4 h-4 rounded-md mr-3 ${studioColors[room]}`}></div>
+                        {room}
+                      </h3>
+                      {activeSwapSource && activeSwapSource.studio !== room && (
+                        <button
+                          onClick={() => {
+                            handleMoveBookingToRoom(activeSwapSource, room);
+                            setActiveSwapSource(null);
+                          }}
+                          className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                        >
+                          Move Here
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-4 flex-1">
+                      {roomBookings.length === 0 ? (
+                        <div 
+                          className={`flex flex-col items-center justify-center min-h-[140px] text-center p-4 border-2 border-dashed rounded-2xl transition-all ${
+                            isRoomHovered
+                              ? 'border-emerald-400 bg-emerald-950/50 text-emerald-300 scale-[1.02] shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                              : activeSwapSource && activeSwapSource.studio !== room
+                              ? 'border-indigo-500/50 bg-indigo-950/20 text-indigo-300'
+                              : 'border-slate-800 text-slate-600'
+                          }`}
+                        >
+                          {isRoomHovered ? (
+                            <div className="text-emerald-300 font-black text-xs uppercase tracking-widest flex items-center gap-2 animate-pulse pointer-events-none">
+                              <Plus size={16} /> Release to Place [{activeDraggingBooking?.project}] Here
+                            </div>
+                          ) : activeSwapSource && activeSwapSource.studio !== room ? (
+                            <button
+                              onClick={() => {
+                                handleMoveBookingToRoom(activeSwapSource, room);
+                                setActiveSwapSource(null);
+                              }}
+                              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                            >
+                              <Plus size={14} /> Move [{activeSwapSource.project}] Here
+                            </button>
+                          ) : (
+                            <>
+                              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">No bookings for this date.</span>
+                              {canManageBookings && (
+                                <span className="text-[10px] text-slate-500 mt-1 font-bold">Drag any booking here to move to {room}</span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {roomBookings.map(booking => {
+                            const isBeingDragged = dragState?.booking?.id === booking.id && dragState.isDragging;
+                            const isHoveredTarget = hoverTarget?.type === 'booking' && hoverTarget.booking.id === booking.id;
+                            const isSwapSource = activeSwapSource?.id === booking.id;
+                            const isEligibleSwapTarget = activeSwapSource && activeSwapSource.id !== booking.id;
+
+                            return (
+                              <div 
+                                key={booking.id} 
+                                data-booking-id={booking.id}
+                                className={`border rounded-2xl p-5 group relative shadow-md transition-all select-none ${
+                                  isBeingDragged 
+                                    ? 'opacity-25 scale-95 border-2 border-dashed border-indigo-400 bg-indigo-950/20 shadow-none' :
+                                  isHoveredTarget 
+                                    ? 'border-2 border-cyan-400 bg-cyan-950/90 shadow-[0_0_40px_rgba(34,211,238,0.7)] scale-[1.04] z-30 ring-4 ring-cyan-400/50' :
+                                  isSwapSource 
+                                    ? 'border-2 border-cyan-400 bg-cyan-950/40 shadow-[0_0_20px_rgba(34,211,238,0.4)] ring-2 ring-cyan-500/30' :
+                                  isEligibleSwapTarget 
+                                    ? 'border-slate-600 hover:border-cyan-400 hover:shadow-lg' :
+                                  'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                } ${booking.date < today ? 'opacity-60 grayscale-[0.5]' : ''}`}
+                              >
+                                {/* Game-Like Drag Hover Target Banner */}
+                                {isHoveredTarget && (
+                                  <div className="animate-in fade-in zoom-in-95 duration-150 mb-3 pointer-events-none">
+                                    <div className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 text-slate-950 px-3.5 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xl animate-bounce">
+                                      <ArrowLeftRight size={14} className="stroke-[3]" /> RELEASE TO SWAP ROOM & TIMING!
+                                    </div>
+                                    <div className="text-[10px] font-mono text-cyan-300 bg-slate-950/95 p-2.5 rounded-xl border border-cyan-500/30 space-y-1 mt-1.5 shadow-xl">
+                                      <div>➔ <strong className="text-white">{activeDraggingBooking?.project}</strong> gets <span className="text-cyan-400 font-bold">{booking.studio} ({booking.startTime}–{booking.endTime})</span></div>
+                                      <div>➔ <strong className="text-white">{booking.project}</strong> gets <span className="text-indigo-300 font-bold">{activeDraggingBooking?.studio} ({activeDraggingBooking?.startTime}–{activeDraggingBooking?.endTime})</span></div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex items-center gap-2">
+                                    {canManageBookings && (
+                                      <div 
+                                        title="🎮 Drag card to another studio or drop onto another booking to interchange timing & room" 
+                                        className="text-slate-400 group-hover:text-cyan-400 hover:scale-110 transition-all cursor-grab active:cursor-grabbing p-1 -ml-1 rounded"
+                                        onPointerDown={(e) => handleCardPointerDown(e, booking)}
+                                        style={{ touchAction: 'none' }}
+                                      >
+                                        <GripVertical size={16} />
+                                      </div>
+                                    )}
+                                    <span className="text-xs font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg tracking-widest">
+                                      {booking.startTime} - {booking.endTime}
+                                    </span>
+                                  </div>
+                                  {canManageBookings && (
+                                    <div className="flex items-center space-x-1.5">
+                                      <button 
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          if (activeSwapSource?.id === booking.id) {
+                                            setActiveSwapSource(null);
+                                          } else {
+                                            setActiveSwapSource(booking);
+                                            setShowSwapModal(booking);
+                                          }
+                                        }} 
+                                        className={`p-2 rounded-xl transition-all ${
+                                          isSwapSource 
+                                            ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30' 
+                                            : 'text-slate-300 hover:text-cyan-400 hover:bg-cyan-500/10'
+                                        }`} 
+                                        title="Interchange / Swap Room & Timing"
+                                      >
+                                        <ArrowLeftRight size={16} />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); duplicateBooking(booking); }} className="p-2 text-slate-300 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all" title="Duplicate Booking">
+                                        <Copy size={16} />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); setShowBookingModal(booking); }} className="p-2 text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all" title="Edit Booking">
+                                        <Edit size={16} />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); moveToVault(booking.id); }} className="p-2 text-slate-300 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all" title="Vault Booking">
+                                        <Archive size={16} />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id); }} className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all" title="Delete Booking">
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col mb-4 mt-2">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <h4 className="text-white font-bold text-lg leading-tight uppercase tracking-tight">{booking.project}</h4>
+                                    {booking.projectCode && (
+                                      <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] px-2 py-0.5 rounded font-black tracking-widest leading-none">
+                                        {booking.projectCode}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-0.5">{booking.productionHouse}</p>
+                                </div>
+                                <div className="space-y-2 mb-4 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                                  {booking.director && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DIR</strong>{booking.director}</p>}
+                                  {booking.dop && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DOP</strong>{booking.dop}</p>}
+                                  {booking.postProducer && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">POST</strong>{booking.postProducer}</p>}
+                                  {booking.deliverables && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DELV</strong>{booking.deliverables}</p>}
+                                </div>
+                                <div className="flex justify-between items-end pt-3 border-t border-slate-700/50 mt-auto">
+                                  <div className="flex flex-col">
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center mb-1">
+                                      <UserCircle size={14} className="mr-1.5 text-indigo-400" /> Colorist
+                                    </p>
+                                    <span className="text-white text-sm font-black tracking-tight">{getUserName(booking.coloristId)}</span>
+                                  </div>
+                                  <div className="flex flex-col items-end space-y-1.5">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{booking.date}</span>
+                                      <span className="text-[9px] font-black bg-slate-900 border border-slate-700 text-slate-400 px-2 py-0.5 rounded-lg font-mono tracking-tighter shadow-inner">
+                                        BID-{(booking.id || '').slice(0, 6).toUpperCase()}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">
+                                        CR: <span className="text-slate-500">{booking.createdAt ? new Date(booking.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '--'}</span>
+                                      </p>
+                                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">
+                                        MD: <span className="text-slate-500">{booking.lastModified ? new Date(booking.lastModified).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '--'}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Interactive Click-to-Swap Action Button */}
+                                {isEligibleSwapTarget && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleInterchangeBookings(activeSwapSource, booking, swapColoristsToggle);
+                                      setActiveSwapSource(null);
+                                    }}
+                                    className="w-full mt-3 py-2 px-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95 animate-pulse"
+                                  >
+                                    <ArrowLeftRight size={14} /> Swap Room & Timing With This
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {isRoomHovered && (
+                            <div className="p-3.5 border-2 border-dashed border-emerald-400 bg-emerald-950/40 rounded-2xl text-center text-emerald-300 font-black text-xs uppercase tracking-widest animate-pulse flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
+                              <Plus size={16} /> Release to Move [{activeDraggingBooking?.project}] into {room}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* MONTHLY CALENDAR OVERVIEW (INTERCHANGED TO BOTTOM) */}
           <div className="bg-slate-900 rounded-3xl border border-slate-800 p-4 md:p-6 shrink-0 shadow-xl overflow-x-hidden">
             <div className="flex items-center justify-between mb-6 w-full">
-              <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">
-                {monthNames[calMonth]} <span className="text-indigo-400">{calYear}</span>
-              </h3>
+              <div>
+                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">
+                  {monthNames[calMonth]} <span className="text-indigo-400">{calYear}</span>
+                </h3>
+                <p className="text-xs text-slate-400 font-bold mt-0.5">Click any date to view and shuffle studio bookings above</p>
+              </div>
               <div className="flex space-x-2 md:space-x-3">
-                <button onClick={() => setCalendarMonth(new Date(calYear, calMonth - 1, 1))} className="p-2 md:p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors"><ChevronLeft size={20} /></button>
-                <button onClick={() => { setCalendarMonth(new Date()); setCalendarDate(formatLocalDate(new Date())); }} className="px-3 md:px-5 py-2 md:py-3 bg-slate-800 hover:bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white transition-colors uppercase tracking-widest">Today</button>
-                <button onClick={() => setCalendarMonth(new Date(calYear, calMonth + 1, 1))} className="p-2 md:p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors"><ChevronRight size={20} /></button>
+                <button onClick={() => setCalendarMonth(new Date(calYear, calMonth - 1, 1))} className="p-2 md:p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors border border-slate-700" title="Previous Month"><ChevronLeft size={20} /></button>
+                <button onClick={() => { const now = new Date(); setCalendarMonth(now); setCalendarDate(formatLocalDate(now)); }} className="px-3 md:px-5 py-2 md:py-3 bg-slate-800 hover:bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white transition-colors uppercase tracking-widest border border-slate-700">Today</button>
+                <button onClick={() => setCalendarMonth(new Date(calYear, calMonth + 1, 1))} className="p-2 md:p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors border border-slate-700" title="Next Month"><ChevronRight size={20} /></button>
               </div>
             </div>
 
@@ -705,296 +1241,6 @@ const StudioBookings = ({
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="shrink-0">
-            <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-slate-800 pb-4 mb-6 gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <h3 className="text-xl font-black text-white flex items-center">
-                  <Calendar size={24} className="mr-3 text-indigo-400 shrink-0" />
-                  Schedule for {new Date(calendarDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                </h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={copyScheduleBrief}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-xl text-xs font-black tracking-widest transition-all shadow-lg"
-                >
-                  <ClipboardCopy size={16} />
-                  COPY BRIEF
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {STUDIO_ROOMS.map(room => {
-                const roomBookings = activeBookings
-                  .filter(b => b.date === calendarDate && b.studio === room)
-                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
-                return (
-                  <div key={room} className="bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col h-full shadow-xl">
-                    <div className="border-b border-slate-800 pb-4 mb-5">
-                      <h3 className="font-black text-lg text-white flex items-center uppercase tracking-widest">
-                        <div className={`w-4 h-4 rounded-md mr-3 ${studioColors[room]}`}></div>
-                        {room}
-                      </h3>
-                    </div>
-                    <div className="space-y-4 flex-1">
-                      {roomBookings.length === 0 ? (
-                        <div className="flex items-center justify-center h-32 text-slate-600 border-2 border-slate-800 border-dashed rounded-2xl font-medium">No bookings for this date.</div>
-                      ) : (
-                        roomBookings.map(booking => (
-                          <div key={booking.id} className={`bg-slate-800 border border-slate-700 rounded-2xl p-5 group relative shadow-md ${booking.date < today ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="text-xs font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg tracking-widest">
-                                {booking.startTime} - {booking.endTime}
-                              </span>
-                              {currentUserProfile.isAdmin && (
-                                <div className="flex items-center space-x-2">
-                                  <button onClick={(e) => { e.stopPropagation(); duplicateBooking(booking); }} className="p-2 text-slate-300 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all" title="Duplicate Booking">
-                                    <Copy size={16} />
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); setShowBookingModal(booking); }} className="p-2 text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all" title="Edit Booking">
-                                    <Edit size={16} />
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); moveToVault(booking.id); }} className="p-2 text-slate-300 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all" title="Vault Booking">
-                                    <Archive size={16} />
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id); }} className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all" title="Delete Booking">
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col mb-4 mt-2">
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <h4 className="text-white font-bold text-lg leading-tight uppercase tracking-tight">{booking.project}</h4>
-                                {booking.projectCode && (
-                                  <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] px-2 py-0.5 rounded font-black tracking-widest leading-none">
-                                    {booking.projectCode}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-0.5">{booking.productionHouse}</p>
-                            </div>
-                            <div className="space-y-2 mb-4 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                              {booking.director && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DIR</strong>{booking.director}</p>}
-                              {booking.dop && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DOP</strong>{booking.dop}</p>}
-                              {booking.postProducer && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">POST</strong>{booking.postProducer}</p>}
-                              {booking.deliverables && <p className="text-[11px] text-slate-400"><strong className="text-slate-500 uppercase tracking-widest mr-2">DELV</strong>{booking.deliverables}</p>}
-                            </div>
-                            <div className="flex justify-between items-end pt-3 border-t border-slate-700/50 mt-auto">
-                              <div className="flex flex-col">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center mb-1">
-                                  <UserCircle size={14} className="mr-1.5 text-indigo-400" /> Colorist
-                                </p>
-                                <span className="text-white text-sm font-black tracking-tight">{getUserName(booking.coloristId)}</span>
-                              </div>
-                              <div className="flex flex-col items-end space-y-1.5">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{booking.date}</span>
-                                  <span className="text-[9px] font-black bg-slate-900 border border-slate-700 text-slate-400 px-2 py-0.5 rounded-lg font-mono tracking-tighter shadow-inner">
-                                    BID-{(booking.id || '').slice(0, 6).toUpperCase()}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <p className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">
-                                    CR: <span className="text-slate-500">{booking.createdAt ? new Date(booking.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '--'}</span>
-                                  </p>
-                                  <p className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">
-                                    MD: <span className="text-slate-500">{booking.lastModified ? new Date(booking.lastModified).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '--'}</span>
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {calendarView === 'list' && (
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pb-8 animate-in fade-in">
-          {upcomingDates.length === 0 && pastDates.length === 0 && (
-            <div className="text-center p-16 bg-slate-900 rounded-3xl border border-slate-800 border-dashed">
-              <Calendar size={48} className="mx-auto text-slate-700 mb-4" />
-              <p className="text-slate-500 font-medium text-lg">No bookings yet.</p>
-            </div>
-          )}
-          {upcomingDates.length > 0 && (
-            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 px-1">Upcoming</p>
-              <div className="space-y-3">
-                {upcomingDates.map(d => <DaySection key={d} dateStr={d} isSelected={d === calendarDate} />)}
-              </div>
-            </div>
-          )}
-          {pastDates.length > 0 && (
-            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 px-1">Past</p>
-              <div className="space-y-3">
-                {pastDates.map(d => <DaySection key={d} dateStr={d} isSelected={d === calendarDate} />)}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* WEEK VIEW */}
-      {calendarView === 'week' && (
-        <div className="flex-1 flex flex-col space-y-6 pb-8 animate-in fade-in">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg shrink-0">
-            <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3 w-full md:w-auto overflow-hidden">
-              <Calendar size={20} className="text-indigo-400 shrink-0" />
-              <span className="truncate">Week Grid View</span>
-            </h3>
-            <div className="flex space-x-2 shrink-0 overflow-x-auto custom-scrollbar w-full md:w-auto">
-              <button 
-                onClick={() => {
-                  const d = new Date(calendarDate);
-                  d.setDate(d.getDate() - (isMobileGrid ? 4 : 7));
-                  setCalendarDate(formatLocalDate(d));
-                }} 
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors border border-slate-700 shrink-0"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button 
-                onClick={() => setCalendarDate(formatLocalDate(new Date()))} 
-                className="px-5 py-2.5 bg-slate-800 hover:bg-indigo-600 rounded-xl text-xs font-bold text-white transition-colors uppercase tracking-widest border border-slate-700 shrink-0"
-              >
-                Today
-              </button>
-              <button 
-                onClick={() => {
-                  const d = new Date(calendarDate);
-                  d.setDate(d.getDate() + (isMobileGrid ? 4 : 7));
-                  setCalendarDate(formatLocalDate(d));
-                }} 
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition-colors border border-slate-700 shrink-0"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-          
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col relative">
-            <div className="w-full relative z-0">
-              <div className="w-full flex flex-col">
-                <div className="flex border-b border-slate-800 bg-slate-900/95 sticky top-[-1px] z-[60] backdrop-blur-xl shadow-lg rounded-t-3xl border-t border-slate-700/50 mt-[-1px]">
-                  <div className="w-12 md:w-20 shrink-0 border-r border-slate-800 bg-transparent z-50" />
-                  <div className={`flex-1 grid ${isMobileGrid ? 'grid-cols-4' : 'grid-cols-7'} relative z-10`}>
-                    {weekDays.map((dStr, i) => {
-                      const d = new Date(dStr);
-                      const isToday = dStr === today;
-                      return (
-                        <div key={i} className="py-2 md:py-4 px-0.5 md:px-2 text-center border-r border-slate-800/50 last:border-r-0 flex flex-col items-center overflow-hidden">
-                          <span className={`text-[9px] md:text-xs font-black uppercase tracking-widest ${isToday ? 'text-indigo-400' : 'text-slate-500'}`}>
-                            {d.toLocaleDateString('en-GB', { weekday: 'short' })}
-                          </span>
-                          <div className={`mt-1.5 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base font-black transition-all ${isToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-200'}`}>
-                            {d.getDate()}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex-1 bg-slate-900 rounded-b-3xl">
-                  <div className="flex relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-                    <div className="w-12 md:w-20 shrink-0 border-r border-slate-800 bg-slate-900/90 backdrop-blur-sm z-40">
-                      {HOURS.map(hour => (
-                        <div key={hour} className="text-[9px] md:text-[10px] font-bold text-slate-500 text-right pr-1.5 md:pr-3 -mt-2.5 absolute w-full" style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }}>
-                          {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex-1 relative">
-                      {HOURS.map(hour => (
-                        <div key={hour} className="absolute w-full border-t border-slate-800/60 pointer-events-none" style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }} />
-                      ))}
-                      {HOURS.map(hour => (
-                        <div key={`half-${hour}`} className="absolute w-full border-t border-slate-800/20 border-dashed pointer-events-none" style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT + 30}px` }} />
-                      ))}
-
-                      <div className={`grid ${isMobileGrid ? 'grid-cols-4' : 'grid-cols-7'} absolute inset-0 h-full`}>
-                        {weekDays.map((dStr, i) => {
-                          const rawDayBookings = activeBookings.filter(b => b.date === dStr).sort((a,b) => a.startTime.localeCompare(b.startTime));
-                          const dayBookings = calculateOverlaps(rawDayBookings);
-                          const isPast = dStr < today;
-                          
-                          return (
-                            <div key={i} className={`relative border-r border-slate-800/50 last:border-r-0 ${isPast ? 'bg-slate-950/40' : ''}`}>
-                              {dStr === today && (
-                                <div className="absolute w-full border-t-2 border-emerald-500 z-30 pointer-events-none" style={{ top: `${(new Date().getHours() - START_HOUR) * HOUR_HEIGHT + new Date().getMinutes()}px` }}>
-                                  <div className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                </div>
-                              )}
-
-                              <div className="absolute inset-0 pt-0">
-                                {dayBookings.map(b => {
-                                  const { top, height } = getPositionMetrics(b.startTime, b.endTime);
-                                  const widthPercent = (1 / b.totalCols) * 100;
-                                  const leftPercent = (b.colIndex / b.totalCols) * 100;
-                                  const colorClassBase = studioColors[b.studio] || 'bg-slate-500';
-                                  const bgColor = colorClassBase.replace('bg-', 'bg-').replace('500', '500/10');
-                                  const textColor = colorClassBase.replace('bg-', 'text-').replace('500', '400');
-                                  const borderColor = colorClassBase.replace('bg-', 'border-').replace('500', '500/20');
-                                  const hoverBorder = colorClassBase.replace('bg-', 'hover:border-').replace('500', '500/40');
-                                  const borderLeft = colorClassBase.replace('bg-', 'border-l-');
-
-                                  const minHeightClass = height < 30 ? 'items-center text-[9px]' : 'items-start flex-col';
-                                  const dateIsPast = b.date < today;
-
-                                  return (
-                                    <div 
-                                      key={b.id} 
-                                      onClick={() => setShowBookingModal(b)}
-                                      className={`absolute rounded-lg border-y border-r border-l-[3px] shadow-sm overflow-hidden transition-transform hover:scale-[1.02] z-10 cursor-pointer p-1.5 flex ${minHeightClass} ${bgColor} ${textColor} ${borderColor} ${hoverBorder} ${borderLeft} ${dateIsPast ? 'opacity-60 grayscale-[0.3]' : ''}`}
-                                      style={{ 
-                                        top: `${top}px`, 
-                                        height: `${height}px`, 
-                                        left: `calc(${leftPercent}% + 2px)`,
-                                        width: `calc(${widthPercent}% - 4px)`,
-                                        zIndex: Math.floor(top) 
-                                      }}
-                                    >
-                                      <div className="font-black text-[10px] md:text-xs leading-none truncate w-full flex items-center justify-between">
-                                        <span className="truncate">
-                                          {b.projectCode ? `[${b.projectCode}] ` : ''}{b.project}
-                                        </span>
-                                      </div>
-                                      {height >= 45 && (
-                                        <>
-                                          <div className="font-medium text-[9px] md:text-[10px] truncate opacity-90 mt-0.5 max-w-full text-slate-300">
-                                            {b.productionHouse}
-                                          </div>
-                                          <div className="flex flex-wrap flex-col items-start mt-auto pt-1 gap-y-0.5 text-[8px] md:text-[9px] font-black uppercase tracking-widest opacity-80">
-                                            <span className="flex items-center gap-0.5"><Clock size={9} /> {b.startTime}-{b.endTime}</span>
-                                            <span className="flex items-center gap-0.5">{b.studio}</span>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1216,8 +1462,194 @@ const StudioBookings = ({
         </div>
       )}
 
+      {/* Interchange / Swap Booking Modal */}
+      {showSwapModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl md:rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 md:p-8 border-b border-slate-800 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <ArrowLeftRight size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-widest">
+                    Interchange Booking
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Swap room & timing with another booking on {showSwapModal.date}, or relocate to an open studio.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowSwapModal(null);
+                  setActiveSwapSource(null);
+                }} 
+                className="text-slate-400 hover:text-white transition-colors p-2 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+              {/* Source Booking Card */}
+              <div className="bg-slate-950/60 p-5 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-md border border-cyan-500/20">
+                    Active Selection
+                  </span>
+                  <span className="text-xs font-black text-slate-300 font-mono">
+                    BID-{(showSwapModal.id || '').slice(0, 6).toUpperCase()}
+                  </span>
+                </div>
+                <h4 className="text-lg font-black text-white uppercase tracking-tight">{showSwapModal.project}</h4>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">{showSwapModal.productionHouse}</p>
+                
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-800/80">
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Current Room</span>
+                    <span className="text-xs font-black text-indigo-400">{showSwapModal.studio}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Current Time</span>
+                    <span className="text-xs font-black text-slate-200">{showSwapModal.startTime} – {showSwapModal.endTime}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Colorist</span>
+                    <span className="text-xs font-black text-slate-200">{getUserName(showSwapModal.coloristId)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Colorist swap toggle */}
+              <div className="flex items-center justify-between bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/50">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={swapColoristsToggle}
+                    onChange={(e) => setSwapColoristsToggle(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Also interchange assigned Colorists (Default: keep artists with their respective projects)</span>
+                </label>
+              </div>
+
+              {/* Section 1: Interchange with another booking on the same date */}
+              <div>
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
+                  <ArrowLeftRight size={14} className="text-cyan-400" />
+                  Interchange With Other Bookings on {showSwapModal.date}
+                </h4>
+
+                {activeBookings.filter(b => b.date === showSwapModal.date && b.id !== showSwapModal.id).length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 border border-slate-800 border-dashed rounded-2xl text-xs font-medium">
+                    No other bookings on this date to interchange with. Use the studio mover below to relocate to another room.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeBookings
+                      .filter(b => b.date === showSwapModal.date && b.id !== showSwapModal.id)
+                      .sort((a, b) => a.studio.localeCompare(b.studio) || a.startTime.localeCompare(b.startTime))
+                      .map(target => (
+                        <div key={target.id} className="bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 rounded-2xl p-4 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group shadow-md">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{target.project}</span>
+                              <span className="text-[10px] font-bold text-slate-400">({target.productionHouse})</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] font-bold mt-1">
+                              <span className="text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{target.studio}</span>
+                              <span className="text-slate-300">{target.startTime} – {target.endTime}</span>
+                              <span className="text-slate-500">•</span>
+                              <span className="text-slate-400">{getUserName(target.coloristId)}</span>
+                            </div>
+
+                            {/* Interchange Visual Summary */}
+                            <div className="mt-2.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/40 p-2.5 rounded-xl border border-cyan-500/20 space-y-1">
+                              <div>➔ <strong className="text-white">{showSwapModal.project}</strong> takes <strong>{target.studio} ({target.startTime}–{target.endTime})</strong></div>
+                              <div>➔ <strong className="text-white">{target.project}</strong> takes <strong>{showSwapModal.studio} ({showSwapModal.startTime}–{showSwapModal.endTime})</strong></div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleInterchangeBookings(showSwapModal, target, swapColoristsToggle);
+                              setShowSwapModal(null);
+                              setActiveSwapSource(null);
+                            }}
+                            className="px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center gap-2"
+                          >
+                            <ArrowLeftRight size={14} /> Swap Both
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section 2: Move to an Open Studio */}
+              <div className="pt-4 border-t border-slate-800">
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
+                  <Plus size={14} className="text-indigo-400" />
+                  Or Move To Another Studio (Keep Timing: {showSwapModal.startTime}–{showSwapModal.endTime})
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {STUDIO_ROOMS.map(room => {
+                    const isCurrent = showSwapModal.studio === room;
+                    const hasConflict = activeBookings.some(b => 
+                      b.id !== showSwapModal.id && 
+                      b.date === showSwapModal.date && 
+                      b.studio === room && 
+                      (showSwapModal.startTime < b.endTime && showSwapModal.endTime > b.startTime)
+                    );
+                    return (
+                      <button
+                        key={room}
+                        type="button"
+                        disabled={isCurrent}
+                        onClick={() => {
+                          handleMoveBookingToRoom(showSwapModal, room);
+                          setShowSwapModal(null);
+                          setActiveSwapSource(null);
+                        }}
+                        className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center ${
+                          isCurrent
+                            ? 'bg-slate-800/30 border-slate-800 text-slate-600 cursor-not-allowed'
+                            : hasConflict
+                            ? 'bg-amber-950/20 border-amber-500/30 hover:border-amber-500 text-amber-300'
+                            : 'bg-slate-800 hover:bg-indigo-600 border-slate-700 text-white shadow-md hover:scale-105 active:scale-95'
+                        }`}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wider">{room}</span>
+                        <span className="text-[9px] font-bold mt-1 text-slate-400">
+                          {isCurrent ? '(Current)' : hasConflict ? 'Has Overlap' : 'Available'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 md:p-6 border-t border-slate-800 bg-slate-950/50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSwapModal(null);
+                  setActiveSwapSource(null);
+                }}
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {calendarView === 'vault' && (
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pb-8 animate-in fade-in">
+        <div className="w-full space-y-8 pb-8 animate-in fade-in">
           
           <div>
             <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl mb-6">
@@ -1302,6 +1734,41 @@ const StudioBookings = ({
         onCancel={() => setShowDeleteConfirmation(null)}
         bookingName={bookings.find(b => b.id === showDeleteConfirmation)?.project}
       />
+      {/* GAME-STYLE FLOATING DRAGGED CARD */}
+      {dragState && dragState.isDragging && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${dragState.currentX - dragState.offsetX}px`,
+            top: `${dragState.currentY - dragState.offsetY}px`,
+            width: `${dragState.width}px`,
+            pointerEvents: 'none',
+            zIndex: 999999,
+            transform: 'rotate(2.5deg) scale(1.05)',
+            filter: 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 30px rgba(99, 102, 241, 0.5))',
+            transition: 'transform 0.05s ease-out',
+            willChange: 'transform, left, top',
+            touchAction: 'none'
+          }}
+        >
+          <div className="bg-slate-900/95 border-2 border-cyan-400 rounded-2xl p-5 shadow-2xl ring-4 ring-cyan-500/30 backdrop-blur-xl">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-black text-indigo-300 bg-indigo-500/20 border border-indigo-500/40 px-2.5 py-1 rounded-lg tracking-widest flex items-center gap-1.5">
+                <Clock size={12} /> {dragState.booking.startTime} – {dragState.booking.endTime}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-md border border-cyan-500/30 animate-pulse flex items-center gap-1">
+                <ArrowLeftRight size={11} /> DRAGGING...
+              </span>
+            </div>
+            <h4 className="text-white font-black text-lg leading-tight uppercase tracking-tight">{dragState.booking.project}</h4>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{dragState.booking.productionHouse}</p>
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-700/60 text-[11px] font-bold text-slate-300">
+              <span className="text-indigo-400 font-black">{dragState.booking.studio}</span>
+              <span className="text-slate-400">{getUserName(dragState.booking.coloristId)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

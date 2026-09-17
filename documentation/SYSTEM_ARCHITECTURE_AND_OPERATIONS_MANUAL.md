@@ -107,7 +107,7 @@ flowchart TD
 | Module | What It Does |
 | :--- | :--- |
 | **PIN Auth & Profile Matrix** | Fast PIN login bound to user profiles `u0`–`u11`. Role-based permissions for Artists, Line Producers, and IT Admin. |
-| **Studio Booking Schedule** | Interactive visual grid displaying live bookings and 9-hour shifts across Studio 01 (HDR+5.1), Studio 02 (SDR+Stereo), Studio 03 (Mastering), Conform, and Assist suites. |
+| **Studio Booking Schedule** | Interactive visual grid displaying live bookings and 9-hour shifts across Studio 01 (HDR+5.1), Studio 02 (SDR+Stereo), Studio 03 (Mastering), Studio 04 (Grade/Finishing), Conform, and Assist suites. |
 | **Atomic Task Logger & Time Clock** | Log work sessions with exact start/end times, actual hours, task type (`Booking`, `Conform`, `Assist`, `Mastering`, `Rendering`), and detailed scope notes. |
 | **IT & System Task Dispatcher** | Create, delegate, and track hardware, software deployment, storage expansion (TrueNAS), and networking tickets with file attachment support. |
 | **WhatsApp & Hard Drive Tracker** | Trigger automated WhatsApp client updates for hard drive pick-up readiness and render handoffs directly from the web interface. |

@@ -127,6 +127,16 @@ users:
     department: "Data & Post Operations"
     is_active: true
 
+  - id: 12
+    primary_email: "natasha.cineloom@gmail.com"
+    full_name: "Natasha Dodiya"
+    username: "natasha-st"
+    role: "Admin Executive"
+    designation: "Admin Executive"
+    department: "Production & Studio Administration"
+    personal_email: "natasha.cineloom@gmail.com"
+    is_active: true
+
 aliases:
   - primary_email: "samiran@studiotunnel.com"
     alias_email: "samiran.sonowal@studiotunnel.com"

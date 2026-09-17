@@ -57,18 +57,28 @@
 }
 
 /* ── Base Reset ── */
-html, body, #root {
-  height: 100%;
+html, body {
+  min-height: 100%;
   width: 100%;
-  overflow: hidden;
+  max-width: 100vw;
+  overflow-x: hidden;
   margin: 0;
   padding: 0;
   touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   font-family: var(--font-sans);
   background-color: var(--bg-base);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Safe-Area Padding ── */
@@ -553,4 +563,11 @@ html, body, #root {
 .tab-btn:not(.active):hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+/* ── Mobile Fit & Auto-Zoom Prevention ── */
+@media screen and (max-width: 768px) {
+  input, select, textarea, .st-input {
+    font-size: 16px !important;
+  }
 }

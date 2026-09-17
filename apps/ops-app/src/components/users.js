@@ -6,6 +6,7 @@ export const ROLES = {
   SR_COLORIST: 'Sr. Colorist',
   COLORIST: 'Colorist',
   LINE_PRODUCER: 'Line Producer',
+  ADMIN_EXECUTIVE: 'Admin Executive',
   ASSISTANT_COLORIST: 'Assistant Colorist',
   CONFORMIST_FLOOR_MGR: 'Conformist / Floor Manager',
   CONFORMIST: 'Conformist',
@@ -66,6 +67,17 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.EDIT_BOOKINGS]: true,
     [PERMISSIONS.VIEW_RECYCLE_BIN]: true
   },
+  [ROLES.ADMIN_EXECUTIVE]: {
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
+    [PERMISSIONS.VIEW_TRACKER]: true,
+    [PERMISSIONS.VIEW_PROJECTS]: true,
+    [PERMISSIONS.VIEW_ATTENDANCE]: true,
+    [PERMISSIONS.VIEW_LONG_FORMAT]: true,
+    [PERMISSIONS.APPROVE_LEAVES]: true,
+    [PERMISSIONS.REVIEW_SUBMISSIONS]: true,
+    [PERMISSIONS.EDIT_BOOKINGS]: true,
+    [PERMISSIONS.VIEW_RECYCLE_BIN]: true
+  },
   [ROLES.SR_COLORIST]: {
     [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
@@ -100,7 +112,7 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   },
   [ROLES.CONFORMIST]: {
-    [PERMISSIONS.VIEW_DASHBOARD]: false,
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
     [PERMISSIONS.VIEW_ATTENDANCE]: true,
@@ -111,7 +123,7 @@ export const ROLE_PERMISSIONS = {
     [PERMISSIONS.VIEW_RECYCLE_BIN]: false
   },
   [ROLES.ASSISTANT_COLORIST]: {
-    [PERMISSIONS.VIEW_DASHBOARD]: false,
+    [PERMISSIONS.VIEW_DASHBOARD]: true,
     [PERMISSIONS.VIEW_TRACKER]: true,
     [PERMISSIONS.VIEW_PROJECTS]: true,
     [PERMISSIONS.VIEW_ATTENDANCE]: true,
@@ -139,7 +151,7 @@ export const USERS = [
     role: ROLES.COLORIST_COO, 
     studio: 'Studio 03', 
     isAdmin: true,
-    emails: ['samiran@studiotunnel.com'],
+    emails: ['samiran@studiotunnel.com', 'samiransonowal@gmail.com', 'samiransnwl@gmail.com', 'contact@studiotunnel.com', 'lab@studiotunnel.com'],
     usernames: ['samiran', 'samiransonowal', 'u3']
   },
   { 
@@ -178,6 +190,15 @@ export const USERS = [
     isAdmin: true,
     emails: ['prakashjai.tunnel@gmail.com', 'prakash@studiotunnel.com'],
     usernames: ['prakash', 'prakashjaiswal', 'u0_b']
+  },
+  { 
+    id: 'u13', 
+    name: 'Natasha Dodiya', 
+    role: ROLES.ADMIN_EXECUTIVE, 
+    studio: 'Office', 
+    isAdmin: true,
+    emails: ['natasha.cineloom@gmail.com', 'natasha@studiotunnel.com'],
+    usernames: ['natasha', 'natashadodiya', 'u13']
   },
   { 
     id: 'u10', 
@@ -250,9 +271,12 @@ export const findUserByIdentifier = (identifier, userProfiles = {}) => {
     // Check built-in usernames
     if (u.usernames?.some(un => un.toLowerCase() === normalized)) return true;
 
-    // Check custom username saved in user_profiles
+    // Check custom username and email saved in user_profiles
     const profile = userProfiles[u.id];
     if (profile?.customUsername && profile.customUsername.trim().toLowerCase() === normalized) {
+      return true;
+    }
+    if (profile?.email && profile.email.trim().toLowerCase() === normalized) {
       return true;
     }
 
@@ -422,3 +446,31 @@ export const toggleClockInHelper = async ({
     showToast('Failed to update shift status', 'error');
   }
 };
+
+/**
+ * Role category detection helpers for tailored views
+ */
+export const isColorist = (user) => {
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('colorist') && !role.includes('assistant');
+};
+
+export const isAssist = (user) => {
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('assist');
+};
+
+export const isConformist = (user) => {
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('conform');
+};
+
+export const isLineProducer = (user) => {
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('producer') || role.includes('admin') || user.isAdmin === true;
+};
+

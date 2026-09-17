@@ -39,6 +39,8 @@ service firebase.storage {
           'aaditya@studiotunnel.com',
           'aadikamble11@gmail.com',
           'aaditya.tunnel@gmail.com',
+          'natasha.cineloom@gmail.com',
+          'natasha@studiotunnel.com',
           'lab@studiotunnel.com'
         ]
       );

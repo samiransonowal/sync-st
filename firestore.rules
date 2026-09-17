@@ -41,6 +41,8 @@ service cloud.firestore {
           'aaditya@studiotunnel.com',
           'aadikamble11@gmail.com',
           'aaditya.tunnel@gmail.com',
+          'natasha.cineloom@gmail.com',
+          'natasha@studiotunnel.com',
           'lab@studiotunnel.com'
         ]
       );
@@ -68,7 +70,9 @@ service cloud.firestore {
           'ansarialtamash04@gmail.com',
           'tamashansari4@gmail.com',
           'prakash@studiotunnel.com',
-          'prakashjai.tunnel@gmail.com'
+          'prakashjai.tunnel@gmail.com',
+          'natasha.cineloom@gmail.com',
+          'natasha@studiotunnel.com'
         ]
       );
     }
@@ -147,6 +151,40 @@ service cloud.firestore {
         allow read: if isApprovedUser();
         allow write: if isManagementOrProducer();
       }
+
+      // Comptroller Financial Ledgers (Strictly accessible by Management/Producers/Admin)
+      match /comptroller_invoices/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_estimates/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_payments_in/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_expenses/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_purchase_bills/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_credit_notes/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_parties/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_items/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+      match /comptroller_settings/{docId} {
+        allow read, write: if isManagementOrProducer();
+      }
+    }
+
+    // Comptroller Root Namespace
+    match /comptroller/{document=**} {
+      allow read, write: if isManagementOrProducer();
     }
 
     // Default deny all other paths

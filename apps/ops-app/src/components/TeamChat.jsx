@@ -6,7 +6,6 @@ import {
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { sendTeamChatAlert } from '../services/ntfy';
-import TeamNotepad from './TeamNotepad';
 
 export default function TeamChat({ 
   db, 
@@ -21,7 +20,6 @@ export default function TeamChat({
   setNotepads,
   waTemplates = []
 }) {
-  const [chatSubTab, setChatSubTab] = useState('messages'); // 'messages' | 'notepad'
   const [chatInputValue, setChatInputValue] = useState('');
   const [mentionQuery, setMentionQuery] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -263,47 +261,16 @@ export default function TeamChat({
       <header className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-black text-white flex items-center">
-            <MessageSquare className="mr-3 text-indigo-400" /> Team Chat & Hub
+            <MessageSquare className="mr-3 text-indigo-400" /> Team Chat
           </h2>
           <p className="text-slate-400 font-medium text-sm md:text-base mt-1">
-            {chatSubTab === 'messages' 
-              ? <span>Real-time internal studio communication. Type <span className="text-indigo-400 font-bold">@name</span> to mention someone.</span>
-              : 'Private staff notes, shared team scratchpad, and delivery templates.'}
+            Real-time internal studio communication. Type <span className="text-indigo-400 font-bold">@name</span> to mention someone.
           </p>
-        </div>
-
-        {/* View Mode Switcher */}
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl shrink-0">
-          <button
-            type="button"
-            onClick={() => setChatSubTab('messages')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
-              chatSubTab === 'messages'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <MessageSquare size={16} />
-            <span>Live Chat</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setChatSubTab('notepad')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
-              chatSubTab === 'notepad'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <FileText size={16} />
-            <span>Notepad & Scratchpad</span>
-          </button>
         </div>
       </header>
 
-      {/* SUBTAB 1: LIVE CHAT */}
-      {chatSubTab === 'messages' && (
-        <div className="h-[calc(100vh-250px)] min-h-[500px] flex-1 bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 flex flex-col shadow-xl overflow-hidden">
+      {/* LIVE CHAT */}
+      <div className="h-[calc(100vh-250px)] min-h-[500px] flex-1 bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 flex flex-col shadow-xl overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-4 flex flex-col">
             {messages.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-600">
@@ -495,22 +462,6 @@ export default function TeamChat({
             </form>
           </div>
         </div>
-      )}
-
-      {/* SUBTAB 2: NOTEPAD & SCRATCHPAD */}
-      {chatSubTab === 'notepad' && (
-        <div className="animate-in fade-in">
-          <TeamNotepad
-            db={db}
-            appId={appId}
-            currentUserProfile={currentUserProfile}
-            notepads={notepads}
-            setNotepads={setNotepads}
-            waTemplates={waTemplates}
-            showToast={showToast}
-          />
-        </div>
-      )}
     </div>
   );
 }

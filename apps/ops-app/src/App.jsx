@@ -5,20 +5,21 @@ import {
   Loader2, Clock, Plus, AlignLeft, UserCheck, UserX, Trash2, Calendar,
   Palmtree, Settings, Lock, UserCog, Play, Timer, FolderOpen, Activity, BarChart2, Edit, Camera,
   BookOpen, Menu, Archive, MessageSquare, Bell, BellDot, Send, Sparkles, RefreshCw, Undo2, FileText, ClipboardCopy, Link, List, Search, LayoutGrid, HardDrive, Film, Share2, Smile, Paperclip, Network, Eye, EyeOff, Copy,
-  ShieldCheck, ExternalLink, MessageCircle, Smartphone
+  ShieldCheck, ExternalLink, MessageCircle, Smartphone, Home
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc, query } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { googleProvider } from './services/firebase';
+
 
 // --- COMPONENTS ---
+import DashboardTab from './pages/DashboardTab';
 import TeamChat from './components/TeamChat';
 import RecycleBin from './components/RecycleBin';
-import SOPGuides from './components/SOPGuides';
+import KnowledgeBase from './components/KnowledgeBase';
 import ITTasks from './components/ITTasks';
 import StudioBookings from './components/StudioBookings';
 import SyncBoard from './components/SyncBoard';
@@ -33,7 +34,7 @@ import { USERS, findUserByEmail, findUserByIdentifier, resolveEmailForAuth, getU
 
 
 const WORKFLOW_STAGES = ['Conform', 'Assist', 'Grade', 'Delivery Sync'];
-const STUDIO_ROOMS = ['Studio 01', 'Studio 02', 'Studio 03'];
+const STUDIO_ROOMS = ['Studio 01', 'Studio 02', 'Studio 03', 'Studio 04'];
 
 import { APP_RELEASES } from './data/releases';
 import { SUBMISSION_VERSIONS, WHATSAPP_TEMPLATES } from './data/whatsappTemplates';
@@ -116,6 +117,57 @@ const calculateDays = (startStr, endStr) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
+class TabErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Tab Render Error:", error, errorInfo);
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.tab !== this.props.tab && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-xl mx-auto my-12 text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertCircle size={28} />
+          </div>
+          <h3 className="text-xl font-black text-white">View Display Issue Detected</h3>
+          <p className="text-xs text-slate-400">{this.state.error?.message || 'An unexpected rendering error occurred in this view.'}</p>
+          <div className="flex justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                if (this.props.onReset) this.props.onReset();
+              }}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+            >
+              Reset to Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-slate-700"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
@@ -123,6 +175,7 @@ export default function App() {
   // Authentication State
   const [user, setUser] = useState(null);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // App Data State
   const [projects, setProjects] = useState([]);
@@ -203,6 +256,7 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSettingsPin, setShowSettingsPin] = useState(false);
 
   // Clock & Greeting State
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -214,22 +268,49 @@ export default function App() {
 
   // --- 1. AUTHENTICATION & INITIALIZATION ---
   useEffect(() => {
+    // Enforce in-memory persistence: credentials are NEVER stored across sessions
+    setPersistence(auth, inMemoryPersistence).catch(err => {
+      console.warn("Could not set in-memory persistence:", err);
+    });
+
+    // Explicitly sign out on startup to purge any legacy persistent sessions stored in IndexedDB/cache
+    signOut(auth).catch(() => {});
+    setUser(null);
+    setCurrentUserProfile(null);
+    setIsAuthChecking(false);
+
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
       if (authUser && authUser.email) {
         const profile = findUserByEmail(authUser.email);
         if (profile) {
           setCurrentUserProfile(profile);
-          const hasAdmin = hasPermission(profile, PERMISSIONS.VIEW_DASHBOARD);
-          setActiveTab(prev => (!prev || prev === 'dashboard' || prev === 'my_tasks' ? (hasAdmin ? 'dashboard' : 'my_tasks') : prev));
+          setActiveTab(prev => (!prev || prev === 'dashboard' || prev === 'my_tasks' ? 'dashboard' : prev));
         } else {
           setCurrentUserProfile(null);
         }
       } else {
         setCurrentUserProfile(null);
       }
+      setIsAuthChecking(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentUserProfile]);
+
+  // Support direct URL query or hash navigation (e.g. ?tab=settings or #settings)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') || window.location.hash.replace(/^#/, '');
+      if (tabParam) {
+        const normalized = tabParam.toLowerCase() === 'settings' ? 'profile' : tabParam;
+        setActiveTab(normalized);
+      }
+    } catch (e) {}
   }, []);
 
 
@@ -237,6 +318,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
+    let isInitialMessagesLoad = true;
     const collections = ['tasks', 'leaves', 'bookings', 'user_profiles', 'projects', 'messages', 'notepads', 'shift_logs', 'submissions', 'long_format_logs', 'wa_templates'];
     const unsubscribes = [];
 
@@ -256,15 +338,25 @@ export default function App() {
           
           setMessages(prev => {
             const prevIds = new Set(prev.map(m => m.id));
-            sorted.forEach(msg => {
-              // Toast only for new personal mentions from others
-              if (!prevIds.has(msg.id) && msg.senderId !== currentUserProfile?.id && msg.mentions?.includes(currentUserProfile?.id)) {
-                setToast({ message: `@You were mentioned by ${msg.senderName}`, type: 'mention' });
-                setTimeout(() => setToast(null), 5000);
-              }
-            });
+            // Only trigger toast for live incoming messages after initial snapshot, preventing mention toast storms on login
+            if (!isInitialMessagesLoad && prev.length > 0) {
+              sorted.forEach(msg => {
+                const isRecent = msg.createdAt && (Date.now() - new Date(msg.createdAt).getTime() < 3 * 60 * 1000);
+                // Toast only for new personal mentions from others received in real time
+                if (
+                  !prevIds.has(msg.id) &&
+                  msg.senderId !== currentUserProfile?.id &&
+                  msg.mentions?.includes(currentUserProfile?.id) &&
+                  isRecent
+                ) {
+                  setToast({ message: `@You were mentioned by ${msg.senderName}`, type: 'mention' });
+                  setTimeout(() => setToast(null), 5000);
+                }
+              });
+            }
             return sorted;
           });
+          isInitialMessagesLoad = false;
         }
         if (collName === 'user_profiles') {
           const profilesMap = {};
@@ -420,25 +512,6 @@ export default function App() {
     return 'Good Evening';
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsAuthLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      const email = result.user?.email;
-      const profile = findUserByEmail(email);
-      if (!profile) {
-        showToast(`Access Denied: ${email} is not in the approved studio roster.`, 'error');
-      } else {
-        showToast(`Welcome back, ${profile.name}!`, 'success');
-      }
-    } catch (err) {
-      console.error("Google sign-in error:", err);
-      showToast(err.message || 'Google sign-in failed', 'error');
-    } finally {
-      setIsAuthLoading(false);
-    }
-  };
-
   const handleEmailPasswordLogin = async (e) => {
     e.preventDefault();
     if (!emailInput.trim() || !passwordInput) {
@@ -452,6 +525,7 @@ export default function App() {
     }
     try {
       setIsAuthLoading(true);
+      await setPersistence(auth, inMemoryPersistence);
       let result;
       if (authMode === 'signup') {
         result = await createUserWithEmailAndPassword(auth, resolvedEmail, passwordInput);
@@ -486,6 +560,7 @@ export default function App() {
       await signOut(auth);
       setUser(null);
       setCurrentUserProfile(null);
+      setIsAuthChecking(false);
       showToast('Logged out securely', 'success');
     } catch (err) {
       console.error("Sign out error:", err);
@@ -1163,12 +1238,12 @@ export default function App() {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaves', leaveId), { status });
       showToast(`Leave ${status}.`, 'success');
 
-      // Notify via Discord
+      // Notify via Discord & ntfy
       if (leaveDoc) {
         const reqUser = USERS.find(u => u.id === leaveDoc.userId);
-        const userMention = reqUser?.discordId ? `<@${reqUser.discordId}>` : `**${reqUser?.name}**`;
+        const userMention = reqUser?.discordId ? `<@${reqUser.discordId}>` : `**${reqUser?.name || 'Staff Member'}**`;
         sendDiscordAlert(`🔔 ${userMention} Leave **${status}**`);
-        sendDirectUserAlert(leave.userId, `🔔 Leave ${status}: ${currentUserProfile.name}`, `Your leave request for ${leave.startDate} to ${leave.endDate} has been ${status}.`);
+        sendDirectUserAlert(leaveDoc.userId, `🔔 Leave ${status}: ${currentUserProfile.name}`, `Your leave request for ${leaveDoc.startDate} to ${leaveDoc.endDate} has been ${status}.`);
       }
 
     } catch (error) {
@@ -1209,6 +1284,50 @@ export default function App() {
     );
   };
 
+  // Session Resolution / Loading Screen (prevents login glitch while restoring auth session)
+  if (isAuthChecking) {
+    return (
+      <div style={{
+        minHeight: '100dvh',
+        height: '100dvh',
+        width: '100%',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,92,252,0.18) 0%, transparent 70%), var(--bg-base)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2.5rem 1.5rem',
+        boxSizing: 'border-box',
+        fontFamily: 'var(--font-sans)',
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          animation: 'fade-in-up 0.3s ease both',
+        }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'var(--shadow-accent)',
+            marginBottom: '1.25rem',
+          }}>
+            <HardDrive size={30} color="#fff" />
+          </div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1, margin: '0 0 0.5rem' }}>STUDIO TUNNEL</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', margin: '0 0 1.5rem' }}>Ops & Financial Pipeline Management</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', color: 'var(--text-muted)', fontSize: '0.8125rem', fontWeight: 600 }}>
+            <Loader2 size={18} className="animate-spin-slow" style={{ color: 'var(--accent)' }} />
+            <span>Verifying session...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Login Screen
   if (!currentUserProfile) {
     const isUnauthorizedEmail = user && user.email && !findUserByEmail(user.email);
@@ -1216,200 +1335,174 @@ export default function App() {
     return (
       <div style={{
         minHeight: '100dvh',
+        height: '100dvh',
+        width: '100%',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,92,252,0.18) 0%, transparent 70%), var(--bg-base)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
+        justifyContent: 'flex-start',
+        padding: '2.5rem 1.5rem 3.5rem',
+        boxSizing: 'border-box',
         fontFamily: 'var(--font-sans)',
       }}>
-        <div style={{ marginBottom: '2rem', textAlign: 'center', animation: 'fade-in-up 0.4s ease both' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div style={{
-              width: '44px', height: '44px', borderRadius: '12px',
-              background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: 'var(--shadow-accent)',
-            }}>
-              <HardDrive size={24} color="#fff" />
-            </div>
-          </div>
-          <h1 style={{ fontSize: 'clamp(1.75rem,6vw,2.75rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1, margin: '0 0 0.5rem' }}>STUDIO TUNNEL</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Ops & Financial Pipeline Management</p>
-        </div>
-
-        {isUnauthorizedEmail ? (
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--danger-border)',
-            borderRadius: 'var(--r-2xl)',
-            padding: '2.5rem 2rem',
-            width: '100%',
-            maxWidth: '440px',
-            textAlign: 'center',
-            animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
-          }}>
-            <div style={{
-              width: '60px', height: '60px', borderRadius: '18px',
-              background: 'var(--danger-dim)', color: 'var(--danger)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1rem',
-            }}>
-              <ShieldAlert size={28} />
-            </div>
-            <h2 style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Access Restricted</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Signed in as <strong style={{ color: 'var(--text-primary)' }}>{user.email}</strong>, which is not registered in the active studio team roster.
-            </p>
-            <button
-              onClick={handleSignOut}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '0.875rem', fontSize: '0.8125rem' }}
-            >
-              Sign In with Approved Account
-            </button>
-          </div>
-        ) : (
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 'var(--r-2xl)',
-            padding: '2.5rem 2rem',
-            width: '100%',
-            maxWidth: '420px',
-            animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
-            boxShadow: 'var(--shadow-xl)'
-          }}>
-            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+        <div style={{
+          margin: 'auto 0',
+          width: '100%',
+          maxWidth: '420px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <div style={{ marginBottom: '2rem', textAlign: 'center', animation: 'fade-in-up 0.4s ease both', width: '100%' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <div style={{
-                width: '54px', height: '54px', borderRadius: '16px',
-                background: 'var(--accent-dim)', color: 'var(--accent)',
+                width: '44px', height: '44px', borderRadius: '12px',
+                background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: 'var(--shadow-accent)',
+              }}>
+                <HardDrive size={24} color="#fff" />
+              </div>
+            </div>
+            <h1 style={{ fontSize: 'clamp(1.75rem,6vw,2.75rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1, margin: '0 0 0.5rem' }}>STUDIO TUNNEL</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Ops & Financial Pipeline Management</p>
+          </div>
+
+          {isUnauthorizedEmail ? (
+            <div style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--danger-border)',
+              borderRadius: 'var(--r-2xl)',
+              padding: '2.5rem 2rem',
+              width: '100%',
+              textAlign: 'center',
+              animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
+              boxShadow: 'var(--shadow-xl)',
+              boxSizing: 'border-box',
+            }}>
+              <div style={{
+                width: '60px', height: '60px', borderRadius: '18px',
+                background: 'var(--danger-dim)', color: 'var(--danger)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 1rem',
               }}>
-                <Lock size={26} />
+                <ShieldAlert size={28} />
               </div>
-              <h2 style={{ fontWeight: 900, fontSize: '1.375rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Team Authentication</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Sign in with your approved Google or personal account</p>
+              <h2 style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Access Restricted</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                Signed in as <strong style={{ color: 'var(--text-primary)' }}>{user.email}</strong>, which is not registered in the active studio team roster.
+              </p>
+              <button
+                onClick={handleSignOut}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '0.875rem', fontSize: '0.8125rem' }}
+              >
+                Sign In with Approved Account
+              </button>
             </div>
-
-            {/* Google 1-Click Sign-In */}
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isAuthLoading}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem',
-                padding: '0.875rem 1rem',
-                borderRadius: 'var(--r-lg)',
-                background: '#ffffff',
-                color: '#1f2937',
-                border: '1px solid #e5e7eb',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: isAuthLoading ? 'wait' : 'pointer',
-                transition: 'all 0.15s',
-                fontFamily: 'var(--font-sans)',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f9fafb'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              {isAuthLoading ? 'Authenticating...' : 'Sign In with Google'}
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '0.75rem' }}>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or sign in with User ID / Email</span>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            </div>
-
-            {/* Email & Password Form */}
-            <form onSubmit={handleEmailPasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User ID or Email</label>
-                <input
-                  type="text"
-                  required
-                  value={emailInput}
-                  onChange={e => setEmailInput(e.target.value)}
-                  placeholder="e.g. samiran, yash, or email"
-                  style={{
-                    width: '100%',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: 'var(--r-md)',
-                    padding: '0.75rem 1rem',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.875rem',
-                    fontFamily: 'var(--font-sans)',
-                    boxSizing: 'border-box'
-                  }}
-                />
+          ) : (
+            <div style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 'var(--r-2xl)',
+              padding: '2.5rem 2rem',
+              width: '100%',
+              animation: 'scale-in 0.2s cubic-bezier(0.32,0.72,0,1)',
+              boxShadow: 'var(--shadow-xl)',
+              boxSizing: 'border-box',
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+                <div style={{
+                  width: '54px', height: '54px', borderRadius: '16px',
+                  background: 'var(--accent-dim)', color: 'var(--accent)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 1rem',
+                }}>
+                  <Lock size={26} />
+                </div>
+                <h2 style={{ fontWeight: 900, fontSize: '1.375rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Team Authentication</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Sign in with your approved studio credentials</p>
               </div>
 
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
-                <div style={{ position: 'relative' }}>
+              {/* Email & Password Form */}
+              <form onSubmit={handleEmailPasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User ID or Email</label>
                   <input
-                    type={showLoginPassword ? 'text' : 'password'}
+                    type="text"
                     required
-                    value={passwordInput}
-                    onChange={e => setPasswordInput(e.target.value)}
-                    placeholder="Enter password"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    placeholder="e.g. samiran, yash, or email"
                     style={{
                       width: '100%',
                       background: 'var(--bg-elevated)',
                       border: '1px solid var(--border-strong)',
                       borderRadius: 'var(--r-md)',
-                      padding: '0.75rem 2.5rem 0.75rem 1rem',
+                      padding: '0.75rem 1rem',
                       color: 'var(--text-primary)',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       fontFamily: 'var(--font-sans)',
                       boxSizing: 'border-box'
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      required
+                      value={passwordInput}
+                      onChange={e => setPasswordInput(e.target.value)}
+                      placeholder="Enter password"
+                      style={{
+                        width: '100%',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-strong)',
+                        borderRadius: 'var(--r-md)',
+                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '1rem',
+                        fontFamily: 'var(--font-sans)',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAuthLoading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', borderRadius: 'var(--r-md)', fontSize: '0.8125rem', padding: '0.875rem', marginTop: '0.5rem', letterSpacing: '0.05em' }}
+                >
+                  {isAuthLoading ? 'Verifying...' : authMode === 'signup' ? 'Register Account' : 'Sign In to Workspace'}
+                </button>
+              </form>
+
+              <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-sans)' }}
+                >
+                  {authMode === 'login' ? 'First time? Click here to set up password' : 'Already registered? Sign In'}
+                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isAuthLoading}
-                className="btn btn-primary"
-                style={{ width: '100%', borderRadius: 'var(--r-md)', fontSize: '0.8125rem', padding: '0.75rem', marginTop: '0.5rem', letterSpacing: '0.05em' }}
-              >
-                {isAuthLoading ? 'Verifying...' : authMode === 'signup' ? 'Register Account' : 'Sign In to Workspace'}
-              </button>
-            </form>
-
-            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
-              <button
-                type="button"
-                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-sans)' }}
-              >
-                {authMode === 'login' ? 'First time? Click here to set up password' : 'Already registered? Sign In'}
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <Toast />
       </div>
@@ -1428,22 +1521,22 @@ export default function App() {
 
   // ─── Bottom nav tab definitions (mobile) ───
   const bottomNavTabs = [
-    { id: 'chat',          icon: MessageSquare, label: 'Chat' },
+    { id: 'dashboard',     icon: Home,          label: 'Home' },
     { id: 'calendar',      icon: Calendar,      label: 'Bookings' },
     { id: 'kanban',        icon: KanbanSquare,  label: 'Tasks' },
-    { id: 'my_tasks',      icon: Briefcase,     label: 'Mine' },
+    { id: 'chat',          icon: MessageSquare, label: 'Chat' },
     { id: '__more__',      icon: Menu,          label: 'More' },
   ];
 
   const getPageTitle = () => {
     const tabMap = {
-      dashboard: 'Control Center', kanban: 'Tasks', my_tasks: 'My Workspace',
+      dashboard: 'Home', kanban: 'Tasks', my_tasks: 'My Workspace',
       calendar: 'Studio Bookings', team: 'Live Team', attendance: 'Attendance',
       tracker: 'Project Tracker', projects_view: 'Project Directory',
       submissions: 'Submissions', long_format: 'Long Format Hub',
-      chat: 'Team Chat', guidebook: 'SOP & Guides', notepad: 'Notepad',
+      chat: 'Team Chat', guidebook: 'Knowledge Base & SOPs', notepad: 'Notepad',
       it_tasks: 'IT Tasks', recycle_bin: 'Recycle Bin',
-      profile: 'Settings', releases: 'Release Notes', leave: 'Leave',
+      profile: 'Settings', settings: 'Settings', releases: 'Release Notes', leave: 'Leave',
     };
     return tabMap[activeTab] || 'TUNNEL';
   };
@@ -1524,9 +1617,9 @@ export default function App() {
 
           <div className="nav-section-label">Workspace</div>
           {[
+            { id: 'dashboard', icon: Home, label: 'Home' },
             { id: 'calendar', icon: Calendar, label: 'Studio Bookings' },
             { id: 'kanban', icon: KanbanSquare, label: 'Task Board' },
-            { id: 'dashboard', icon: LayoutDashboard, label: 'Control Center', perm: 'VIEW_DASHBOARD' },
             { id: 'projects_view', icon: FolderOpen, label: 'Projects & Tracker', perm: 'VIEW_PROJECTS' },
             { id: 'team', icon: Users, label: 'Live Team Status' },
             { id: 'my_tasks', icon: Briefcase, label: 'My Tasks' },
@@ -1552,13 +1645,14 @@ export default function App() {
           <div className="nav-section-label">Operations</div>
           {[
             { id: 'it_tasks', icon: Network, label: 'IT Tasks', perm: 'MANAGE_IT' },
-            { id: 'guidebook', icon: BookOpen, label: 'SOP & Guides' },
+            { id: 'guidebook', icon: BookOpen, label: 'Knowledge Base & SOPs' },
             { id: 'recycle_bin', icon: Trash2, label: 'Recycle Bin', perm: 'VIEW_RECYCLE_BIN' },
+            { id: 'profile', icon: Settings, label: 'Settings & Identity' },
           ].filter(i => !i.perm || hasPermission(currentUserProfile, PERMISSIONS[i.perm])).map(item => (
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
-              className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+              className={`nav-item ${(activeTab === item.id || (item.id === 'profile' && activeTab === 'settings')) ? 'active' : ''}`}
             >
               <item.icon size={17} />
               {item.label}
@@ -1609,7 +1703,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }}
-              className={activeTab === 'profile' ? 'btn-icon btn btn-primary' : 'btn-icon btn btn-ghost'}
+              className={(activeTab === 'profile' || activeTab === 'settings') ? 'btn-icon btn btn-primary' : 'btn-icon btn btn-ghost'}
               title="Settings"
             >
               <Settings size={16} />
@@ -1670,6 +1764,7 @@ export default function App() {
 
         {/* Main content padding wrapper */}
         <div style={{ padding: '1.5rem 1rem 1rem' }} className="md:p-10">
+          <TabErrorBoundary tab={activeTab} onReset={() => setActiveTab('dashboard')}>
 
         {/* RELEASES TAB */}
         {activeTab === 'releases' && (
@@ -1777,7 +1872,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setActiveTab(hasPermission(currentUserProfile, PERMISSIONS.VIEW_DASHBOARD) ? 'dashboard' : 'my_tasks')}
+              onClick={() => setActiveTab('dashboard')}
               className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-black tracking-widest transition-all border border-slate-800"
             >
               RETURN TO PIPELINE
@@ -1802,136 +1897,34 @@ export default function App() {
           />
         )}
 
-        {/* DASHBOARD TAB */}
+        {/* HOME / DASHBOARD TAB */}
         {activeTab === 'dashboard' && hasPermission(currentUserProfile, PERMISSIONS.VIEW_DASHBOARD) && (
-          <div className="space-y-8 animate-fade-up">
-            <div>
-              <h2 className="section-title">Control Center</h2>
-              <p className="section-subtitle">Real-time pipeline status and staff allocation.</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                { label: 'Active Tasks',    val: tasks.filter(t => t.status !== 'Delivered' && !t.isDeleted).length, color: 'text-warn',   icon: AlertCircle },
-                { label: 'Delivered',       val: tasks.filter(t => t.status === 'Delivered' && !t.isDeleted).length, color: 'text-accent',  icon: CheckCircle2 },
-                { label: 'Staff Online',    val: USERS.filter(u => isUserClockedIn(u.id)).length,                    color: 'text-online',  icon: Users },
-              ].map((stat, i) => (
-                <div key={i} className="stat-card">
-                  <p className="stat-label">{stat.label}</p>
-                  <p className={`stat-value ${stat.color}`}>{stat.val}</p>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: '1.5rem', overflowX: 'auto' }}>
-              <h3 style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1rem' }}>Unassigned Pipeline Tasks</h3>
-              <div style={{ minWidth: '420px' }}>
-                {tasks.filter(t => !t.assigneeId && t.status !== 'Delivered' && !t.isDeleted).length === 0 ? (
-                  <div className="empty-state" style={{ padding: '2rem', borderRadius: 'var(--r-lg)' }}>
-                    <span className="empty-state-text">All active tasks are currently assigned.</span>
-                  </div>
-                ) : (
-                  tasks.filter(t => !t.assigneeId && t.status !== 'Delivered' && !t.isDeleted).map(task => (
-                    <div key={task.id} className="flex items-center justify-between p-5 bg-slate-800/50 rounded-2xl border border-slate-700/50">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-10 h-10 mt-1 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                          <AlertCircle size={20} />
-                        </div>
-                        <div>
-                          <h4 className="text-white font-black text-sm mb-1 uppercase tracking-tight">{getProjectName(task.projectId)}</h4>
-                          <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Awaiting Phase: {task.status}</p>
-                          <h5 className="text-xs font-bold text-slate-300 mb-3">{task.title}</h5>
-                          <div className="flex gap-4 text-[9px] text-slate-400 mb-3">
-                            <span>Created: {task.createdAt ? new Date(task.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Unknown'}</span>
-                          </div>
-
-                          <div className="flex items-center gap-3 bg-black/40 px-3 py-2 rounded-lg border border-slate-700/50">
-                            <div className="flex items-center gap-1.5 border-r border-slate-700/50 pr-3">
-                              <UserCircle size={12} className="text-slate-500" />
-                              <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none mb-0.5">Last Worked By</p>
-                                <p className="text-[10px] font-bold text-slate-300 leading-none">{task.lastAssigneeId ? getUserName(task.lastAssigneeId) : '—'}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Briefcase size={12} className="text-indigo-400" />
-                              <div>
-                                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-0.5">Recommend Role</p>
-                                <p className="text-[10px] font-bold text-slate-300 leading-none">{getRecommendedRole(task.status)}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => setShowAssignModal(task)}
-                          className="px-6 py-2.5 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl text-xs font-black tracking-widest transition-all shadow-lg shadow-indigo-600/20"
-                        >
-                          ASSIGN STAFF
-                        </button>
-                        <button
-                          onClick={() => handleForceFinishTask(task.id)}
-                          className="px-6 py-2 bg-slate-800 text-slate-400 hover:bg-red-900/20 hover:text-red-400 border border-slate-700 rounded-xl text-[9px] font-black tracking-widest transition-all"
-                        >
-                          FORCE FINISH
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 overflow-x-auto">
-              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <Timer className="text-amber-500" size={20} /> Stale Active Tasks (from previous days)
-              </h3>
-              <div className="space-y-4 min-w-[500px]">
-                {tasks.filter(t => t.assigneeId && t.status !== 'Delivered' && !t.isDeleted && t.createdAt?.slice(0, 10) < new Date().toISOString().slice(0, 10)).length === 0 ? (
-                  <p className="text-slate-500 italic">No stale tasks from previous days.</p>
-                ) : (
-                  tasks.filter(t => t.assigneeId && t.status !== 'Delivered' && !t.isDeleted && t.createdAt?.slice(0, 10) < new Date().toISOString().slice(0, 10)).map(task => (
-                    <div key={task.id} className="flex items-center justify-between p-6 bg-slate-800/20 rounded-2xl border border-slate-700/30">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-500 flex items-center justify-center shrink-0 border border-slate-700">
-                          <Timer size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-white font-black text-sm mb-0.5 uppercase tracking-tight">{getProjectName(task.projectId)}</h4>
-                          <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Current Phase: {task.status}</p>
-                          <h5 className="text-xs font-bold text-slate-200 mb-2">{task.title}</h5>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
-                               Created: {task.createdAt ? new Date(task.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '') : '—'}
-                            </span>
-                            <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded">
-                              ASSIGNED TO: {getUserName(task.assigneeId)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleForceFinishTask(task.id)}
-                          className="flex items-center gap-2 px-6 py-3 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 rounded-xl text-[10px] font-black tracking-widest transition-all"
-                        >
-                          <CheckCircle2 size={16} /> FORCE FINISH
-                        </button>
-                        <button
-                          onClick={() => setShowAssignModal(task)}
-                          className="px-6 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl text-[10px] font-black tracking-widest transition-all border border-slate-700"
-                        >
-                          REASSIGN
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-          </div>
+          <DashboardTab
+            currentUserProfile={currentUserProfile}
+            bookings={bookings}
+            projects={projects}
+            tasks={tasks}
+            USERS={USERS}
+            isUserClockedIn={isUserClockedIn}
+            getProjectName={getProjectName}
+            getUserName={getUserName}
+            getRecommendedRole={getRecommendedRole}
+            setShowAssignModal={setShowAssignModal}
+            handleForceFinishTask={handleForceFinishTask}
+            commenceTask={commenceTask}
+            requestStageAdvance={requestStageAdvance}
+            assignTask={assignTask}
+            setActiveTab={setActiveTab}
+            formatLocalDate={formatLocalDate}
+            formatTime={formatTime}
+            getTaskTotalMinutes={getTaskTotalMinutes}
+            showToast={showToast}
+            db={db}
+            appId={appId}
+            notepads={notepads}
+            setNotepads={setNotepads}
+            waTemplates={waTemplates}
+          />
         )}
 
         {/* MERGED PROJECT DIRECTORY & OPERATIONS TRACKER TAB */}
@@ -2589,9 +2582,9 @@ export default function App() {
           />
         )}
 
-        {/* GUIDEBOOK & SOP TAB */}
+        {/* KNOWLEDGE BASE & SOPs TAB */}
         {activeTab === 'guidebook' && (
-          <SOPGuides />
+          <KnowledgeBase />
         )}
 
         {/* LEAVE TAB */}
@@ -2657,7 +2650,7 @@ export default function App() {
                       <p className="text-slate-500 font-medium">No leave requests found.</p>
                     </div>
                   );
-                  return targetLeaves.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt)).map(l => (
+                  return [...targetLeaves].sort((a, b) => new Date(b.requestedAt || 0) - new Date(a.requestedAt || 0)).map(l => (
                     <div key={l.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between shadow-lg gap-6">
                       <div>
                         <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -2691,114 +2684,232 @@ export default function App() {
         )}
 
         {/* SETTINGS TAB */}
-        {activeTab === 'profile' && (
-          <div className="animate-in fade-in space-y-8 max-w-4xl pb-32">
+        {(activeTab === 'profile' || activeTab === 'settings') && (
+          <div className="animate-in fade-in space-y-10 max-w-5xl pb-32">
             <header>
-              <h2 className="text-2xl md:text-3xl font-black text-white flex items-center tracking-tighter uppercase"><Settings className="mr-3 text-indigo-400" /> Settings</h2>
-              <p className="text-slate-500 font-bold text-xs md:text-sm uppercase tracking-widest mt-1">Configure your workspace identity and security.</p>
+              <h2 className="text-2xl md:text-3xl font-black text-white flex items-center tracking-tighter uppercase"><Settings className="mr-3 text-indigo-400" /> Settings & Workspace Identity</h2>
+              <p className="text-slate-400 font-medium text-xs md:text-sm mt-1">Configure your personal profile, security credentials, push alerts, and annual leave allowances.</p>
             </header>
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!db) return;
-              const formData = new FormData(e.target);
-              const customUsername = formData.get('customUsername')?.toString().trim().toLowerCase() || '';
-              try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', currentUserProfile.id), {
-                  customUsername: customUsername,
-                  email: formData.get('email') || '',
-                  phone: formData.get('phone') || '',
-                  emergency: formData.get('emergency') || '',
-                  lastUpdated: new Date().toISOString()
-                }, { merge: true });
-                showToast('Settings & User ID successfully updated.', 'success');
-              } catch (err) {
-                showToast('Failed to update settings.', 'error');
-              }
-            }} className="space-y-6">
-
-
-              {/* SECTION: EMPLOYMENT & HR (TOP) */}
-              <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700 overflow-hidden relative">
-                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-10">
-                  <div>
-                    <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
-                      <Palmtree size={28} className="text-indigo-400" /> Employment & HR
-                    </h3>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">Request time off and track your annual allowance.</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-full uppercase tracking-widest animate-pulse border border-emerald-500/20 flex items-center gap-2">
-                      <Activity size={12} /> Connected
-                    </span>
-                  </div>
+            {/* SECTION 1: EMPLOYMENT & HR (LEAVE PORTAL) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700 overflow-hidden relative space-y-8">
+              <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
+                    <Palmtree size={28} className="text-indigo-400" /> Employment & HR
+                  </h3>
+                  <p className="text-slate-400 font-medium text-xs uppercase tracking-widest mt-1">Request time off and track your annual allowance.</p>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                  {/* Left: Leave Balance Cards */}
-                  <div className="lg:col-span-4 space-y-6">
-                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                      ANNUAL ALLOWANCE
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
-                      {[
-                        { label: 'Casual Leave', val: 12, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                        { label: 'Sick Leave', val: 8, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                        { label: 'Earned Leave', val: 15, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-                      ].map(leave => (
-                        <div key={leave.label} className="bg-slate-950/40 p-6 rounded-2xl border border-slate-800/50 flex justify-between items-center transition-all hover:translate-x-1 hover:border-slate-600 group">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-300 transition-colors">{leave.label}</p>
-                          <div className={`px-4 py-2 rounded-xl bg-slate-900 font-black text-xl ${leave.color} border border-slate-800 shadow-inner`}>{leave.val}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right: Request Form (Format from Production) */}
-                  <div className="lg:col-span-8 bg-slate-950/20 rounded-[2rem] p-8 border border-slate-800/50 space-y-8 relative">
-                    <div className="flex items-center gap-4 border-b border-slate-800 pb-6 mb-2">
-                      <h4 className="text-sm font-black text-white uppercase tracking-[0.2em]">
-                        Request Time Off
-                      </h4>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
-                        <input type="date" onClick={(e) => e.target.showPicker?.()} className="w-full bg-slate-800 border-2 border-slate-700/50 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-emerald-500 transition-all font-bold cursor-pointer [color-scheme:dark]" />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">End Date</label>
-                        <input type="date" onClick={(e) => e.target.showPicker?.()} className="w-full bg-slate-800 border-2 border-slate-700/50 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-emerald-500 transition-all font-bold cursor-pointer [color-scheme:dark]" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Reason</label>
-                      <textarea placeholder="Brief explanation..." className="w-full bg-slate-800 border-2 border-slate-700/50 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-emerald-500 min-h-[120px] font-medium transition-all" />
-                    </div>
-
-                    <button type="button" onClick={async () => {
-                      showToast('Leave request submitted to HR.', 'success');
-                      const msg = `🏝️ **LEAVE REQUEST**: ${currentUserProfile.name}\n📅 **Status**: Submitted via Dashboard Portal`;
-                      await sendDiscordAlert(msg);
-                    }} className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black tracking-[0.2em] uppercase shadow-[0_10px_30px_rgba(16,185,129,0.2)] transition-all active:scale-[0.98] group flex items-center justify-center gap-3">
-                      <Palmtree size={18} className="group-hover:rotate-12 transition-transform" /> SUBMIT REQUEST
-                    </button>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-full uppercase tracking-widest border border-emerald-500/20 flex items-center gap-2">
+                    <Activity size={12} className="animate-pulse" /> Active Employee
+                  </span>
                 </div>
               </div>
 
-              {/* SECTION: PROFILE */}
+              {(() => {
+                const myLeaves = leaves.filter(l => getSelfAndPredecessorIds(currentUserProfile).includes(l.userId));
+                const approvedDays = myLeaves.filter(l => l.status === 'Approved').reduce((sum, l) => sum + calculateDays(l.startDate, l.endDate), 0);
+                const pendingCount = myLeaves.filter(l => l.status === 'Pending').length;
+                const remainingAllowance = Math.max(0, 21 - approvedDays);
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-950/50 p-6 rounded-2xl border border-slate-800 flex justify-between items-center transition-all hover:border-slate-700">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Annual Leave Remaining</p>
+                        <p className="text-2xl font-black text-emerald-400 mt-1">{remainingAllowance} <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">/ 21 Days</span></p>
+                      </div>
+                      <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <Palmtree size={22} />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/50 p-6 rounded-2xl border border-slate-800 flex justify-between items-center transition-all hover:border-slate-700">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Approved Days Used</p>
+                        <p className="text-2xl font-black text-indigo-400 mt-1">{approvedDays} <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Days Taken</span></p>
+                      </div>
+                      <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
+                        <CheckCircle2 size={22} />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/50 p-6 rounded-2xl border border-slate-800 flex justify-between items-center transition-all hover:border-slate-700">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending Requests</p>
+                        <p className="text-2xl font-black text-amber-400 mt-1">{pendingCount} <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Awaiting HR</span></p>
+                      </div>
+                      <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                        <Clock size={22} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Leave Request Form */}
+              <div className="bg-slate-950/30 rounded-3xl p-6 md:p-8 border border-slate-800/80">
+                <h4 className="text-sm font-black text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Plus size={16} className="text-emerald-400" /> Request Time Off
+                </h4>
+                <form onSubmit={handleLeaveSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Date</label>
+                      <input required name="startDate" type="date" onClick={(e) => e.target.showPicker?.()} className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-bold cursor-pointer [color-scheme:dark]" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">End Date</label>
+                      <input required name="endDate" type="date" onClick={(e) => e.target.showPicker?.()} className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-bold cursor-pointer [color-scheme:dark]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Reason / Notes</label>
+                    <textarea required name="reason" placeholder="Brief explanation for time off..." className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 min-h-[90px] font-medium transition-all" />
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black tracking-[0.2em] uppercase shadow-[0_10px_30px_rgba(16,185,129,0.2)] transition-all active:scale-[0.98] group flex items-center justify-center gap-3">
+                    <Palmtree size={16} className="group-hover:rotate-12 transition-transform" /> SUBMIT LEAVE REQUEST
+                  </button>
+                </form>
+              </div>
+
+              {/* Leave History / Staff Approvals */}
+              <div className="space-y-4 pt-4 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">
+                    {hasPermission(currentUserProfile, PERMISSIONS.APPROVE_LEAVES) ? 'Staff Leave Requests (Admin)' : 'My Leave History'}
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {(() => {
+                    const targetLeaves = hasPermission(currentUserProfile, PERMISSIONS.APPROVE_LEAVES)
+                      ? leaves
+                      : leaves.filter(l => getSelfAndPredecessorIds(currentUserProfile).includes(l.userId));
+
+                    if (targetLeaves.length === 0) {
+                      return <p className="text-xs text-slate-500 font-medium italic">No leave records found.</p>;
+                    }
+
+                    return [...targetLeaves].sort((a, b) => new Date(b.requestedAt || 0) - new Date(a.requestedAt || 0)).slice(0, 6).map(l => (
+                      <div key={l.id} className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-3">
+                            {hasPermission(currentUserProfile, PERMISSIONS.APPROVE_LEAVES) && (
+                              <span className="text-xs font-black text-white">{getUserName(l.userId)}</span>
+                            )}
+                            <span className="text-xs font-bold text-slate-300">
+                              {l.startDate} &rarr; {l.endDate} ({calculateDays(l.startDate, l.endDate)} days)
+                            </span>
+                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                              l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                              l.status === 'Rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                              'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            }`}>
+                              {l.status}
+                            </span>
+                          </div>
+                          {l.reason && <p className="text-xs text-slate-400 mt-1">{l.reason}</p>}
+                        </div>
+
+                        {hasPermission(currentUserProfile, PERMISSIONS.APPROVE_LEAVES) && l.status === 'Pending' && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => updateLeaveStatus(l.id, 'Approved')}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black tracking-widest transition-all"
+                            >
+                              APPROVE
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateLeaveStatus(l.id, 'Rejected')}
+                              className="px-4 py-2 bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 rounded-xl text-[10px] font-black tracking-widest transition-all border border-slate-700"
+                            >
+                              REJECT
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: PROFILE & SIGN-IN IDENTITY FORM */}
+            <form
+              key={currentUserProfile.id + '_' + (userProfiles[currentUserProfile.id]?.lastUpdated || '')}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!db || !currentUserProfile) return;
+                const formData = new FormData(e.target);
+                const customUsername = formData.get('customUsername')?.toString().trim().toLowerCase() || '';
+                const email = formData.get('email')?.toString().trim() || '';
+                const phone = formData.get('phone')?.toString().trim() || '';
+                const emergency = formData.get('emergency')?.toString().trim() || '';
+                const pin = formData.get('pin')?.toString().trim() || '';
+
+                if (pin && !/^\d{4}$/.test(pin)) {
+                  showToast('PIN must be exactly 4 digits.', 'error');
+                  return;
+                }
+
+                // Check alias collision with another user
+                if (customUsername) {
+                  const existingOther = USERS.find(u => u.id !== currentUserProfile.id && (
+                    u.id.toLowerCase() === customUsername ||
+                    u.usernames?.some(un => un.toLowerCase() === customUsername) ||
+                    (userProfiles[u.id]?.customUsername && userProfiles[u.id].customUsername.trim().toLowerCase() === customUsername)
+                  ));
+                  if (existingOther) {
+                    showToast(`User ID "${customUsername}" is already taken by ${existingOther.name}.`, 'error');
+                    return;
+                  }
+                }
+
+                try {
+                  const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', currentUserProfile.id);
+                  const updatedData = {
+                    customUsername,
+                    email,
+                    phone,
+                    emergency,
+                    pin: pin || '0000',
+                    lastUpdated: new Date().toISOString()
+                  };
+                  await setDoc(profileRef, updatedData, { merge: true });
+
+                  // Update local cache immediately
+                  setUserProfiles(prev => ({
+                    ...prev,
+                    [currentUserProfile.id]: {
+                      ...(prev[currentUserProfile.id] || {}),
+                      ...updatedData
+                    }
+                  }));
+
+                  showToast('Profile & Security PIN updated successfully.', 'success');
+                } catch (err) {
+                  console.error('Failed to update settings:', err);
+                  showToast('Failed to update settings.', 'error');
+                }
+              }}
+              className="space-y-8"
+            >
+              {/* Profile Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl overflow-hidden relative transition-all hover:border-slate-700">
                 <div className="flex flex-col md:flex-row gap-10 items-start">
                   <div className="shrink-0 flex flex-col items-center space-y-4">
                     <div className="relative group cursor-pointer" onClick={() => document.getElementById('dp-upload').click()}>
-                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-slate-800 border-2 border-slate-700 overflow-hidden flex items-center justify-center text-3xl font-black text-slate-500 shadow-2xl transition-all group-hover:border-indigo-500 group-hover:bg-slate-700">
+                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-slate-800 border-2 border-slate-700 overflow-hidden flex items-center justify-center text-3xl font-black text-slate-400 shadow-2xl transition-all group-hover:border-indigo-500 group-hover:bg-slate-700">
                         {userProfiles[currentUserProfile.id]?.photoURL ? (
                           <img src={userProfiles[currentUserProfile.id].photoURL} className="w-full h-full object-cover transition-opacity group-hover:opacity-40" alt="" />
                         ) : (
-                          currentUserProfile.name.charAt(0)
+                          currentUserProfile?.name ? currentUserProfile.name.charAt(0) : '?'
                         )}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Camera className="text-white" size={32} />
@@ -2823,24 +2934,25 @@ export default function App() {
                         reader.readAsDataURL(file);
                       }} />
                     </div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Click photo to update</p>
                   </div>
 
                   <div className="flex-1 space-y-6">
                     <div>
                       <h3 className="text-sm font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <UserCircle size={16} /> Profile & Sign-In Identity
+                        <UserCircle size={18} /> Profile & Sign-In Identity
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                          <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Sign-In User ID (Alias)</label>
+                          <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Sign-In User ID (Alias)</label>
                           <input name="customUsername" type="text" defaultValue={userProfiles[currentUserProfile.id]?.customUsername || currentUserProfile.usernames?.[0] || currentUserProfile.id} placeholder="e.g. samiran" className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-indigo-300 font-bold outline-none focus:border-indigo-500 transition-all" />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Employee Email</label>
+                          <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Employee Email</label>
                           <input required name="email" type="email" defaultValue={userProfiles[currentUserProfile.id]?.email || currentUserProfile.emails?.[0] || ''} placeholder="you@studio.com" className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-medium transition-all" />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Phone Number</label>
+                          <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Phone Number</label>
                           <input name="phone" type="tel" defaultValue={userProfiles[currentUserProfile.id]?.phone || ''} placeholder="+91..." className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 font-medium transition-all" />
                         </div>
                       </div>
@@ -2850,99 +2962,101 @@ export default function App() {
                 </div>
               </div>
 
-              {/* SECTION: EMERGENCY CONTACTS */}
+              {/* Emergency Contacts Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700">
                 <h3 className="text-sm font-black text-emerald-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                  <ShieldAlert size={16} /> Emergency Contacts
+                  <ShieldAlert size={18} /> Emergency Contacts
                 </h3>
                 <div className="bg-slate-950/30 rounded-2xl p-6 border border-slate-800/50">
-                  <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Contact Details</label>
-                  <textarea name="emergency" defaultValue={userProfiles[currentUserProfile.id]?.emergency || ''} placeholder="Name, Relationship, Phone Number..." className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 min-h-[100px] font-medium transition-all" />
+                  <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Contact Details (Name, Relationship, Phone)</label>
+                  <textarea name="emergency" defaultValue={userProfiles[currentUserProfile.id]?.emergency || ''} placeholder="Name, Relationship, Phone Number..." className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 min-h-[90px] font-medium transition-all" />
                 </div>
               </div>
 
-              {/* SECTION: NTFY PUSH NOTIFICATIONS */}
-              <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700">
-                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
-                  <div>
-                    <h3 className="text-sm font-black text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                      <Bell size={16} /> Mobile & Desktop Push Notifications (ntfy)
-                    </h3>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">Receive live lockscreen alerts for tasks, QC renders & studio updates.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowNtfyModal(true)}
-                    className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-indigo-500/30 flex items-center gap-2"
-                  >
-                    <Smartphone size={14} /> Open Setup & QR Codes
-                  </button>
-                </div>
-                <div className="bg-slate-950/40 p-6 rounded-2xl border border-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Your Personal Topic</p>
-                    <code className="text-sm font-mono font-black text-indigo-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
-                      {getUserNtfyTopic(currentUserProfile.id)}
-                    </code>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`https://ntfy.sh/${getUserNtfyTopic(currentUserProfile.id)}`);
-                        showToast('Personal ntfy link copied!', 'success');
-                      }}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5"
-                    >
-                      <Copy size={14} /> Copy Link
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await sendDirectUserAlert(
-                          currentUserProfile.id,
-                          `🔔 Push Alert Test`,
-                          `Hello ${currentUserProfile.name}! Your ntfy push connection is active and operational.`
-                        );
-                        showToast(`Test push sent to ${getUserNtfyTopic(currentUserProfile.id)}!`, 'success');
-                      }}
-                      className="px-4 py-2.5 bg-emerald-950/30 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-500/30 flex items-center gap-1.5"
-                    >
-                      <Sparkles size={14} /> Send Test Push
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION: SECURITY */}
+              {/* Security PIN Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700">
                 <h3 className="text-sm font-black text-red-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                  <Lock size={16} /> Security
+                  <Lock size={18} /> Security Credentials
                 </h3>
                 <div className="max-w-xs relative group">
-                  <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Change 4-Digit Access PIN</label>
+                  <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">4-Digit Workspace Access PIN</label>
                   <input required name="pin" type={showSettingsPin ? "text" : "password"} inputMode="numeric" maxLength="4" defaultValue={userProfiles[currentUserProfile.id]?.pin || '0000'} className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 tracking-[0.5em] font-black transition-all" />
                   <button
                     type="button"
                     onClick={() => setShowSettingsPin(!showSettingsPin)}
-                    className="absolute right-3 bottom-2.5 p-1 text-slate-600 hover:text-white transition-colors"
+                    className="absolute right-3 bottom-2.5 p-1 text-slate-500 hover:text-white transition-colors"
                   >
                     {showSettingsPin ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-
-              <div className="flex justify-end pt-4">
-                <button type="submit" className="w-full md:w-auto px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-black tracking-widest shadow-[0_10px_30px_rgba(99,102,241,0.3)] transition-all hover:scale-[1.02] active:scale-95">
-                  SAVE ALL SETTINGS
+              {/* Save Button */}
+              <div className="flex justify-end pt-2">
+                <button type="submit" className="w-full md:w-auto px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-black tracking-widest uppercase shadow-[0_10px_30px_rgba(99,102,241,0.3)] transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                  <CheckCircle2 size={16} /> SAVE ALL SETTINGS
                 </button>
               </div>
             </form>
+
+            {/* SECTION 3: NTFY PUSH NOTIFICATIONS */}
+            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-xl transition-all hover:border-slate-700">
+              <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                <div>
+                  <h3 className="text-sm font-black text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Bell size={18} /> Mobile & Desktop Push Notifications (ntfy)
+                  </h3>
+                  <p className="text-slate-400 font-medium text-xs uppercase tracking-widest mt-1">Receive live lockscreen alerts for tasks, QC renders & studio updates.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNtfyModal(true)}
+                  className="px-4 py-2.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-indigo-500/30 flex items-center gap-2"
+                >
+                  <Smartphone size={14} /> Open Setup & QR Codes
+                </button>
+              </div>
+              <div className="bg-slate-950/40 p-6 rounded-2xl border border-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Your Personal Topic</p>
+                  <code className="text-sm font-mono font-black text-indigo-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
+                    {getUserNtfyTopic(currentUserProfile.id)}
+                  </code>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://ntfy.sh/${getUserNtfyTopic(currentUserProfile.id)}`);
+                      showToast('Personal ntfy link copied!', 'success');
+                    }}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5"
+                  >
+                    <Copy size={14} /> Copy Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await sendDirectUserAlert(
+                        currentUserProfile.id,
+                        `🔔 Push Alert Test`,
+                        `Hello ${currentUserProfile?.name || 'Team Member'}! Your ntfy push connection is active and operational.`
+                      );
+                      showToast(`Test push sent to ${getUserNtfyTopic(currentUserProfile.id)}!`, 'success');
+                    }}
+                    className="px-4 py-2.5 bg-emerald-950/30 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-500/30 flex items-center gap-1.5"
+                  >
+                    <Sparkles size={14} /> Send Test Push
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
-      </div>
+          </TabErrorBoundary>
+        </div>
 
       {/* --- MODALS --- */}
 
@@ -3180,7 +3294,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {hasPermission(currentUserProfile, PERMISSIONS.VIEW_DASHBOARD) && (
+                  {(currentUserProfile?.isAdmin || currentUserProfile?.role === ROLES.LINE_PRODUCER) && (
                     <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
                       <label className="block text-xs font-black text-amber-500 uppercase tracking-widest mb-3">LP: Select Next Phase</label>
                       <select name="targetStatus" defaultValue={nextStatus} className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-sm text-white focus:border-indigo-500 outline-none font-bold">

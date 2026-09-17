@@ -18,7 +18,7 @@
 > All generated invoices, draft previews, and email dispatches are strictly locked and routed exclusively to authorized internal Studio Tunnel addresses:
 > - `finance@studiotunnel.com`
 > - `samiran@studiotunnel.com`
-> - `contact@studiotunnel.com`
+> - `accounts@studiotunnel.com`
 > - `tamash@studiotunnel.com`
 
 > [!IMPORTANT]
