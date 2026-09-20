@@ -922,35 +922,6 @@
       </div>
     </div>
 
-    <!-- Pending Verification Queue: automated Monday statement matches awaiting accountant re-verification -->
-    <div id="pendingVerificationPanel" class="recon-panel" style="display: none; margin-bottom: 16px; border: 1px solid rgba(245, 158, 11, 0.4);">
-      <div class="recon-panel-header">
-        <div>
-          <div class="recon-panel-title">
-            <span>🕓 Pending Verification — Automated Monday Ingestion</span>
-            <span class="badge badge-unpaid" id="pendingVerificationBadge">0</span>
-          </div>
-          <div class="recon-panel-subtitle">Matched automatically from your emailed bank statement reply. Nothing here is marked Paid until approved below.</div>
-        </div>
-      </div>
-      <div class="table-container" style="border: none; border-radius: 0; max-height: 320px; overflow-y: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Bank Txn Date</th>
-              <th>Project</th>
-              <th>Client</th>
-              <th>Amount (₹)</th>
-              <th>Match Basis</th>
-              <th>Narration</th>
-              <th style="text-align: right;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="pendingVerificationTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- Dual Split Workspace Layout -->
     <div class="recon-split-layout">
       <!-- Left Panel: Bank Statement Credits -->
@@ -1321,7 +1292,6 @@
     let bankStatementTransactions = [];
     let selectedTxnForManualMatch = null;
     let reconciliationLog = [];
-    let pendingVerifications = [];
     let vyaparPreviewRows = [];
     let expandedPartyClient = null;
 
@@ -1460,75 +1430,6 @@
           }
         })
         .catch(err => console.warn('Reconciliation log unavailable:', err));
-
-      loadPendingVerifications();
-    }
-
-    /** Automated Monday bank-statement matches awaiting Natasha's re-verification. */
-    function loadPendingVerifications() {
-      callBackend('getPendingVerifications')
-        .then(res => {
-          if (res.success) {
-            pendingVerifications = res.data || [];
-            renderPendingVerificationsPanel();
-          }
-        })
-        .catch(err => console.warn('Pending verifications unavailable:', err));
-    }
-
-    function renderPendingVerificationsPanel() {
-      const panel = document.getElementById('pendingVerificationPanel');
-      const tbody = document.getElementById('pendingVerificationTableBody');
-      const badge = document.getElementById('pendingVerificationBadge');
-      if (!panel || !tbody) return;
-
-      badge.innerText = pendingVerifications.length;
-      panel.style.display = pendingVerifications.length > 0 ? 'block' : 'none';
-      if (pendingVerifications.length === 0) return;
-
-      tbody.innerHTML = pendingVerifications.map(v => `
-        <tr>
-          <td>${escapeHtml(v.bankTxnDate || '')}</td>
-          <td><strong>${escapeHtml(v.projectCode || '')}</strong></td>
-          <td>${escapeHtml(v.clientName || '')}</td>
-          <td>₹${(v.creditAmount || 0).toLocaleString('en-IN')}</td>
-          <td><span class="badge badge-auto-matched">${escapeHtml(v.matchConfidence || 'Matched')}</span></td>
-          <td style="max-width: 220px; font-size: 0.78rem; color: var(--text-dim);">${escapeHtml(v.narration || '')}</td>
-          <td style="text-align: right; white-space: nowrap;">
-            <button class="btn-action btn-settle" onclick="approveVerification('${v.uuid}')">✓ Approve</button>
-            <button class="btn-action" style="color: var(--brand-red);" onclick="rejectVerification('${v.uuid}')">✕ Reject</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function approveVerification(uuid) {
-      const activeUser = auth.currentUser ? { email: auth.currentUser.email } : JSON.parse(sessionStorage.getItem('st_comptroller_user') || 'null');
-      showToast('Verifying & marking Paid...', 'info');
-      callBackend('approveVerification', { uuid: uuid, approvedBy: (activeUser && activeUser.email) || 'Unknown' })
-        .then(res => {
-          showToast(res.message || (res.success ? 'Verified.' : 'Failed to verify.'), res.success ? 'success' : 'danger');
-          if (res.success) {
-            pendingVerifications = pendingVerifications.filter(v => v.uuid !== uuid);
-            renderPendingVerificationsPanel();
-            loadDashboardData();
-          }
-        })
-        .catch(err => showToast('Error: ' + (err.message || err), 'danger'));
-    }
-
-    function rejectVerification(uuid) {
-      const reason = prompt('Reason for rejecting this auto-match? (this credit will stay unmatched for manual review)') || '';
-      const activeUser = auth.currentUser ? { email: auth.currentUser.email } : JSON.parse(sessionStorage.getItem('st_comptroller_user') || 'null');
-      callBackend('rejectVerification', { uuid: uuid, reason: reason, rejectedBy: (activeUser && activeUser.email) || 'Unknown' })
-        .then(res => {
-          showToast(res.message || (res.success ? 'Rejected.' : 'Failed to reject.'), res.success ? 'success' : 'danger');
-          if (res.success) {
-            pendingVerifications = pendingVerifications.filter(v => v.uuid !== uuid);
-            renderPendingVerificationsPanel();
-          }
-        })
-        .catch(err => showToast('Error: ' + (err.message || err), 'danger'));
     }
 
     function onDataLoaded(data) {

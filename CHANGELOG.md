@@ -8,20 +8,6 @@ This document tracks all release versions of **`ST-fin-com-prog`**, categorized 
 
 ## 🏷️ Version History
 
-### 📦 Release Version `v1.1` — *"automated-monday-bank-statement-ingestion"*
-**Date:** 2026-09-20
-
-#### 📧 Reply-to-Email Bank Statement Ingestion (Zero External Access)
-- Added `sendWeeklyBankStatementRequestEmail` (`6_BankStatementIngestion.gs`): every Monday 9 AM IST, emails Samiran asking for the week's HDFC statement export, cc'ing accountant Natasha, and tags the thread with a Gmail label so the reply can be found later. No bank API, no third-party aggregator, no external access granted to anyone — everything stays inside the studio's own Gmail.
-- Added `pollForBankStatementReplies` (hourly trigger): watches the tagged thread for Samiran's reply, pulls the `.xlsx`/`.xls`/`.csv` attachment (XLS/XLSX parsed via a temporary Drive-converted Google Sheet, since Apps Script has no native binary Excel reader), and runs the same exact / TDS-adjusted / name-or-invoice-number matching engine already used by the Finance App's manual reconciliation tool.
-
-#### 🕓 Human-in-the-Loop Verification Queue
-- Matches are **never** auto-applied to the ledger. Each is written to `Bank_Reconciliation_Log` with a new `Verification Status = 'Pending Verification'` (plus `Match Confidence`, `Verified By`, `Verified At` columns — existing sheets are healed non-destructively on first write).
-- Added `getPendingVerifications` / `approveVerification` / `rejectVerification` API actions: only a human clicking **Approve** in the Finance App's new "Pending Verification" panel (Bank Reconciliation tab) actually flips `Payment Status` to `Paid`; **Reject** leaves the ledger untouched and records the reason.
-- A summary email (matched + unmatched credits) goes to Natasha, cc Samiran, after every ingestion so nothing is finalized without her re-verifying it against the real bank credit.
-
----
-
 ### 📦 Release Version `v1.0` — *"party-ledger-recon-log-vyapar-import"*
 **Date:** 2026-09-17
 

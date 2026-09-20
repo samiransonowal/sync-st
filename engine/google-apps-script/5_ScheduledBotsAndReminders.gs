@@ -2,11 +2,8 @@
  * 🚀 Studio Tunnel — Automated Scheduled Bots & Payment Reminders
  * 
  * 1. Saturday Night Executive Summary Bot (Cron: Saturdays 10:00 PM IST)
- * 2. Monday Morning Overdue Collections Report (Cron: Mondays 9:00 AM IST)
+ * 2. Monday Morning Bank Reconciliation & Overdue Collections Bot (Cron: Mondays 9:00 AM IST)
  * 3. Daily Staggered 30-Day Payment Reminders (Days 21, 23, 25, 28, 30)
- * 4. Monday Morning Bank Statement Request + hourly reply ingestion
- *    (see 6_BankStatementIngestion.gs for sendWeeklyBankStatementRequestEmail /
- *    pollForBankStatementReplies)
  */
 
 /**
@@ -194,7 +191,7 @@ function sendMondayMorningReconciliationAndOverdueReport() {
       
       <div style="background-color: #1e3a8a; border-left: 4px solid #60a5fa; padding: 12px 16px; margin-bottom: 24px; border-radius: 4px;">
         <h4 style="margin: 0 0 6px 0; color: #93c5fd;">⚡ Action Item 1: Weekend Bank Statement Reconciliation</h4>
-        <p style="margin: 0; font-size: 0.95em; color: #e0f2fe;">A separate email in your inbox is asking for this week's HDFC statement — reply to that thread with the export attached and the Comptroller engine will auto-match credits for Natasha to verify.</p>
+        <p style="margin: 0; font-size: 0.95em; color: #e0f2fe;">Please check HDFC Bank credits received over the weekend and update Col AB (Payment Status → Paid) in the Master Ledger.</p>
       </div>
       
       <h3 style="color: #ef4444; border-bottom: 1px solid #2d3748; padding-bottom: 8px;">🚨 Overdue Receivables (>30 Days Cycle)</h3>
@@ -328,27 +325,14 @@ function setupSystemTriggers() {
     .onWeekDay(ScriptApp.WeekDay.MONDAY)
     .atHour(9)
     .create();
-
-  // 2b. Monday 9:00 AM IST — Bank Statement Request (reply-to-email ingestion pipeline)
-  ScriptApp.newTrigger('sendWeeklyBankStatementRequestEmail')
-    .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.MONDAY)
-    .atHour(9)
-    .create();
-
-  // 2c. Hourly — watches for Samiran's reply with the statement attached
-  ScriptApp.newTrigger('pollForBankStatementReplies')
-    .timeBased()
-    .everyHours(1)
-    .create();
-
+    
   // 3. Daily 9:00 AM IST for Staggered Payment Reminders
   ScriptApp.newTrigger('processDailyPaymentReminders')
     .timeBased()
     .everyDays(1)
     .atHour(9)
     .create();
-
+    
   Logger.log('✅ Automated System Triggers installed successfully!');
 }
 
