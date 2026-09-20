@@ -52,6 +52,18 @@ function doPost(e) {
         result = importVyaparRows(data.rows || [], data.importedBy || '');
         break;
 
+      case 'getPendingVerifications':
+        result = { success: true, data: getPendingVerifications() };
+        break;
+
+      case 'approveVerification':
+        result = approveVerification(data.uuid, data.approvedBy || '');
+        break;
+
+      case 'rejectVerification':
+        result = rejectVerification(data.uuid, data.reason || '', data.rejectedBy || '');
+        break;
+
       default:
         result = { success: false, message: `Unsupported action: ${action}` };
     }
@@ -395,8 +407,16 @@ function updatePaymentStatus(projectCode, newPaymentStatus, amountPending, tdsAm
 const RECON_LOG_SHEET_NAME = 'Bank_Reconciliation_Log';
 const RECON_LOG_HEADERS = [
   'UUID', 'Reconciled At', 'Bank Txn Date', 'Narration / UTR Ref', 'Credit Amount (INR)',
-  'Project Code', 'Invoice Number', 'Client Name', 'TDS Deducted (INR)', 'Status', 'Source'
+  'Project Code', 'Invoice Number', 'Client Name', 'TDS Deducted (INR)', 'Status', 'Source',
+  'Verification Status', 'Match Confidence', 'Verified By', 'Verified At'
 ];
+// Column indices (0-based) for the verification-lifecycle columns appended above.
+const RECON_LOG_COL = {
+  VERIFICATION_STATUS: 11,
+  MATCH_CONFIDENCE: 12,
+  VERIFIED_BY: 13,
+  VERIFIED_AT: 14
+};
 
 function getOrCreateReconLogSheet_() {
   const ss = SpreadsheetApp.openById(ACCOUNTS_SPREADSHEET_ID);
@@ -405,10 +425,22 @@ function getOrCreateReconLogSheet_() {
     sheet = ss.insertSheet(RECON_LOG_SHEET_NAME);
     sheet.getRange(1, 1, 1, RECON_LOG_HEADERS.length).setValues([RECON_LOG_HEADERS]);
     sheet.setFrozenRows(1);
+  } else {
+    // Non-destructively heal older sheets created before the verification columns existed.
+    const existingHeaderCount = sheet.getLastColumn();
+    if (existingHeaderCount < RECON_LOG_HEADERS.length) {
+      const missingHeaders = RECON_LOG_HEADERS.slice(existingHeaderCount);
+      sheet.getRange(1, existingHeaderCount + 1, 1, missingHeaders.length).setValues([missingHeaders]);
+    }
   }
   return sheet;
 }
 
+/**
+ * `entry.verificationStatus` defaults to 'Verified' because every OTHER caller of this
+ * function (manual settle, 1-click settle, Vyapar import) is a human acting in the app in
+ * real time. Only the automated Monday statement ingestion passes 'Pending Verification'.
+ */
 function appendReconciliationLogEntry_(entry) {
   const sheet = getOrCreateReconLogSheet_();
   const uuid = Utilities.getUuid();
@@ -423,7 +455,11 @@ function appendReconciliationLogEntry_(entry) {
     entry.clientName || '',
     Number(entry.tdsDeducted || 0),
     entry.status || '',
-    entry.source || 'Manual'
+    entry.source || 'Manual',
+    entry.verificationStatus || 'Verified',
+    entry.matchConfidence || '',
+    entry.verifiedBy || '',
+    entry.verificationStatus === 'Verified' ? new Date() : ''
   ]);
   return uuid;
 }
@@ -451,7 +487,11 @@ function getReconciliationLog() {
         clientName: r[7],
         tdsDeducted: Number(r[8] || 0),
         status: r[9],
-        source: r[10]
+        source: r[10],
+        verificationStatus: r[RECON_LOG_COL.VERIFICATION_STATUS] || 'Verified',
+        matchConfidence: r[RECON_LOG_COL.MATCH_CONFIDENCE] || '',
+        verifiedBy: r[RECON_LOG_COL.VERIFIED_BY] || '',
+        verifiedAt: r[RECON_LOG_COL.VERIFIED_AT] || ''
       });
     }
     log.reverse();
@@ -459,6 +499,121 @@ function getReconciliationLog() {
   } catch (err) {
     Logger.log('Error reading reconciliation log: ' + err.toString());
     return [];
+  }
+}
+
+/**
+ * Entries the automated Monday statement ingestion matched but has NOT yet applied to the
+ * ledger — Natasha (or Samiran) must explicitly approve or reject each one in the app before
+ * any Payment Status changes. Oldest first, so the queue reads top-to-bottom in arrival order.
+ */
+function getPendingVerifications() {
+  try {
+    const sheet = getOrCreateReconLogSheet_();
+    const rows = sheet.getDataRange().getValues();
+    const pending = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0]) continue;
+      if (String(r[RECON_LOG_COL.VERIFICATION_STATUS] || '').trim() !== 'Pending Verification') continue;
+      pending.push({
+        uuid: r[0],
+        reconciledAt: r[1],
+        bankTxnDate: r[2],
+        narration: r[3],
+        creditAmount: Number(r[4] || 0),
+        projectCode: r[5],
+        invoiceNumber: r[6],
+        clientName: r[7],
+        tdsDeducted: Number(r[8] || 0),
+        source: r[10],
+        matchConfidence: r[RECON_LOG_COL.MATCH_CONFIDENCE] || ''
+      });
+    }
+    return pending;
+  } catch (err) {
+    Logger.log('Error reading pending verifications: ' + err.toString());
+    return [];
+  }
+}
+
+function findReconLogRowIndexByUuid_(sheet, uuid) {
+  const ids = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (ids[i][0] === uuid) return i + 2; // 1-based sheet row, +1 for header
+  }
+  return -1;
+}
+
+/**
+ * Approves a Pending Verification entry: applies the payment update to Project_Billing_Ledger
+ * (the same effect a manual "Settle & Reconcile" click has) and marks the log row Verified.
+ * This never creates a second log row — it finalizes the one the ingestion already wrote.
+ */
+function approveVerification(uuid, approvedBy) {
+  try {
+    if (!uuid) throw new Error('Missing verification UUID.');
+    const sheet = getOrCreateReconLogSheet_();
+    const rowNum = findReconLogRowIndexByUuid_(sheet, uuid);
+    if (rowNum === -1) throw new Error(`Verification entry ${uuid} not found.`);
+
+    const row = sheet.getRange(rowNum, 1, 1, RECON_LOG_HEADERS.length).getValues()[0];
+    const projectCode = row[5];
+    const creditAmount = Number(row[4] || 0);
+    const tdsDeducted = Number(row[8] || 0);
+    if (!projectCode) throw new Error('Verification entry has no linked project code.');
+
+    const ledgerSheet = SpreadsheetApp.openById(ACCOUNTS_SPREADSHEET_ID).getSheetByName('Project_Billing_Ledger');
+    if (!ledgerSheet) throw new Error('Project_Billing_Ledger sheet not found.');
+    const data = ledgerSheet.getDataRange().getValues();
+    let matched = false;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toString().trim() === projectCode.toString().trim()) {
+        ledgerSheet.getRange(i + 1, 28).setValue('Paid');                 // Col AB: Payment Status
+        ledgerSheet.getRange(i + 1, 29).setValue(0);                      // Col AC: Amount Pending
+        ledgerSheet.getRange(i + 1, 31).setValue(tdsDeducted);            // Col AE: TDS Amount
+        ledgerSheet.getRange(i + 1, 32).setValue(new Date());             // Col AF: Last Activity
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) throw new Error(`Project ${projectCode} not found in ledger.`);
+
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFICATION_STATUS + 1).setValue('Verified');
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFIED_BY + 1).setValue(approvedBy || '');
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFIED_AT + 1).setValue(new Date());
+
+    return { success: true, message: `${projectCode} verified and marked Paid (₹${creditAmount.toLocaleString('en-IN')}).` };
+  } catch (err) {
+    Logger.log('Error approving verification: ' + err.toString());
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Rejects a Pending Verification entry: the ledger is left untouched (invoice stays exactly
+ * as it was before the automated match), the log row is marked Rejected with the reason, and
+ * the credit remains visible in the Finance App for manual matching.
+ */
+function rejectVerification(uuid, reason, rejectedBy) {
+  try {
+    if (!uuid) throw new Error('Missing verification UUID.');
+    const sheet = getOrCreateReconLogSheet_();
+    const rowNum = findReconLogRowIndexByUuid_(sheet, uuid);
+    if (rowNum === -1) throw new Error(`Verification entry ${uuid} not found.`);
+
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFICATION_STATUS + 1).setValue('Rejected');
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFIED_BY + 1).setValue(rejectedBy || '');
+    sheet.getRange(rowNum, RECON_LOG_COL.VERIFIED_AT + 1).setValue(new Date());
+    if (reason) {
+      const currentNarration = sheet.getRange(rowNum, 4).getValue() || '';
+      sheet.getRange(rowNum, 4).setValue(`${currentNarration} [Rejected: ${reason}]`);
+    }
+
+    return { success: true, message: 'Verification entry rejected. Ledger left unchanged.' };
+  } catch (err) {
+    Logger.log('Error rejecting verification: ' + err.toString());
+    return { success: false, message: err.message };
   }
 }
 
